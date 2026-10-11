@@ -15,6 +15,7 @@ import { Library } from './library';
 import { Queue } from './queue';
 import { Detail } from './detail';
 import { Settings } from './settings';
+import { Wishlist } from './wishlist';
 import { AuthService } from './auth/auth.service';
 import { authGuard, guestGuard } from './auth/auth.guard';
 import { authInterceptor } from './auth/auth.interceptor';
@@ -36,6 +37,8 @@ import { Login } from './auth/login';
             ><span>▦</span> Lista de jogos</a
           ><a routerLink="/ordem" routerLinkActive="active" (click)="menu.set(false)"
             ><span>≋</span> Ordem de jogos</a
+          ><a routerLink="/desejos" routerLinkActive="active" (click)="menu.set(false)"
+            ><span>♡</span> Lista de desejos</a
           ><a routerLink="/configuracoes" routerLinkActive="active" (click)="menu.set(false)"
             ><span>⚙</span> Configurações</a
           >
@@ -128,6 +131,7 @@ bootstrapApplication(App, {
       { path: 'jogos', component: Library, canActivate: [authGuard] },
       { path: 'ordem', component: Queue, canActivate: [authGuard] },
       { path: 'jogos/:id', component: Detail, canActivate: [authGuard] },
+      { path: 'desejos', component: Wishlist, canActivate: [authGuard] },
       { path: 'configuracoes', component: Settings, canActivate: [authGuard] },
       { path: '', redirectTo: 'jogos', pathMatch: 'full' },
       { path: '**', redirectTo: 'jogos' },

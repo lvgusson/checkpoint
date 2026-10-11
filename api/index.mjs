@@ -21,12 +21,12 @@ import { createService } from './src/setup.ts';
 import { authenticatorFromEnv } from './src/auth.ts';
 
 const auth = authenticatorFromEnv();
-const { service } = await createService({
+const { service, wishlist } = await createService({
   dataDir: process.env.DATA_DIR ?? join(tmpdir(), 'checkpoint'),
 });
 
 // makeServer devolve um http.Server; reaproveitamos o listener dele sem listen().
-const server = makeServer(service, auth);
+const server = makeServer(service, auth, wishlist);
 
 export default function handler(req, res) {
   server.emit('request', req, res);

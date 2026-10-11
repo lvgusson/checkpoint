@@ -1,4 +1,5 @@
-export type GameStatus = 'Não iniciado' | 'Jogando' | 'Abandonado' | 'Finalizado';
+/** 'Desejado' = lista de desejos (ainda não tem o jogo); nunca entra na fila. */
+export type GameStatus = 'Não iniciado' | 'Jogando' | 'Abandonado' | 'Finalizado' | 'Desejado';
 export type Desire = 'Muito Alta' | 'Alta' | 'Média' | 'Baixa' | 'Muito Baixa';
 export interface Game {
   id: string;
@@ -216,4 +217,54 @@ export interface Catalog {
     playing: number;
     pending: number;
   };
+}
+
+/** Preço atual de um app na loja da Steam (centavos da moeda; BRL para o Brasil). */
+export interface SteamPrice {
+  currency: string | null;
+  initialCents: number | null;
+  /** null = sem preço à venda (lançamento futuro, fora da loja). */
+  finalCents: number | null;
+  discountPercent: number;
+  /** Fim da promoção atual (ISO), quando houver. */
+  discountEndsAt: string | null;
+  isFree: boolean;
+  formatted: string | null;
+  fetchedAt: string;
+}
+/** Resultado da busca por nome na loja. */
+export interface SteamSearchItem {
+  appId: number;
+  name: string;
+  imageUrl: string | null;
+  price: SteamPrice | null;
+}
+/** Detalhes de um app da Steam usados para cadastrar o jogo. */
+export interface SteamApp {
+  appId: number;
+  name: string;
+  shortDescription: string;
+  /** Tags da comunidade em pt-BR, da mais votada para a menos votada. */
+  tags: string[];
+  developers: string[];
+  publishers: string[];
+  releaseDate: string | null;
+  headerUrl: string | null;
+  capsuleUrl: string | null;
+  heroUrl: string | null;
+  storeUrl: string;
+  price: SteamPrice | null;
+}
+export interface WishlistItem {
+  game: ScoredGame;
+  price: SteamPrice | null;
+  description: string | null;
+}
+export interface WishlistImportResult {
+  /** Itens na lista de desejos da Steam. */
+  total: number;
+  created: number;
+  /** Já estavam no app (em qualquer status). */
+  existing: number;
+  failed: { appId: number; reason: string }[];
 }

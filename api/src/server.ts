@@ -8,11 +8,14 @@ import { SEED_APP_USER_ID } from './app-user.ts';
 import { authenticatorFromEnv, publicAuthConfig, type Authenticator } from './auth.ts';
 import { runWithContext, setContext } from './context.ts';
 import { currentVersion } from './version.ts';
+import type { WishlistService } from './wishlist.ts';
+import { wishlistRoute } from './wishlist-routes.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 // auth: null desliga a autenticação (dev/testes sem SUPABASE_URL). Ver api/src/auth.ts.
 export function makeServer(
   service: GameService,
   auth: Authenticator | null = authenticatorFromEnv(),
+  wishlist: WishlistService | null = null,
 ) {
   return createServer((req, res) =>
     runWithContext({}, async () => {
@@ -119,6 +122,13 @@ export function makeServer(
         }
         if (path === '/api/v1/settings/scoring/reset' && req.method === 'POST')
           return send(await service.resetScoringSettings());
+        if (
+          wishlist &&
+          (path.startsWith('/api/v1/steam/') || path.startsWith('/api/v1/wishlist'))
+        ) {
+          const hit = await wishlistRoute(wishlist, req, url, readJson);
+          if (hit) return send(hit.data, hit.status);
+        }
         if (path.startsWith('/api/')) throw new AppError('Rota não encontrada', 404);
         if (req.method !== 'GET') throw new AppError('Método não permitido', 405);
         const base = resolve(root, 'dist/web/browser');
@@ -151,12 +161,12 @@ export function makeServer(
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const auth = authenticatorFromEnv();
-  const { service, storage } = await createService({
+  const { service, storage, wishlist } = await createService({
     dataDir: resolve(root, 'api/data'),
     // Sem auth (dev), os dados do Postgres são os do dono do seed.
     devAppUserId: auth ? undefined : SEED_APP_USER_ID,
   });
-  const server = makeServer(service, auth);
+  const server = makeServer(service, auth, wishlist);
   if (!auth)
     console.warn('Aviso: SUPABASE_URL ausente — API rodando SEM autenticação (somente dev).');
   server.listen(Number(process.env.PORT) || 3000, process.env.HOST ?? '127.0.0.1', () =>

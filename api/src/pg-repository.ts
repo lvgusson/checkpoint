@@ -33,6 +33,7 @@ const statusCode: Record<GameStatus, string> = {
   Jogando: 'playing',
   Abandonado: 'abandoned',
   Finalizado: 'finished',
+  Desejado: 'wishlist',
 };
 const desireCode: Record<Desire, string> = {
   'Muito Alta': 'very_high',

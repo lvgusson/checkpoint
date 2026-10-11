@@ -86,16 +86,19 @@ Decisões de performance (Postgres):
 
 ### Variáveis de ambiente (nomes apenas — configure em Project Settings → Environment Variables ou `vercel env add`)
 
-| Nome                                        | Uso                                                                 | Exposição                   |
-| ------------------------------------------- | ------------------------------------------------------------------- | --------------------------- |
-| `SUPABASE_URL`                              | URL do projeto Supabase                                             | servidor (pode ir ao front) |
-| `SUPABASE_ANON_KEY` (ou publishable key)    | cliente público, sujeito a RLS                                      | pode ir ao front            |
-| `SUPABASE_SERVICE_ROLE_KEY` (ou secret key) | acesso administrativo na API                                        | **somente servidor**        |
-| `DATABASE_URL`                              | Postgres via pooler em modo transação (6543); liga o repositório Pg | **somente servidor**        |
-| `SEED_OWNER_EMAIL`                          | e-mail que reivindica os dados do seed no primeiro login            | servidor                    |
-| `AUTH_GITHUB_ENABLED`                       | `true` mostra o login com GitHub no front                           | servidor                    |
-| `PG_POOL_MAX`                               | opcional, conexões por instância (padrão 5)                         | servidor                    |
-| `DATA_DIR`                                  | opcional, diretório dos JSON locais (só sem `DATABASE_URL`)         | servidor                    |
+| Nome                                        | Uso                                                                   | Exposição                   |
+| ------------------------------------------- | --------------------------------------------------------------------- | --------------------------- |
+| `SUPABASE_URL`                              | URL do projeto Supabase                                               | servidor (pode ir ao front) |
+| `SUPABASE_ANON_KEY` (ou publishable key)    | cliente público, sujeito a RLS                                        | pode ir ao front            |
+| `SUPABASE_SERVICE_ROLE_KEY` (ou secret key) | acesso administrativo na API                                          | **somente servidor**        |
+| `DATABASE_URL`                              | Postgres via pooler em modo transação (6543); liga o repositório Pg   | **somente servidor**        |
+| `SEED_OWNER_EMAIL`                          | e-mail que reivindica os dados do seed no primeiro login              | servidor                    |
+| `AUTH_GITHUB_ENABLED`                       | `true` mostra o login com GitHub no front                             | servidor                    |
+| `PG_POOL_MAX`                               | opcional, conexões por instância (padrão 5)                           | servidor                    |
+| `DATA_DIR`                                  | opcional, diretório dos JSON locais (só sem `DATABASE_URL`)           | servidor                    |
+| `STEAM_API_KEY`                             | só para resolver nome personalizado de perfil na importação           | **somente servidor**        |
+| `STEAM_PROFILE`                             | perfil padrão da importação (SteamID64 ou URL; aceita `STEAM_DOMAIN`) | servidor                    |
+| `STEAM_COUNTRY`                             | opcional, loja/moeda dos preços (padrão `BR` = BRL)                   | servidor                    |
 
 Obs.: o arquivo local `local-env.env` usa nomes diferentes (`NEXT_PUBLIC_SUPABASE_URL`,
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `DATA-BASE_KEY`, `DATA_BASE_CONECTION_STRING`). Padronize

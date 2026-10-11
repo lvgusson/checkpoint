@@ -37,7 +37,8 @@ export class LocalGameRepository implements GameRepository {
   private async load() {
     try {
       const data = JSON.parse(await readFile(this.path, 'utf8'));
-      for (const g of data) if (this.games.has(g.id)) this.games.set(g.id, g);
+      // Jogos fora do seed são os cadastrados no app (lista de desejos).
+      for (const g of data) this.games.set(g.id, g);
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
     }
