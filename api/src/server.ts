@@ -7,6 +7,7 @@ import { createService } from './setup.ts';
 import { SEED_APP_USER_ID } from './app-user.ts';
 import { authenticatorFromEnv, publicAuthConfig, type Authenticator } from './auth.ts';
 import { runWithContext, setContext } from './context.ts';
+import { currentVersion } from './version.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 // auth: null desliga a autenticação (dev/testes sem SUPABASE_URL). Ver api/src/auth.ts.
 export function makeServer(
@@ -48,6 +49,7 @@ export function makeServer(
           return;
         }
         if (path === '/api/v1/config') return send(publicAuthConfig());
+        if (path === '/api/v1/version') return send(await currentVersion());
         // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
         if (auth && path.startsWith('/api/')) {
           const user = await auth.authenticate(req.headers.authorization);

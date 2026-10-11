@@ -15,6 +15,21 @@
     }
   ],
   "paths": {
+    "/version": {
+      "get": {
+        "summary": "Versão do deploy corrente",
+        "description": "Pública (sem token). Lê app_release pelo deploy da Vercel; em dev usa package.json + git.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/VersionInfo" } }
+            }
+          }
+        }
+      }
+    },
     "/config": {
       "get": {
         "summary": "Configuração pública do front (Supabase Auth)",
@@ -313,6 +328,16 @@
       }
     },
     "schemas": {
+      "VersionInfo": {
+        "type": "object",
+        "required": ["version", "gitSha", "environment", "deployedAt"],
+        "properties": {
+          "version": { "type": "string", "description": "semver do package.json" },
+          "gitSha": { "type": ["string", "null"] },
+          "environment": { "type": "string", "enum": ["production", "preview", "development"] },
+          "deployedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
       "PublicConfig": {
         "type": "object",
         "required": ["auth"],

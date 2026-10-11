@@ -35,10 +35,10 @@ git add -A; git commit -m "chore: initial commit"; git push -u origin main
 
 ### Estrutura
 
-| Peça          | Como é publicada                                                                              |
-| ------------- | --------------------------------------------------------------------------------------------- |
-| Front Angular | `@vercel/static-build` roda `npm run build` (`ng build`) e publica `dist/web/browser`         |
-| API           | Uma única função Node: `api/index.mjs`, que reaproveita `makeServer()` de `api/src/server.ts` |
+| Peça          | Como é publicada                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Front Angular | `@vercel/static-build` roda `npm run vercel-build` (`ng build` + registro do release) e publica `dist/web/browser` |
+| API           | Uma única função Node: `api/index.mjs`, que reaproveita `makeServer()` de `api/src/server.ts`                      |
 
 `vercel.json` usa o bloco `builds` de propósito: a Vercel trata todo arquivo em `api/` como função
 serverless, e `api/src/**` / `api/test/**` virariam funções. Com `builds`, só `api/index.mjs` é
@@ -112,19 +112,79 @@ vercel deploy                          # preview
 vercel deploy --prod                   # produção
 ```
 
-## 4. Domínio gps.dev.br — pendente
+### Versões e rollback (`app_release`)
 
-Decisão do usuário: mover `gps.dev.br` (e `www.gps.dev.br`, se existir) do projeto atual para o
-projeto novo `checkpoint`, **somente após um deploy de produção em que o front carregue**.
+Cada deploy grava uma linha em `app_release` (migration `006_app_release` /
+`20261011230000_app_release.sql`): `version` (package.json), `git_sha`, `git_ref`,
+`commit_message`, `vercel_deployment_id`, `vercel_url`, `environment`,
+`db_migration_version` (última de `supabase_migrations.schema_migrations`), `status`
+(`deployed` / `rolled_back` / `superseded`), `rolled_back_to`, `created_at`, `notes`.
+RLS ligada sem policies: só a API e os scripts (conexão direta) acessam.
 
-Antes de mover, registrar aqui para rollback:
+- **Registro:** o `@vercel/static-build` executa o script `vercel-build` quando ele existe
+  (prioridade sobre `build`). Ele roda `ng build` e depois `scripts/record-release.mjs`, que lê as
+  variáveis de sistema (`VERCEL_GIT_COMMIT_SHA`, `VERCEL_GIT_COMMIT_REF`,
+  `VERCEL_GIT_COMMIT_MESSAGE`, `VERCEL_ENV`, `VERCEL_URL`, `VERCEL_DEPLOYMENT_ID`) e
+  `DATABASE_URL`, grava o release e marca o anterior do mesmo environment como `superseded`.
+  Sem `DATABASE_URL` ou com erro no banco, só loga: **o build nunca falha por isso**.
+  Requer "Automatically expose System Environment Variables" ligado no projeto (já está:
+  `vercel api /v9/projects/checkpoint` → `autoExposeSystemEnvs: true`).
+- **Consulta:** `GET /api/v1/version` (público) → `{ version, gitSha, environment, deployedAt }`.
 
-- Projeto/repositório que usa o domínio hoje: _(preencher — `vercel domains inspect gps.dev.br`, `vercel project ls`)_
-- Redirects (ex.: `www` → apex) e aliases: _(preencher)_
+```powershell
+npm run release:list                                   # últimos releases de produção
+npm run release:list -- --env all --limit 50
 
-Procedimento (sem tocar DNS fora da Vercel, sem apagar projeto antigo nem o domínio da conta):
+# Rollback instantâneo na Vercel (sem build): re-aponta o domínio para o deploy alvo
+npm run release:rollback -- <git_sha|version|dpl_...> --vercel          # dry-run (mostra o plano)
+npm run release:rollback -- <git_sha|version|dpl_...> --vercel --yes    # executa `vercel rollback <url>`
 
-1. `vercel deploy --prod` no projeto `checkpoint` e validar que `index.html` é servido.
-2. No projeto antigo: Settings → Domains → remover `gps.dev.br` / `www.gps.dev.br` (só a associação).
-3. No projeto `checkpoint`: `vercel domains add gps.dev.br` (e `www.gps.dev.br`, recriando o redirect).
-4. Rollback: inverter os passos 2–3.
+# Rollback por git: `git revert --no-edit <alvo>..HEAD` + `git push` → novo deploy pela Vercel
+npm run release:rollback -- <git_sha|version> --git          # dry-run
+npm run release:rollback -- <git_sha|version> --git --yes    # exige working tree limpa
+
+npm run release:tag     # cria a tag anotada v<version> e faz push
+```
+
+O script marca o release corrente como `rolled_back` (`rolled_back_to` = alvo) e, no modo
+`--vercel`, o alvo volta a `deployed`. Comandos equivalentes à mão:
+
+```powershell
+vercel ls                                   # deploys recentes
+vercel rollback https://<deploy>.vercel.app --yes
+vercel rollback status
+vercel promote https://<deploy>.vercel.app  # volta a promover (desfaz o rollback)
+git revert --no-edit <sha>..HEAD; git push origin main
+```
+
+Cuidados:
+
+- **Migrations não são revertidas.** O script mostra `db_migration_version` do alvo vs atual;
+  se diferirem, avalie se o código antigo funciona com o schema novo (migrations aditivas
+  costumam ser seguras) e reverta manualmente se necessário.
+- Depois de `vercel rollback`, a Vercel **desliga a promoção automática**: pushes em `main`
+  geram deploy (e linha `production` em `app_release`) mas não assumem o domínio até
+  `vercel promote <url>`.
+- O registro acontece no build: um deploy cujo build passou mas falhou depois fica como
+  `deployed` (corrija com `UPDATE app_release SET status = ... WHERE id = ...`).
+
+## 4. Domínio gps.dev.br — movido para `checkpoint`
+
+O domínio `gps.dev.br` estava no projeto Vercel `clone-tabnews` (só o apex, sem `www` nem
+redirects; o projeto antigo segue acessível em `clone-tabnews-chi-hazel.vercel.app`). Foi movido
+para o projeto `checkpoint` com:
+
+```powershell
+vercel domains add gps.dev.br checkpoint --force
+```
+
+Produção: https://gps.dev.br (`/api/v1/health` → 200).
+
+Rollback do domínio (devolve ao projeto antigo, sem tocar DNS):
+
+```powershell
+vercel domains add gps.dev.br clone-tabnews --force
+```
+
+Obs.: ao criar/alterar env vars da Vercel no Windows PowerShell 5.1, use
+`vercel env add NOME <env> --value <valor>` — passar o valor por pipe insere BOM no conteúdo.

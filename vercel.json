@@ -11,7 +11,7 @@
       "src": "api/index.mjs",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["api/src/**", "shared/**", "docs/openapi.json"]
+        "includeFiles": ["api/src/**", "shared/**", "docs/openapi.json", "package.json"]
       }
     }
   ],
