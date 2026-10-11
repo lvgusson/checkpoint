@@ -15,6 +15,7 @@ import {
 } from '../src/scoring.ts';
 import { parseScoringConfig, scoringFactors } from '../src/scoring-config.ts';
 import { LocalScoringConfigRepository } from '../src/settings-repository.ts';
+import { LOCAL_DEFAULT_LIST_ID } from '../src/list-repository.ts';
 import { LocalGameRepository } from '../src/repository.ts';
 import { LocalManualAdjustmentRepository } from '../src/manual-repository.ts';
 import { GameService } from '../src/service.ts';
@@ -296,27 +297,33 @@ test('repositório JSON: versão sobe, persiste e tolera arquivo antigo', async 
   const dir = await mkdtemp(join(tmpdir(), 'settings-'));
   try {
     const file = join(dir, 'scoring-settings.json');
+    const L = LOCAL_DEFAULT_LIST_ID;
     const repo = new LocalScoringConfigRepository(file);
-    assert.equal((await repo.get()).version, 0);
+    assert.equal((await repo.get(L)).version, 0);
     const custom = withRules({ repeatPace: false });
-    const saved = await repo.save(custom);
+    const saved = await repo.save(L, custom);
     assert.equal(saved.version, 1);
     const again = new LocalScoringConfigRepository(file);
-    assert.deepEqual((await again.get()).config, custom);
-    assert.equal((await again.get()).version, 1);
-    assert.equal((await again.save(defaultConfig)).version, 2);
-    // Arquivo antigo (sem filters) e filtro salvo inválido voltam ao padrão neutro.
+    assert.deepEqual((await again.get(L)).config, custom);
+    assert.equal((await again.get(L)).version, 1);
+    assert.equal((await again.save(L, defaultConfig)).version, 2);
+    assert.equal((await again.get('outra')).version, 0);
+    // Arquivo antigo (uma config só, sem listas) vira a config da lista padrão.
+    const old = join(dir, 'old.json');
+    await writeFile(old, JSON.stringify({ config: custom, version: 7, updatedAt: null }));
+    assert.equal((await new LocalScoringConfigRepository(old).get(L)).version, 7);
+    // Sem filters ou com filtro salvo inválido: volta ao padrão neutro.
     await writeFile(
-      file,
+      old,
       JSON.stringify({
         config: { weights: {}, rules: {}, filters: { maxHours: 'x', excludedTags: ['Terror'] } },
         version: 3,
       }),
     );
-    const old = await new LocalScoringConfigRepository(file).get();
-    assert.deepEqual(old.config.filters, { ...defaultFilters, excludedTags: ['Terror'] });
-    await writeFile(file, JSON.stringify({ config: { weights: {}, rules: {} }, version: 4 }));
-    assert.deepEqual((await new LocalScoringConfigRepository(file).get()).config, defaultConfig);
+    const legacy = await new LocalScoringConfigRepository(old).get(L);
+    assert.deepEqual(legacy.config.filters, { ...defaultFilters, excludedTags: ['Terror'] });
+    await writeFile(old, JSON.stringify({ config: { weights: {}, rules: {} }, version: 4 }));
+    assert.deepEqual((await new LocalScoringConfigRepository(old).get(L)).config, defaultConfig);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

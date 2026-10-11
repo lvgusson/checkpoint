@@ -12,6 +12,7 @@
 import type {
   Desire,
   Game,
+  GameList,
   GameStatus,
   ManualAdjustment,
   ManualMove,
@@ -24,6 +25,7 @@ const json = (v: unknown) => v as postgres.JSONValue;
 import type { AppUserResolver } from './app-user.ts';
 import type { GameRepository, QueueInputs, QueueInputsReader } from './repository.ts';
 import type { ManualAdjustmentRepository } from './manual-repository.ts';
+import { DEFAULT_LIST_NAME, duplicateListName, type ListRepository } from './list-repository.ts';
 import { AppError } from './service.ts';
 import { storedScoringConfig } from './scoring-config.ts';
 import type { ScoringConfigRepository, StoredScoringConfig } from './settings-repository.ts';
@@ -93,6 +95,9 @@ function asAppError(e: unknown): never {
     ['23514', '22001', '22003', '22007', '22008'].includes(e.code)
   )
     throw new AppError('Valor inválido');
+  // FK: lista/jogo inexistente ou de outro usuário (ex.: (user_id, list_id) → game_list).
+  if (e instanceof postgres.PostgresError && e.code === '23503')
+    throw new AppError('Registro não encontrado', 404);
   throw e;
 }
 
@@ -233,34 +238,36 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
     this.sql = sql;
     this.user = user;
   }
-  private async select(gameId?: string): Promise<ManualAdjustment[]> {
+  private async select(listId: string, gameId?: string): Promise<ManualAdjustment[]> {
     const sql = this.sql;
     const u = await this.user();
     const rows = await sql<(Omit<ManualAdjustment, 'updatedAt'> & { updatedAt: Date })[]>`
       SELECT g.code AS "gameId", a.flat_points::float8 AS "manualPoints",
              a.manual_position AS "manualPosition", a.updated_at AS "updatedAt"
         FROM queue_manual_adjustment a JOIN game g ON g.id = a.game_id
-       WHERE a.user_id = ${u} AND a.flat_points <> 0
+       WHERE a.list_id = ${listId} AND a.user_id = ${u} AND a.flat_points <> 0
              ${gameId ? sql`AND g.code = ${gameId}` : sql``}
        ORDER BY a.updated_at, g.code`;
     return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
   }
-  list() {
-    return this.select();
+  list(listId: string) {
+    return this.select(listId);
   }
-  async get(gameId: string) {
-    return (await this.select(gameId))[0];
+  async get(listId: string, gameId: string) {
+    return (await this.select(listId, gameId))[0];
   }
   /**
    * Aplica o DELTA do movimento com apply_queue_move (atômica, FOR UPDATE, idempotente
    * por client_request_id = move.id). O total é a soma no banco, então dois movimentos
-   * concorrentes de instâncias diferentes não se sobrescrevem.
+   * concorrentes de instâncias diferentes não se sobrescrevem. A FK (user_id, list_id)
+   * garante que a lista é do usuário.
    */
-  async save(_adjustment: ManualAdjustment, move: ManualMove): Promise<void> {
+  async save(listId: string, _adjustment: ManualAdjustment, move: ManualMove): Promise<void> {
     const u = await this.user();
     await this.sql`
       SELECT 1 FROM apply_queue_move(
         p_user_id       => ${u}::uuid,
+        p_list_id       => ${listId}::uuid,
         p_game_id       => (SELECT e.game_id FROM library_entry e JOIN game g ON g.id = e.game_id
                              WHERE e.user_id = ${u} AND g.code = ${move.gameId}),
         p_from_position => ${move.fromPosition}::int,
@@ -270,22 +277,23 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
         p_request_id    => ${move.id}::uuid)`.catch(asAppError);
   }
   /** Reset: apaga o ajuste e audita, num statement só (equivalente a reset_queue_adjustments). */
-  async remove(gameId: string, move: ManualMove): Promise<void> {
-    if (move.kind === 'reorder') return this.save({} as ManualAdjustment, move);
+  async remove(listId: string, gameId: string, move: ManualMove): Promise<void> {
+    if (move.kind === 'reorder') return this.save(listId, {} as ManualAdjustment, move);
     const u = await this.user();
     await this.sql`
       WITH d AS (
         DELETE FROM queue_manual_adjustment a USING game g
-         WHERE a.user_id = ${u} AND a.game_id = g.id AND g.code = ${gameId}
+         WHERE a.list_id = ${listId} AND a.user_id = ${u} AND a.game_id = g.id AND g.code = ${gameId}
         RETURNING a.game_id, a.flat_points)
-      INSERT INTO queue_move_event (user_id, game_id, kind, from_position, to_position, points_delta,
-                                    flat_points_before, flat_points_after, source, client_request_id)
-      SELECT ${u}, d.game_id, 'reset', ${move.fromPosition}::int, ${move.toPosition}::int,
+      INSERT INTO queue_move_event (user_id, list_id, game_id, kind, from_position, to_position,
+                                    points_delta, flat_points_before, flat_points_after, source,
+                                    client_request_id)
+      SELECT ${u}, ${listId}, d.game_id, 'reset', ${move.fromPosition}::int, ${move.toPosition}::int,
              -d.flat_points, d.flat_points, 0, 'api', ${move.id}::uuid
         FROM d WHERE d.flat_points <> 0`;
   }
-  /** Últimos 500 movimentos, em ordem cronológica. */
-  async moves(gameId?: string): Promise<ManualMove[]> {
+  /** Últimos 500 movimentos da lista, em ordem cronológica. */
+  async moves(listId: string, gameId?: string): Promise<ManualMove[]> {
     const sql = this.sql;
     const u = await this.user();
     const rows = await sql<(Omit<ManualMove, 'createdAt'> & { createdAt: Date })[]>`
@@ -299,7 +307,8 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
                      m.flat_points_after::float8 AS "manualPointsAfter",
                      m.created_at AS "createdAt", m.id AS seq
                 FROM queue_move_event m JOIN game g ON g.id = m.game_id
-               WHERE m.user_id = ${u} ${gameId ? sql`AND g.code = ${gameId}` : sql``}
+               WHERE m.list_id = ${listId} AND m.user_id = ${u}
+                     ${gameId ? sql`AND g.code = ${gameId}` : sql``}
                ORDER BY m.created_at DESC, m.id DESC
                LIMIT 500) x
        ORDER BY "createdAt", seq`;
@@ -307,7 +316,7 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
   }
 }
 
-/** Linha de user_score_weights como json (sem linha = config padrão, versão 0). */
+/** Linha de user_score_weights (uma por lista) como json (sem linha = config padrão, versão 0). */
 const SETTINGS_JSON = `SELECT json_build_object('weights', w.weights, 'rules', w.rules, 'filters', w.filters,
   'version', w.version, 'updatedAt', ${isoTs('w.updated_at')}) FROM user_score_weights w`;
 interface RawSettings {
@@ -323,7 +332,7 @@ const toSettings = (raw: RawSettings | null | undefined): StoredScoringConfig =>
   updatedAt: raw?.updatedAt ?? null,
 });
 
-/** Pesos + regras do usuário em user_score_weights (trg_weights_bump invalida a fila). */
+/** Pesos + regras de cada lista em user_score_weights (chave list_id). */
 export class PgScoringConfigRepository implements ScoringConfigRepository {
   private sql: Sql;
   private user: AppUserResolver;
@@ -331,34 +340,45 @@ export class PgScoringConfigRepository implements ScoringConfigRepository {
     this.sql = sql;
     this.user = user;
   }
-  async get(): Promise<StoredScoringConfig> {
+  async get(listId: string): Promise<StoredScoringConfig> {
     const sql = this.sql;
     const u = await this.user();
-    const [row] = await sql<
-      { settings: RawSettings | null }[]
-    >`SELECT (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings`;
+    const [row] = await sql<{ settings: RawSettings | null }[]>`
+      SELECT (${sql.unsafe(SETTINGS_JSON)} WHERE w.list_id = ${listId} AND w.user_id = ${u}) AS settings`;
     return toSettings(row?.settings);
   }
-  /** Upsert numa instrução; `version` sobe atomicamente. */
-  async save(config: ScoringConfig): Promise<StoredScoringConfig> {
+  /**
+   * Upsert numa instrução; `version` sobe atomicamente. A FK (user_id, list_id) → game_list
+   * impede gravar na lista de outro usuário (vira 404).
+   */
+  async save(listId: string, config: ScoringConfig): Promise<StoredScoringConfig> {
     const sql = this.sql;
     const u = await this.user();
     const [row] = await sql<{ settings: RawSettings }[]>`
-      INSERT INTO user_score_weights AS w (user_id, weights, rules, filters)
-      VALUES (${u}, ${sql.json(json(config.weights))}::jsonb, ${sql.json(json(config.rules))}::jsonb,
-              ${sql.json(json(config.filters))}::jsonb)
-      ON CONFLICT (user_id) DO UPDATE
+      INSERT INTO user_score_weights AS w (list_id, user_id, weights, rules, filters)
+      VALUES (${listId}, ${u}, ${sql.json(json(config.weights))}::jsonb,
+              ${sql.json(json(config.rules))}::jsonb, ${sql.json(json(config.filters))}::jsonb)
+      ON CONFLICT (list_id) DO UPDATE
          SET weights = EXCLUDED.weights, rules = EXCLUDED.rules, filters = EXCLUDED.filters,
              version = w.version + 1
+       WHERE w.user_id = EXCLUDED.user_id
       RETURNING json_build_object('weights', w.weights, 'rules', w.rules, 'filters', w.filters,
                 'version', w.version, 'updatedAt', ${sql.unsafe(isoTs('w.updated_at'))}) AS settings`.catch(
       asAppError,
     );
+    if (!row) throw new AppError('Lista não encontrada', 404);
     return toSettings(row.settings);
   }
 }
 
-/** Jogos, ajustes manuais e config da fila numa única consulta (um round trip, leitura consistente). */
+type RawList = Omit<GameList, 'createdAt'> & { createdAt: Date };
+const toList = (r: RawList): GameList => ({ ...r, createdAt: r.createdAt.toISOString() });
+const LIST_JSON = `json_build_object('id', l.id, 'name', l.name, 'createdAt', ${isoTs('l.created_at')})`;
+
+/**
+ * Jogos, lista, ajustes manuais da lista e config da lista numa única consulta
+ * (um round trip, leitura consistente). Sem `listId`, usa a lista mais antiga do usuário.
+ */
 export class PgQueueInputsReader implements QueueInputsReader {
   private sql: Sql;
   private user: AppUserResolver;
@@ -366,22 +386,106 @@ export class PgQueueInputsReader implements QueueInputsReader {
     this.sql = sql;
     this.user = user;
   }
-  async load(): Promise<QueueInputs> {
+  async load(listId?: string): Promise<QueueInputs | null> {
     const sql = this.sql;
     const u = await this.user();
     const [row] = await sql<
-      { games: RawGame[]; manual: Record<string, number>; settings: RawSettings | null }[]
+      {
+        list: GameList | null;
+        games: RawGame[];
+        manual: Record<string, number>;
+        settings: RawSettings | null;
+      }[]
     >`
-      SELECT (SELECT coalesce(json_agg(${sql.unsafe(GAME_JSON)} ORDER BY e.id), '[]')
+      WITH l AS (
+        SELECT l.id, l.name, l.created_at FROM game_list l
+         WHERE l.user_id = ${u} AND (${listId ?? null}::uuid IS NULL OR l.id = ${listId ?? null}::uuid)
+         ORDER BY l.created_at, l.id LIMIT 1)
+      SELECT (SELECT ${sql.unsafe(LIST_JSON)} FROM l) AS list,
+             (SELECT coalesce(json_agg(${sql.unsafe(GAME_JSON)} ORDER BY e.id), '[]')
                 FROM ${sql.unsafe(GAME_FROM)} WHERE e.user_id = ${u}) AS games,
              (SELECT coalesce(json_object_agg(g.code, a.flat_points), '{}')
                 FROM queue_manual_adjustment a JOIN game g ON g.id = a.game_id
-               WHERE a.user_id = ${u} AND a.flat_points <> 0) AS manual,
-             (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings`;
+               WHERE a.list_id = (SELECT id FROM l) AND a.flat_points <> 0) AS manual,
+             (${sql.unsafe(SETTINGS_JSON)} WHERE w.list_id = (SELECT id FROM l)) AS settings`;
+    if (!row.list) return null;
     return {
+      list: row.list,
       games: row.games.map(toGame),
       manual: row.manual,
       settings: toSettings(row.settings),
     };
   }
+}
+
+/** Listas do usuário em game_list. */
+export class PgListRepository implements ListRepository {
+  private sql: Sql;
+  private user: AppUserResolver;
+  constructor(sql: Sql, user: AppUserResolver) {
+    this.sql = sql;
+    this.user = user;
+  }
+  /**
+   * Todas as listas, mais antiga primeiro. Se o usuário não tiver nenhuma, cria a padrão na
+   * mesma instrução (o CTE de INSERT não é visível no SELECT da tabela, daí o UNION ALL).
+   */
+  async list(): Promise<GameList[]> {
+    const u = await this.user();
+    const rows = await this.sql<RawList[]>`
+      WITH ins AS (
+        INSERT INTO game_list (user_id, name)
+        SELECT ${u}, ${DEFAULT_LIST_NAME}
+         WHERE NOT EXISTS (SELECT 1 FROM game_list WHERE user_id = ${u})
+        ON CONFLICT DO NOTHING
+        RETURNING id, name, created_at)
+      SELECT id, name, created_at AS "createdAt" FROM ins
+      UNION ALL
+      SELECT id, name, created_at FROM game_list WHERE user_id = ${u}
+      ORDER BY "createdAt", id`;
+    return rows.map(toList);
+  }
+  async get(id: string): Promise<GameList | undefined> {
+    const u = await this.user();
+    const [row] = await this.sql<RawList[]>`
+      SELECT id, name, created_at AS "createdAt" FROM game_list WHERE id = ${id} AND user_id = ${u}`;
+    return row && toList(row);
+  }
+  async create(name: string): Promise<GameList> {
+    const u = await this.user();
+    const [row] = await this.sql<RawList[]>`
+      INSERT INTO game_list (user_id, name) VALUES (${u}, ${name})
+      RETURNING id, name, created_at AS "createdAt"`.catch(listError);
+    return toList(row);
+  }
+  async rename(id: string, name: string): Promise<GameList | undefined> {
+    const u = await this.user();
+    const [row] = await this.sql<RawList[]>`
+      UPDATE game_list SET name = ${name} WHERE id = ${id} AND user_id = ${u}
+      RETURNING id, name, created_at AS "createdAt"`.catch(listError);
+    return row && toList(row);
+  }
+  /**
+   * Apaga a lista (cascata: config, ajustes e histórico dela) se não for a única.
+   * Duas exclusões simultâneas das duas últimas listas poderiam passar juntas; o caso é
+   * inofensivo (a próxima leitura recria a padrão).
+   */
+  async remove(id: string): Promise<'removed' | 'missing' | 'last'> {
+    const u = await this.user();
+    const [row] = await this.sql<{ found: boolean; deleted: boolean }[]>`
+      WITH target AS (SELECT id FROM game_list WHERE id = ${id} AND user_id = ${u}),
+           d AS (
+             DELETE FROM game_list
+              WHERE id IN (SELECT id FROM target)
+                AND (SELECT count(*) FROM game_list WHERE user_id = ${u}) > 1
+             RETURNING id)
+      SELECT EXISTS (SELECT 1 FROM target) AS found, EXISTS (SELECT 1 FROM d) AS deleted`;
+    return !row.found ? 'missing' : row.deleted ? 'removed' : 'last';
+  }
+}
+
+/** Nome repetido (índice único user_id + lower(name)) → 409; CHECK → 400. */
+function listError(e: unknown): never {
+  if (e instanceof postgres.PostgresError && e.code === '23505') throw duplicateListName();
+  return asAppError(e);
 }

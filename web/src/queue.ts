@@ -3,12 +3,15 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, color } from './api';
 import { ScoringSettingsStore } from './scoring-settings';
+import { ListPicker, routeListId } from './lists';
 import type { QueueEntry, Recommendations } from '../../shared/models';
 
 /** Linha da fila medida no início do arraste (coordenadas do documento). */
@@ -54,7 +57,7 @@ const LONG_PRESS_MS = 320;
 
 @Component({
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ListPicker],
   template: `<div class="page-heading">
       <div>
         <span class="eyebrow">MENOS DECISÃO, MAIS DIVERSÃO</span>
@@ -63,6 +66,7 @@ const LONG_PRESS_MS = 320;
       </div>
       <button class="button" (click)="load()" [disabled]="loading()">↻ Recalcular</button>
     </div>
+    <app-list-picker base="/ordem" [current]="listId()" />
     @if (error()) {
       <div class="error" role="alert">{{ error() }}</div>
     }
@@ -299,6 +303,8 @@ const LONG_PRESS_MS = 320;
 export class Queue {
   api = inject(Api);
   private settings = inject(ScoringSettingsStore);
+  /** Lista cuja fila está na tela (da URL). */
+  readonly listId = routeListId('/ordem');
   color = color;
   data = signal<Recommendations | null>(null);
   /** Jogos fora da fila agrupados por motivo (filtros, predecessores). */
@@ -329,7 +335,9 @@ export class Queue {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   constructor() {
-    this.load();
+    effect(() => {
+      if (this.listId()) untracked(() => void this.load());
+    });
     // Clique após arraste não deve navegar para o detalhe.
     const onClick = (e: Event) => {
       if (Date.now() < this.suppressClickUntil) {
@@ -369,13 +377,21 @@ export class Queue {
   }
 
   async load() {
+    const listId = this.listId();
+    if (!listId) return;
     this.loading.set(true);
     this.error.set('');
     try {
-      const next = await this.api.queue();
-      this.settings.syncVersion(next.configVersion);
-      if (this.data()) this.flipTo(next);
-      else this.data.set(next);
+      const next = await this.api.queue(listId);
+      if (listId !== this.listId()) return;
+      this.settings.syncVersion(listId, next.configVersion);
+      // Mesma lista: anima a diferença; outra lista: troca direto.
+      if (this.data()?.listId === listId) this.flipTo(next);
+      else {
+        this.notice.set(null);
+        this.visible.set(30);
+        this.data.set(next);
+      }
     } catch {
       this.error.set('Não foi possível calcular a ordem. Confira a API.');
     } finally {
@@ -768,7 +784,7 @@ export class Queue {
     this.busyId.set(id);
     this.error.set('');
     try {
-      const r = await this.api.reorder(id, toPosition);
+      const r = await this.api.reorder(prev.listId ?? this.listId()!, id, toPosition);
       this.flipTo(r.recommendations);
       this.showFlash(id, r.pointsDelta);
       const name = this.nameOf(id);
@@ -807,7 +823,7 @@ export class Queue {
     this.busyId.set(id);
     this.error.set('');
     try {
-      const r = await this.api.resetManual(id);
+      const r = await this.api.resetManual(this.data()?.listId ?? this.listId()!, id);
       this.flipTo(r.recommendations);
       this.showFlash(id, r.pointsDelta);
       const pos = r.recommendations.items.findIndex((i) => i.game.id === id) + 1;

@@ -153,6 +153,8 @@ export interface ScoringFactor {
   step: number;
 }
 export interface ScoringSettings {
+  /** Lista dona desta configuração. */
+  listId: string;
   config: ScoringConfig;
   /** Sobe a cada gravação (0 = nunca salvo, usando o padrão). */
   version: number;
@@ -229,7 +231,18 @@ export interface ManualState {
   adjustments: ManualAdjustment[];
   moves: ManualMove[];
 }
+/**
+ * Lista de jogos: um "guarda-chuva" com TODOS os jogos do usuário. Só o nome é dela;
+ * pesos, regras, filtros e ajustes manuais da fila são aplicados por lista.
+ */
+export interface GameList {
+  id: string;
+  name: string;
+  createdAt: string;
+}
 export interface Recommendations {
+  /** Lista cuja configuração gerou esta fila (ausente em chamadas diretas ao algoritmo). */
+  listId?: string;
   items: QueueEntry[];
   total: number;
   estimatedHours: number;

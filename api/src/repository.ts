@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { Game } from '../../shared/models.ts';
+import type { Game, GameList } from '../../shared/models.ts';
 import type { StoredScoringConfig } from './settings-repository.ts';
 export interface GameRepository {
   list(): Promise<Game[]>;
@@ -8,20 +8,25 @@ export interface GameRepository {
   save(game: Game): Promise<void>;
 }
 
-/** Entradas do algoritmo da fila. */
+/** Entradas do algoritmo da fila de uma lista. */
 export interface QueueInputs {
+  list: GameList;
   games: Game[];
-  /** gameId -> pontos manuais (só ≠ 0). */
+  /** gameId -> pontos manuais da lista (só ≠ 0). */
   manual: Record<string, number>;
   settings: StoredScoringConfig;
 }
 
 /**
  * Lê todas as entradas da fila de uma vez (opcional). Com banco remoto, uma única
- * consulta em vez de três; a fila é calculada em memória (~50 ms para ~500 jogos).
+ * consulta em vez de quatro; a fila é calculada em memória (~50 ms para ~500 jogos).
  */
 export interface QueueInputsReader {
-  load(): Promise<QueueInputs>;
+  /**
+   * `listId` ausente = lista padrão (a mais antiga). null se a lista não existir/não for do
+   * usuário (ou, sem `listId`, se o usuário ainda não tiver listas).
+   */
+  load(listId?: string): Promise<QueueInputs | null>;
 }
 
 export class LocalGameRepository implements GameRepository {

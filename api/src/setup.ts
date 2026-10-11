@@ -39,6 +39,7 @@ export async function createService({
         new pg.PgManualAdjustmentRepository(sql, user),
         new pg.PgQueueInputsReader(sql, user),
         new pg.PgScoringConfigRepository(sql, user),
+        new pg.PgListRepository(sql, user),
       ),
     };
   }
@@ -46,11 +47,13 @@ export async function createService({
     { LocalGameRepository },
     { LocalManualAdjustmentRepository },
     { LocalScoringConfigRepository },
+    { LocalListRepository },
     { seedGames },
   ] = await Promise.all([
     import('./repository.ts'),
     import('./manual-repository.ts'),
     import('./settings-repository.ts'),
+    import('./list-repository.ts'),
     import('./seed.ts'),
   ]);
   return {
@@ -62,6 +65,7 @@ export async function createService({
       ),
       null,
       new LocalScoringConfigRepository(env.SETTINGS_FILE ?? join(dataDir, 'scoring-settings.json')),
+      new LocalListRepository(env.LISTS_FILE ?? join(dataDir, 'lists.json')),
     ),
   };
 }

@@ -9,6 +9,8 @@ import type {
   ReorderResult,
   ManualResetResult,
 } from '../../shared/models';
+/** Prefixo das rotas de uma lista (fila, ajustes manuais e configuração são por lista). */
+export const listUrl = (listId: string) => '/api/v1/lists/' + encodeURIComponent(listId);
 @Injectable({ providedIn: 'root' })
 export class Api {
   private http = inject(HttpClient);
@@ -21,21 +23,21 @@ export class Api {
   game(id: string) {
     return firstValueFrom(this.http.get<ScoredGame>('/api/v1/games/' + encodeURIComponent(id)));
   }
-  queue() {
-    return firstValueFrom(this.http.get<Recommendations>('/api/v1/recommendations'));
+  queue(listId: string) {
+    return firstValueFrom(this.http.get<Recommendations>(listUrl(listId) + '/recommendations'));
   }
-  reorder(gameId: string, toPosition: number) {
+  reorder(listId: string, gameId: string, toPosition: number) {
     return firstValueFrom(
-      this.http.post<ReorderResult>('/api/v1/queue/reorder', {
+      this.http.post<ReorderResult>(listUrl(listId) + '/queue/reorder', {
         gameId,
         toPosition,
       }),
     );
   }
-  resetManual(gameId: string) {
+  resetManual(listId: string, gameId: string) {
     return firstValueFrom(
       this.http.delete<ManualResetResult>(
-        '/api/v1/queue/adjustments/' + encodeURIComponent(gameId),
+        listUrl(listId) + '/queue/adjustments/' + encodeURIComponent(gameId),
       ),
     );
   }
