@@ -1,24 +1,28 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { ManualAdjustment, ManualMove } from '../../shared/models.ts';
+import type { ManualPin } from './scoring.ts';
 
 /**
- * Ajustes manuais da fila (pontos flat por jogo) e histórico de movimentos.
- * Fica separado de `GameRepository` para que o registro importado do jogo não
- * seja alterado. Um adaptador SQL pode implementar esta interface com duas
- * tabelas: ajustes (game_id, manual_points, manual_position, updated_at) e
- * movimentos (game_id, kind, from_position, to_position, effective_position,
- * points_delta, manual_points_after, created_at).
+ * Posições fixadas na fila (pins) e histórico de movimentos. Fica separado de
+ * `GameRepository` para que o registro importado do jogo não seja alterado.
+ * SQL: queue_manual_adjustment (manual_position) e queue_move_event.
  */
 export interface ManualAdjustmentRepository {
+  /** Pins do mais antigo ao mais recente (o mais recente vence empates). */
   list(): Promise<ManualAdjustment[]>;
-  get(gameId: string): Promise<ManualAdjustment | undefined>;
-  /** Grava o ajuste e o movimento que o originou, juntos. */
-  save(adjustment: ManualAdjustment, move: ManualMove): Promise<void>;
-  /** Remove o ajuste (volta a 0) registrando o movimento de reset. */
-  remove(gameId: string, move: ManualMove): Promise<void>;
+  /**
+   * Grava os pins e o movimento que os originou, juntos. Idempotente por `move.id`:
+   * repetir a mesma gravação (retentativa) não aplica duas vezes.
+   */
+  pin(pins: ManualPin[], move: ManualMove): Promise<void>;
+  /** Remove o pin do jogo registrando o reset. false se não havia pin. */
+  remove(gameId: string, move: ManualMove): Promise<boolean>;
   moves(gameId?: string): Promise<ManualMove[]>;
 }
+
+export const toPins = (adjustments: ManualAdjustment[]): ManualPin[] =>
+  adjustments.map((a) => ({ gameId: a.gameId, position: a.manualPosition }));
 
 interface ManualFile {
   adjustments: ManualAdjustment[];
@@ -27,6 +31,7 @@ interface ManualFile {
 
 /** Adaptador local em JSON. Sem `path`, mantém tudo só em memória. */
 export class LocalManualAdjustmentRepository implements ManualAdjustmentRepository {
+  /** Ordem de inserção = recência (um jogo movido de novo vai para o fim). */
   private adjustments = new Map<string, ManualAdjustment>();
   private history: ManualMove[] = [];
   private ready: Promise<void>;
@@ -42,9 +47,14 @@ export class LocalManualAdjustmentRepository implements ManualAdjustmentReposito
     if (!this.path) return;
     try {
       const data = JSON.parse(await readFile(this.path, 'utf8')) as Partial<ManualFile>;
+      // Arquivos antigos (pontos manuais) sem posição são ignorados.
       for (const a of data.adjustments ?? [])
-        if (a && typeof a.gameId === 'string' && Number.isFinite(a.manualPoints))
-          this.adjustments.set(a.gameId, a);
+        if (a && typeof a.gameId === 'string' && Number.isInteger(a.manualPosition))
+          this.adjustments.set(a.gameId, {
+            gameId: a.gameId,
+            manualPosition: a.manualPosition,
+            updatedAt: a.updatedAt,
+          });
       this.history = Array.isArray(data.moves) ? data.moves : [];
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
@@ -75,21 +85,27 @@ export class LocalManualAdjustmentRepository implements ManualAdjustmentReposito
     await this.ready;
     return structuredClone([...this.adjustments.values()]);
   }
-  async get(gameId: string) {
+  async pin(pins: ManualPin[], move: ManualMove) {
     await this.ready;
-    return structuredClone(this.adjustments.get(gameId));
-  }
-  async save(adjustment: ManualAdjustment, move: ManualMove) {
-    await this.ready;
-    this.adjustments.set(adjustment.gameId, structuredClone(adjustment));
+    if (this.history.some((m) => m.id === move.id)) return;
+    for (const p of pins) {
+      const old = this.adjustments.get(p.gameId);
+      const next = { gameId: p.gameId, manualPosition: p.position, updatedAt: move.createdAt };
+      // Só o jogo movido ganha recência; os demais só têm o índice corrigido.
+      if (p.gameId === move.gameId || !old) {
+        this.adjustments.delete(p.gameId);
+        this.adjustments.set(p.gameId, next);
+      } else old.manualPosition = p.position;
+    }
     this.history.push(structuredClone(move));
     await this.persist();
   }
   async remove(gameId: string, move: ManualMove) {
     await this.ready;
-    this.adjustments.delete(gameId);
+    if (!this.adjustments.delete(gameId)) return false;
     this.history.push(structuredClone(move));
     await this.persist();
+    return true;
   }
   async moves(gameId?: string) {
     await this.ready;

@@ -640,23 +640,6 @@ footer {
 .chip-remove:hover {
   background: #0000000f;
 }
-.delta-badge {
-  padding: 4px 9px;
-  border-radius: 999px;
-  font:
-    800 11px Manrope,
-    sans-serif;
-  white-space: nowrap;
-  animation: delta-pop 0.55s cubic-bezier(0.2, 1.5, 0.4, 1) both;
-}
-.delta-badge.up {
-  background: #dff3e6;
-  color: #13623f;
-}
-.delta-badge.down {
-  background: #fde8e4;
-  color: #a1473c;
-}
 .saving-pill {
   font-size: 10px;
   color: var(--muted);
@@ -763,11 +746,6 @@ body.queue-dragging * {
   font-size: 12px;
   animation: notice-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.reorder-notice.warn {
-  border-color: #f0dcb5;
-  background: #fdf7ea;
-  color: #7c5b22;
-}
 .reorder-notice button {
   border: 0;
   background: none;
@@ -789,18 +767,6 @@ body.queue-dragging * {
 @keyframes spin {
   to {
     rotate: 360deg;
-  }
-}
-@keyframes delta-pop {
-  0% {
-    opacity: 0;
-    scale: 0.6;
-    translate: 0 6px;
-  }
-  100% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
   }
 }
 @keyframes row-glow {
@@ -832,7 +798,6 @@ body.queue-dragging * {
     rotate: none;
     scale: 1.01;
   }
-  .delta-badge,
   .queue-row.just-moved,
   .reorder-notice {
     animation: none;

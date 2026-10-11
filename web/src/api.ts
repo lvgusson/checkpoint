@@ -6,7 +6,7 @@ import type {
   GamePage,
   ScoredGame,
   Recommendations,
-  ReorderResult,
+  ReorderAccepted,
   ManualResetResult,
 } from '../../shared/models';
 @Injectable({ providedIn: 'root' })
@@ -24,9 +24,10 @@ export class Api {
   queue() {
     return firstValueFrom(this.http.get<Recommendations>('/api/v1/recommendations'));
   }
+  /** Responde assim que valida; o servidor recalcula e grava depois. */
   reorder(gameId: string, toPosition: number) {
     return firstValueFrom(
-      this.http.post<ReorderResult>('/api/v1/queue/reorder', {
+      this.http.post<ReorderAccepted>('/api/v1/queue/reorder', {
         gameId,
         toPosition,
       }),
@@ -46,6 +47,7 @@ export class Api {
   }
 }
 export const color = (v: string) => {
+  if (v === 'Imediata') return 'rose';
   if (v === 'Finalizado' || v === 'Muito Alta') return 'green';
   if (v === 'Jogando' || v === 'Alta') return 'blue';
   if (v === 'Abandonado' || v === 'Muito Baixa') return 'gray';

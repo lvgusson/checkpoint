@@ -102,8 +102,8 @@ const LONG_PRESS_MS = 320;
                   : first.game.plannedHours + ' horas estimadas'
               }}
               · {{ first.score }} pontos
-              @if (first.manualPoints) {
-                · ajuste manual {{ signed(first.manualPoints) }}
+              @if (first.pinnedPosition) {
+                · posição fixada por você
               }
             </p>
             <span class="button primary">Ver jogo e avaliar ↗</span>
@@ -146,10 +146,9 @@ const LONG_PRESS_MS = 320;
           tempos disponíveis.
         </p>
         <p>
-          <b>Ajuste manual.</b> Arrastar um jogo vira pontos fixos seus (“Manual +12”), somados ao
-          score dele em qualquer contexto. O servidor calcula o menor ajuste que leva o jogo à
-          posição escolhida; se um predecessor ou o contexto impedir, ele fica na posição possível
-          mais próxima. Remova o ajuste no × do chip.
+          <b>Posição fixa.</b> O jogo que você arrasta fica exatamente onde foi solto (“Fixado”) e
+          os demais descem uma posição. Se ele ficar antes do jogo anterior da série, aparece um
+          aviso ⚠. Solte a posição no × do chip. Vontade <b>Imediata</b> leva o jogo ao topo.
         </p>
       </details>
       <div class="list-toolbar">
@@ -164,8 +163,8 @@ const LONG_PRESS_MS = 320;
         {{ announcement() }}
       </div>
       @if (notice(); as n) {
-        <div class="reorder-notice" [class.warn]="!n.exact" role="status">
-          <span>{{ n.text }}</span>
+        <div class="reorder-notice" role="status">
+          <span>{{ n }}</span>
           <button type="button" (click)="notice.set(null)" aria-label="Fechar aviso">×</button>
         </div>
       }
@@ -180,7 +179,7 @@ const LONG_PRESS_MS = 320;
             class="queue-row"
             [attr.data-id]="item.game.id"
             [class.saving]="busyId() === item.game.id"
-            [class.just-moved]="flash()?.id === item.game.id"
+            [class.just-moved]="flash() === item.game.id"
           >
             <button
               type="button"
@@ -241,28 +240,26 @@ const LONG_PRESS_MS = 320;
               <span class="row-arrow">↗</span></a
             >
             <div class="queue-manual">
-              @if (flash(); as f) {
-                @if (f.id === item.game.id && f.delta) {
-                  <span class="delta-badge" [class.up]="f.delta > 0" [class.down]="f.delta < 0"
-                    >{{ signed(f.delta) }} pts</span
-                  >
-                }
-              }
               @if (busyId() === item.game.id) {
                 <span class="saving-pill">Recalculando…</span>
-              } @else if (item.manualPoints) {
+              } @else if (item.pinnedPosition) {
                 <span
                   class="manual-chip"
-                  [class.neg]="item.manualPoints < 0"
+                  [class.neg]="item.pinnedBeforePrerequisite"
                   [title]="
-                    'Ajuste manual: ' + signed(item.manualPoints) + ' pontos somados ao score'
+                    item.pinnedBeforePrerequisite
+                      ? 'Fixado antes do jogo anterior da série'
+                      : 'Posição fixada por você ao arrastar'
                   "
-                  >Manual {{ signed(item.manualPoints)
-                  }}<button
+                >
+                  @if (item.pinnedBeforePrerequisite) {
+                    <span aria-label="Antes do jogo anterior da série">⚠ </span>
+                  }
+                  Fixado<button
                     type="button"
                     class="chip-remove"
                     [disabled]="busyId() !== null"
-                    [attr.aria-label]="'Remover ajuste manual de ' + item.game.name"
+                    [attr.aria-label]="'Soltar a posição fixa de ' + item.game.name"
                     (click)="resetManual(item.game.id, $event)"
                   >
                     ×
@@ -304,13 +301,13 @@ export class Queue {
   visible = signal(30);
   error = signal('');
   loading = signal(false);
-  /** Jogo aguardando a resposta do servidor após reordenar/zerar. */
+  /** Jogo aguardando a resposta do servidor ao soltar a posição fixa. */
   busyId = signal<string | null>(null);
   /** Jogo pego pelo teclado (aria-pressed no puxador). */
   keyboardId = signal<string | null>(null);
-  /** Badge de delta mostrado no último jogo movido. */
-  flash = signal<{ id: string; delta: number } | null>(null);
-  notice = signal<{ text: string; exact: boolean } | null>(null);
+  /** Último jogo movido (destaque breve). */
+  flash = signal<string | null>(null);
+  notice = signal<string | null>(null);
   announcement = signal('');
 
   private host: HTMLElement = inject(ElementRef).nativeElement;
@@ -319,6 +316,11 @@ export class Queue {
   private pending: PendingPress | null = null;
   private suppressClickUntil = 0;
   private flashTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Movimentos vão ao servidor um por vez, na ordem em que foram soltos. */
+  private sending: Promise<void> = Promise.resolve();
+  private pendingMoves = 0;
+  private moveFailed = false;
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private reduced =
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -347,19 +349,12 @@ export class Queue {
       this.clearPending();
       if (this.drag) this.teardown(this.drag);
       if (this.flashTimer) clearTimeout(this.flashTimer);
+      if (this.refreshTimer) clearTimeout(this.refreshTimer);
     });
   }
 
-  signed(n: number) {
-    const r = Math.round(n * 10) / 10;
-    return (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r);
-  }
   hasManual(items: QueueEntry[]) {
-    return (
-      this.flash() !== null ||
-      this.busyId() !== null ||
-      items.slice(0, this.visible()).some((i) => i.manualPoints)
-    );
+    return this.busyId() !== null || items.slice(0, this.visible()).some((i) => i.pinnedPosition);
   }
 
   async load() {
@@ -685,9 +680,11 @@ export class Queue {
       const [moved] = items.splice(from, 1);
       items.splice(over, 0, moved);
       this.data.set({ ...prev, items });
+      this.showFlash(id);
       this.cdr.detectChanges();
       this.focusHandle(id, d.mode);
-      this.save(id, over + 1, prev, d.mode);
+      this.say(`${this.nameOf(id)} fixado na posição ${over + 1}.`);
+      this.save(id, over + 1);
     };
     if (this.reduced) return land();
     d.el.classList.add('dropping');
@@ -753,65 +750,76 @@ export class Queue {
 
   // ------------------------------------------------------------- servidor
 
-  private async save(
-    id: string,
-    toPosition: number,
-    prev: Recommendations,
-    mode: DragState['mode'],
-  ) {
-    this.busyId.set(id);
+  /**
+   * O jogo já está onde foi solto (otimista). O servidor só valida e responde; o recálculo
+   * e a gravação acontecem lá depois. Em erro, a fila volta ao estado salvo no servidor.
+   */
+  private save(id: string, toPosition: number) {
+    this.pendingMoves++;
     this.error.set('');
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+    this.sending = this.sending.then(async () => {
+      try {
+        await this.api.reorder(id, toPosition);
+      } catch (e) {
+        this.moveFailed = true;
+        const reason = (e as { error?: { error?: { message?: string } } }).error?.error?.message;
+        this.error.set(
+          `Não foi possível mover ${this.nameOf(id)}${reason ? ': ' + reason : ''}. A fila voltou à última ordem salva.`,
+        );
+        this.say('Erro ao salvar. A ordem salva foi restaurada.');
+      } finally {
+        if (--this.pendingMoves === 0) this.settle();
+      }
+    });
+  }
+
+  /** Fila de envios vazia: em erro, restaura com animação; senão, sincroniza em silêncio. */
+  private settle() {
+    if (this.moveFailed) {
+      this.moveFailed = false;
+      void this.load();
+      return;
+    }
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+    // Dá tempo ao servidor de terminar a gravação antes de reler (scores e motivos novos).
+    this.refreshTimer = setTimeout(() => void this.refreshQuietly(), 1200);
+  }
+
+  /** Troca os dados sem animar: o jogo movido já está no lugar certo. */
+  private async refreshQuietly() {
+    if (this.drag || this.pending || this.pendingMoves || this.busyId()) {
+      this.refreshTimer = setTimeout(() => void this.refreshQuietly(), 800);
+      return;
+    }
     try {
-      const r = await this.api.reorder(id, toPosition);
-      this.flipTo(r.recommendations);
-      this.showFlash(id, r.pointsDelta);
-      const name = this.nameOf(id);
-      const manual = `ajuste manual ${this.signed(r.manualPoints)} (${this.signed(r.pointsDelta)} agora)`;
-      this.notice.set(
-        r.exact
-          ? {
-              exact: true,
-              text: `${name} agora está na posição ${r.effectivePosition} · ${manual}.`,
-            }
-          : {
-              exact: false,
-              text: `${name} não pode ficar exatamente na posição ${r.requestedPosition} (predecessor ou contexto da fila); ficou na ${r.effectivePosition} · ${manual}.`,
-            },
-      );
-      this.say(this.notice()!.text);
-    } catch {
-      this.flipTo(prev);
-      this.error.set(
-        prev.rules.manual
-          ? 'Não foi possível salvar a nova ordem. A fila voltou ao estado anterior.'
-          : 'O ajuste manual está desativado em Configurações. A fila voltou ao estado anterior.',
-      );
-      this.say('Erro ao salvar. A ordem anterior foi restaurada.');
-    } finally {
-      this.busyId.set(null);
+      const next = await this.api.queue();
+      if (this.drag || this.pendingMoves) return; // outro movimento começou: ele resincroniza
+      this.settings.syncVersion(next.configVersion);
+      this.data.set(next);
       this.cdr.detectChanges();
-      this.focusHandle(id, mode);
+    } catch {
+      // Sem rede: a próxima recarga resolve.
     }
   }
 
   async resetManual(id: string, e: Event) {
     e.preventDefault();
     e.stopPropagation();
-    if (this.busyId() || this.drag) return;
+    if (this.busyId() || this.drag || this.pendingMoves) return;
     this.busyId.set(id);
     this.error.set('');
     try {
       const r = await this.api.resetManual(id);
       this.flipTo(r.recommendations);
-      this.showFlash(id, r.pointsDelta);
+      this.showFlash(id);
       const pos = r.recommendations.items.findIndex((i) => i.game.id === id) + 1;
-      this.notice.set({
-        exact: true,
-        text: `Ajuste manual de ${this.nameOf(id)} removido (${this.signed(r.pointsDelta)} pts)${pos ? '; agora na posição ' + pos : ''}.`,
-      });
-      this.say(this.notice()!.text);
+      this.notice.set(
+        `${this.nameOf(id)} voltou à posição do algoritmo${pos ? ' (' + pos + 'ª)' : ''}.`,
+      );
+      this.say(this.notice()!);
     } catch {
-      this.error.set('Não foi possível remover o ajuste manual.');
+      this.error.set('Não foi possível soltar a posição fixa.');
     } finally {
       this.busyId.set(null);
     }
@@ -846,10 +854,10 @@ export class Queue {
     }
   }
 
-  private showFlash(id: string, delta: number) {
+  private showFlash(id: string) {
     if (this.flashTimer) clearTimeout(this.flashTimer);
-    this.flash.set({ id, delta });
-    this.flashTimer = setTimeout(() => this.flash.set(null), 6000);
+    this.flash.set(id);
+    this.flashTimer = setTimeout(() => this.flash.set(null), 2500);
   }
   private focusHandle(id: string, mode: DragState['mode']) {
     if (mode !== 'keyboard') return;

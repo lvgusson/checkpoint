@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Game } from '../../shared/models.ts';
 import type { StoredScoringConfig } from './settings-repository.ts';
+import type { ManualPin } from './scoring.ts';
 export interface GameRepository {
   list(): Promise<Game[]>;
   get(id: string): Promise<Game | undefined>;
@@ -11,8 +12,8 @@ export interface GameRepository {
 /** Entradas do algoritmo da fila. */
 export interface QueueInputs {
   games: Game[];
-  /** gameId -> pontos manuais (só ≠ 0). */
-  manual: Record<string, number>;
+  /** Posições fixadas pelo usuário, do pin mais antigo ao mais recente. */
+  pins: ManualPin[];
   settings: StoredScoringConfig;
 }
 

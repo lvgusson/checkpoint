@@ -55,7 +55,7 @@ const digest = (q: Recommendations) =>
           i.game.id,
           i.score,
           i.cumulativeHours,
-          i.manualPoints,
+          i.pinnedPosition ?? 0, // era manualPoints (0 sem ajuste): mesma impressão digital
           i.reasons,
           i.adjustments,
           i.game.plannedHours,
@@ -165,13 +165,17 @@ test('pré-requisitos e ajuste manual desligáveis', () => {
   const games = [game('a', { desire: 'Baixa' }), game('b', { prerequisiteId: 'a' })];
   assert.equal(recommendGames(games).items[0].game.id, 'a');
   assert.equal(recommendGames(games, withRules({ prerequisites: false })).items[0].game.id, 'b');
-  const manual = { a: 500 };
-  const on = recommendGames([game('a'), game('b')], defaultConfig, manual);
-  assert.equal(on.items[0].game.id, 'a');
-  assert.equal(on.items[0].manualPoints, 500);
-  const off = recommendGames([game('a'), game('b')], withRules({ manual: false }), manual);
-  assert.equal(off.items.find((i) => i.game.id === 'a')!.manualPoints, 0);
-  assert(off.items.every((i) => !i.adjustments.some((a) => a.label === 'Ajuste manual')));
+  const plain = recommendGames([game('a'), game('b')]).items.map((i) => i.game.id);
+  const pins = [{ gameId: plain[1], position: 1 }];
+  const on = recommendGames([game('a'), game('b')], defaultConfig, pins);
+  assert.equal(on.items[0].game.id, plain[1]);
+  assert.equal(on.items[0].pinnedPosition, 1);
+  const off = recommendGames([game('a'), game('b')], withRules({ manual: false }), pins);
+  assert.deepEqual(
+    off.items.map((i) => i.game.id),
+    plain,
+  );
+  assert(off.items.every((i) => i.pinnedPosition === null));
 });
 
 test('validação da configuração', () => {

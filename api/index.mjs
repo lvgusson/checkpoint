@@ -14,6 +14,7 @@
 // arquivos da Vercel (nft) as inclua no bundle da função.
 import 'jose';
 import 'postgres';
+import '@vercel/functions';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { makeServer } from './src/server.ts';

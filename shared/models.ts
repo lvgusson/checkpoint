@@ -1,5 +1,6 @@
 export type GameStatus = 'Não iniciado' | 'Jogando' | 'Abandonado' | 'Finalizado';
-export type Desire = 'Muito Alta' | 'Alta' | 'Média' | 'Baixa' | 'Muito Baixa';
+/** "Imediata" vai para o topo da fila por pontuação (ver recommendGames). */
+export type Desire = 'Imediata' | 'Muito Alta' | 'Alta' | 'Média' | 'Baixa' | 'Muito Baixa';
 export interface Game {
   id: string;
   name: string;
@@ -132,55 +133,44 @@ export interface QueueEntry {
   cumulativeHours: number;
   reasons: string[];
   adjustments: { label: string; points: number }[];
-  /** Pontos flat definidos pelo usuário ao reordenar a fila (0 = sem ajuste). */
-  manualPoints: number;
+  /** Posição fixada pelo usuário ao arrastar (null = posição livre, decidida pelo algoritmo). */
+  pinnedPosition: number | null;
+  /** Ficou antes do jogo anterior da série por causa de uma posição fixa (mostrar aviso). */
+  pinnedBeforePrerequisite: boolean;
 }
 /**
- * Ajuste manual de prioridade, separado do registro importado do jogo.
- * Mapeamento SQL sugerido: game_id, manual_points, manual_position, updated_at.
+ * Posição fixada pelo usuário (pin), separada do registro importado do jogo.
+ * SQL: queue_manual_adjustment.manual_position (linha sem posição = sem pin).
  */
 export interface ManualAdjustment {
   gameId: string;
-  manualPoints: number;
-  /** Posição pedida pelo usuário no último arraste (intenção, não garantia). */
-  manualPosition: number | null;
+  manualPosition: number;
   updatedAt: string;
 }
-/**
- * Histórico de movimentos manuais.
- * Mapeamento SQL sugerido: id, game_id, kind, from_position, to_position,
- * effective_position, points_delta, manual_points_after, created_at.
- */
+/** Histórico de movimentos manuais (queue_move_event). */
 export interface ManualMove {
   id: string;
   gameId: string;
   kind: 'reorder' | 'reset';
   fromPosition: number | null;
   toPosition: number | null;
-  effectivePosition: number | null;
-  pointsDelta: number;
-  manualPointsAfter: number;
   createdAt: string;
 }
 export interface ReorderRequest {
   gameId: string;
   toPosition: number;
 }
-export interface ReorderResult {
+/** Resposta imediata do reorder: validado; o recálculo e a gravação seguem em background. */
+export interface ReorderAccepted {
+  accepted: true;
   gameId: string;
   fromPosition: number;
-  requestedPosition: number;
-  effectivePosition: number;
-  /** true quando a posição efetiva é exatamente a pedida. */
-  exact: boolean;
-  pointsDelta: number;
-  manualPoints: number;
-  recommendations: Recommendations;
+  toPosition: number;
 }
 export interface ManualResetResult {
   gameId: string;
-  pointsDelta: number;
-  manualPoints: number;
+  /** false quando o jogo não tinha posição fixada. */
+  removed: boolean;
   recommendations: Recommendations;
 }
 export interface ManualState {

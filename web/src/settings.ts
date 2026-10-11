@@ -27,7 +27,7 @@ const SECTIONS: { id: ScoringSection; title: string; hint: string }[] = [
     title: 'Filtros e elegibilidade',
     hint: 'Quem entra na fila. Desligar um filtro inclui esses jogos.',
   },
-  { id: 'manual', title: 'Ajuste manual', hint: 'Pontos criados ao arrastar jogos na fila.' },
+  { id: 'manual', title: 'Ajuste manual', hint: 'Posições fixadas ao arrastar jogos na fila.' },
   {
     id: 'params',
     title: 'Parâmetros',
@@ -69,7 +69,6 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
         <div class="formula">
           <p class="eq">
             <var>score</var> = <var>base</var> + <span class="op">Σ</span> ajustes ativos
-            <span [class.off]="!d.rules.manual">+ <var>M</var></span>
           </p>
           <p class="eq">
             <var>base</var> =
@@ -132,8 +131,8 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
         </div>
         <ul class="legend">
           <li>
-            <var>D</var> vontade de jogar: Muito Alta 100, Alta 75, Média 50, Baixa 25, Muito Baixa
-            0.
+            <var>D</var> vontade de jogar: Imediata e Muito Alta 100, Alta 75, Média 50, Baixa 25,
+            Muito Baixa 0. Jogos com vontade Imediata vão para o topo da fila, entre si pelo score.
           </li>
           <li>
             <var>A</var> afinidade bayesiana: média das suas notas (1–5 viram 0–100) nos <var>n</var
@@ -146,9 +145,9 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
             suavizada e limitada a 0,5×–2×.
           </li>
           <li>
-            <var>M</var> pontos do ajuste manual (arrastar na fila). [condição] vale 1 quando é
-            verdadeira e 0 quando não é. A fila é montada um jogo por vez: sempre entra o maior
-            score entre os disponíveis.
+            [condição] vale 1 quando é verdadeira e 0 quando não é. A fila é montada um jogo por
+            vez: sempre entra o maior score entre os disponíveis. Depois, os jogos que você arrastou
+            entram exatamente na posição fixada, empurrando os demais.
           </li>
           <li>{{ queueRule(d) }}</li>
         </ul>

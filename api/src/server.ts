@@ -2,12 +2,13 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GameService, AppError } from './service.ts';
+import { GameService, AppError, desires } from './service.ts';
 import { createService } from './setup.ts';
 import { SEED_APP_USER_ID } from './app-user.ts';
 import { authenticatorFromEnv, publicAuthConfig, type Authenticator } from './auth.ts';
 import { runWithContext, setContext } from './context.ts';
 import { currentVersion } from './version.ts';
+import { runInBackground } from './background.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 // auth: null desliga a autenticação (dev/testes sem SUPABASE_URL). Ver api/src/auth.ts.
 export function makeServer(
@@ -79,9 +80,7 @@ export function makeServer(
             sort === 'score'
               ? (a, b) => b.baseScore - a.baseScore
               : sort === 'desire'
-                ? (a, b) =>
-                    ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'].indexOf(a.desire) -
-                    ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'].indexOf(b.desire)
+                ? (a, b) => desires.indexOf(a.desire) - desires.indexOf(b.desire)
                 : (a, b) => a.name.localeCompare(b.name, 'pt-BR'),
           );
           const page = Math.max(1, Number(url.searchParams.get('page')) || 1),
@@ -105,7 +104,10 @@ export function makeServer(
         }
         if (path === '/api/v1/queue/reorder' && req.method === 'POST') {
           const body = await readJson();
-          return send(await service.reorder(body.gameId, body.toPosition));
+          // 200 assim que validar; o recálculo e a gravação continuam depois da resposta.
+          const { accepted, done } = await service.reorder(body.gameId, body.toPosition);
+          runInBackground(done);
+          return send(accepted);
         }
         if (path === '/api/v1/queue/adjustments' && req.method === 'GET')
           return send(await service.manualState());

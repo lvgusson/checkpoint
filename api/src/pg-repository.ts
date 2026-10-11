@@ -24,6 +24,7 @@ const json = (v: unknown) => v as postgres.JSONValue;
 import type { AppUserResolver } from './app-user.ts';
 import type { GameRepository, QueueInputs, QueueInputsReader } from './repository.ts';
 import type { ManualAdjustmentRepository } from './manual-repository.ts';
+import type { ManualPin } from './scoring.ts';
 import { AppError } from './service.ts';
 import { storedScoringConfig } from './scoring-config.ts';
 import type { ScoringConfigRepository, StoredScoringConfig } from './settings-repository.ts';
@@ -35,6 +36,7 @@ const statusCode: Record<GameStatus, string> = {
   Finalizado: 'finished',
 };
 const desireCode: Record<Desire, string> = {
+  Imediata: 'immediate',
   'Muito Alta': 'very_high',
   Alta: 'high',
   Média: 'medium',
@@ -226,6 +228,9 @@ export class PgGameRepository implements GameRepository {
   }
 }
 
+/** Recência dos pins: o mais recente por último (vence empates em recommendGames). */
+const PIN_ORDER = 'coalesce(a.last_moved_at, a.updated_at), g.code';
+
 export class PgManualAdjustmentRepository implements ManualAdjustmentRepository {
   private sql: Sql;
   private user: AppUserResolver;
@@ -233,70 +238,79 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
     this.sql = sql;
     this.user = user;
   }
-  private async select(gameId?: string): Promise<ManualAdjustment[]> {
-    const sql = this.sql;
+  /** Pins (manual_position preenchida), do movido há mais tempo ao mais recente. */
+  async list(): Promise<ManualAdjustment[]> {
     const u = await this.user();
-    const rows = await sql<(Omit<ManualAdjustment, 'updatedAt'> & { updatedAt: Date })[]>`
-      SELECT g.code AS "gameId", a.flat_points::float8 AS "manualPoints",
-             a.manual_position AS "manualPosition", a.updated_at AS "updatedAt"
+    const rows = await this.sql<(Omit<ManualAdjustment, 'updatedAt'> & { updatedAt: Date })[]>`
+      SELECT g.code AS "gameId", a.manual_position AS "manualPosition",
+             coalesce(a.last_moved_at, a.updated_at) AS "updatedAt"
         FROM queue_manual_adjustment a JOIN game g ON g.id = a.game_id
-       WHERE a.user_id = ${u} AND a.flat_points <> 0
-             ${gameId ? sql`AND g.code = ${gameId}` : sql``}
-       ORDER BY a.updated_at, g.code`;
+       WHERE a.user_id = ${u} AND a.manual_position IS NOT NULL
+       ORDER BY ${this.sql.unsafe(PIN_ORDER)}`;
     return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
   }
-  list() {
-    return this.select();
-  }
-  async get(gameId: string) {
-    return (await this.select(gameId))[0];
-  }
   /**
-   * Aplica o DELTA do movimento com apply_queue_move (atômica, FOR UPDATE, idempotente
-   * por client_request_id = move.id). O total é a soma no banco, então dois movimentos
-   * concorrentes de instâncias diferentes não se sobrescrevem.
+   * Um statement: registra o movimento (ON CONFLICT no client_request_id = move.id) e só
+   * se ele for novo grava os pins. Retentativa de uma gravação que já entrou é no-op.
+   * Só o jogo movido ganha recência (last_moved_at); os outros só corrigem o índice.
    */
-  async save(_adjustment: ManualAdjustment, move: ManualMove): Promise<void> {
+  async pin(pins: { gameId: string; position: number }[], move: ManualMove): Promise<void> {
     const u = await this.user();
+    const codes = pins.map((p) => p.gameId),
+      positions = pins.map((p) => p.position);
     await this.sql`
-      SELECT 1 FROM apply_queue_move(
-        p_user_id       => ${u}::uuid,
-        p_game_id       => (SELECT e.game_id FROM library_entry e JOIN game g ON g.id = e.game_id
-                             WHERE e.user_id = ${u} AND g.code = ${move.gameId}),
-        p_from_position => ${move.fromPosition}::int,
-        p_to_position   => ${move.toPosition}::int,
-        p_points_delta  => ${move.pointsDelta}::numeric,
-        p_source        => 'api',
-        p_request_id    => ${move.id}::uuid)`.catch(asAppError);
+      WITH ev AS (
+        INSERT INTO queue_move_event (user_id, game_id, kind, from_position, to_position, points_delta,
+                                      flat_points_before, flat_points_after, source, client_request_id)
+        SELECT ${u}, e.game_id, 'move', ${move.fromPosition}::int, ${move.toPosition}::int, 0, 0, 0,
+               'drag', ${move.id}::uuid
+          FROM library_entry e JOIN game g ON g.id = e.game_id
+         WHERE e.user_id = ${u} AND g.code = ${move.gameId}
+        ON CONFLICT (user_id, client_request_id) WHERE client_request_id IS NOT NULL DO NOTHING
+        RETURNING 1)
+      INSERT INTO queue_manual_adjustment AS a
+             (user_id, game_id, flat_points, manual_position, previous_position, move_count, last_moved_at)
+      SELECT ${u}, e.game_id, 0, p.pos,
+             CASE WHEN g.code = ${move.gameId} THEN ${move.fromPosition}::int END,
+             (g.code = ${move.gameId})::int, now()
+        FROM unnest(${codes}::text[], ${positions}::int[]) AS p(code, pos)
+        JOIN game g ON g.code = p.code
+        JOIN library_entry e ON e.game_id = g.id AND e.user_id = ${u}
+       WHERE EXISTS (SELECT 1 FROM ev)
+      ON CONFLICT (user_id, game_id) DO UPDATE
+         SET manual_position   = EXCLUDED.manual_position,
+             flat_points       = 0,
+             previous_position = coalesce(EXCLUDED.previous_position, a.previous_position),
+             move_count        = a.move_count + EXCLUDED.move_count,
+             last_moved_at     = CASE WHEN EXCLUDED.move_count > 0 THEN now()
+                                      ELSE coalesce(a.last_moved_at, a.updated_at) END`.catch(
+      asAppError,
+    );
   }
-  /** Reset: apaga o ajuste e audita, num statement só (equivalente a reset_queue_adjustments). */
-  async remove(gameId: string, move: ManualMove): Promise<void> {
-    if (move.kind === 'reorder') return this.save({} as ManualAdjustment, move);
+  /** Reset: apaga o pin e audita, num statement só. */
+  async remove(gameId: string, move: ManualMove): Promise<boolean> {
     const u = await this.user();
-    await this.sql`
+    const rows = await this.sql`
       WITH d AS (
         DELETE FROM queue_manual_adjustment a USING game g
          WHERE a.user_id = ${u} AND a.game_id = g.id AND g.code = ${gameId}
-        RETURNING a.game_id, a.flat_points)
+        RETURNING a.game_id, a.manual_position)
       INSERT INTO queue_move_event (user_id, game_id, kind, from_position, to_position, points_delta,
                                     flat_points_before, flat_points_after, source, client_request_id)
-      SELECT ${u}, d.game_id, 'reset', ${move.fromPosition}::int, ${move.toPosition}::int,
-             -d.flat_points, d.flat_points, 0, 'api', ${move.id}::uuid
-        FROM d WHERE d.flat_points <> 0`;
+      SELECT ${u}, d.game_id, 'reset', ${move.fromPosition}::int, NULL, 0, 0, 0, 'api', ${move.id}::uuid
+        FROM d WHERE d.manual_position IS NOT NULL
+      RETURNING 1`;
+    return rows.length > 0;
   }
   /** Últimos 500 movimentos, em ordem cronológica. */
   async moves(gameId?: string): Promise<ManualMove[]> {
     const sql = this.sql;
     const u = await this.user();
     const rows = await sql<(Omit<ManualMove, 'createdAt'> & { createdAt: Date })[]>`
-      SELECT id, "gameId", kind, "fromPosition", "toPosition", "effectivePosition",
-             "pointsDelta", "manualPointsAfter", "createdAt"
+      SELECT id, "gameId", kind, "fromPosition", "toPosition", "createdAt"
         FROM (SELECT coalesce(m.client_request_id::text, m.id::text) AS id, g.code AS "gameId",
                      CASE m.kind WHEN 'reset' THEN 'reset' ELSE 'reorder' END AS kind,
                      m.from_position AS "fromPosition", m.to_position AS "toPosition",
-                     NULL::int AS "effectivePosition",
-                     m.points_delta::float8 AS "pointsDelta",
-                     m.flat_points_after::float8 AS "manualPointsAfter",
                      m.created_at AS "createdAt", m.id AS seq
                 FROM queue_move_event m JOIN game g ON g.id = m.game_id
                WHERE m.user_id = ${u} ${gameId ? sql`AND g.code = ${gameId}` : sql``}
@@ -365,17 +379,18 @@ export class PgQueueInputsReader implements QueueInputsReader {
     const sql = this.sql;
     const u = await this.user();
     const [row] = await sql<
-      { games: RawGame[]; manual: Record<string, number>; settings: RawSettings | null }[]
+      { games: RawGame[]; pins: ManualPin[]; settings: RawSettings | null }[]
     >`
       SELECT (SELECT coalesce(json_agg(${sql.unsafe(GAME_JSON)} ORDER BY e.id), '[]')
                 FROM ${sql.unsafe(GAME_FROM)} WHERE e.user_id = ${u}) AS games,
-             (SELECT coalesce(json_object_agg(g.code, a.flat_points), '{}')
+             (SELECT coalesce(json_agg(json_build_object('gameId', g.code, 'position', a.manual_position)
+                                       ORDER BY ${sql.unsafe(PIN_ORDER)}), '[]')
                 FROM queue_manual_adjustment a JOIN game g ON g.id = a.game_id
-               WHERE a.user_id = ${u} AND a.flat_points <> 0) AS manual,
+               WHERE a.user_id = ${u} AND a.manual_position IS NOT NULL) AS pins,
              (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings`;
     return {
       games: row.games.map(toGame),
-      manual: row.manual,
+      pins: row.pins,
       settings: toSettings(row.settings),
     };
   }
