@@ -113,12 +113,19 @@ const pending = (g: Game, r: ScoringRules) =>
     g.status === 'Jogando' ||
     (g.status === 'Abandonado' && !r.excludeAbandoned)) &&
   (finiteCampaign(g) || !r.excludeEndless);
+/** Pontos da vontade, da maior para a menor (a ordem das chaves é o ranking do filtro). */
 const desires: Record<string, number> = {
+  // Peso neutro (igual a Muito Alta): o topo de "Imediata" vem da ordenação da fila.
+  Imediata: 100,
   'Muito Alta': 100,
   Alta: 75,
   Média: 50,
   Baixa: 25,
   'Muito Baixa': 0,
+};
+const desireRank = (d: string) => {
+  const i = Object.keys(desires).indexOf(d);
+  return i < 0 ? Object.keys(desires).indexOf('Média') : i;
 };
 /** Coop: qualquer valor preenchido diferente de "Não". */
 const hasCoop = (g: Game) => !!g.coop?.trim() && normal(g.coop) !== 'nao';
@@ -134,7 +141,7 @@ export function contentFilter(f: QueueFilters): (g: ScoredGame) => string | null
     tags = normalSet(f.excludedTags),
     stores = normalSet(f.stores),
     paces = normalSet(f.paces);
-  const minDesire = f.minDesire === null ? null : desires[f.minDesire];
+  const minDesire = f.minDesire === null ? null : desireRank(f.minDesire);
   return (g) => {
     if (genres.has(normal(g.primaryGenre))) return 'Filtro: gênero ' + g.primaryGenre;
     const tag = g.secondaryTags.find((t) => tags.has(normal(t)));
@@ -142,7 +149,7 @@ export function contentFilter(f: QueueFilters): (g: ScoredGame) => string | null
     if (stores.size && !stores.has(normal(g.store))) return 'Filtro: loja ' + (g.store || '—');
     if (paces.size && !paces.has(normal(g.pace))) return 'Filtro: ritmo ' + (g.pace || '—');
     if (f.coopOnly && !hasCoop(g)) return 'Filtro: sem coop';
-    if (minDesire !== null && (desires[g.desire] ?? 50) < minDesire)
+    if (minDesire !== null && desireRank(g.desire) > minDesire)
       return 'Filtro: vontade ' + g.desire;
     const h = g.plannedHours;
     if (h === null) return f.excludeUnknownHours ? 'Filtro: sem tempo estimado' : null;
@@ -235,7 +242,6 @@ function contextual(
   game: ScoredGame,
   history: ScoredGame[],
   { weights: w, rules: r }: ScoringConfig,
-  manualPoints = 0,
 ) {
   const adjustments: { label: string; points: number }[] = [];
   const add = (label: string, points: number) => {
@@ -292,41 +298,71 @@ function contextual(
     history.slice(-3).reduce((s, g) => s + contextHours(g), 0) >= w.recentHours
   )
     add('Campanha longa após carga recente alta', -w.longAfterHeavy);
-  if (r.manual && Number.isFinite(manualPoints)) add('Ajuste manual', manualPoints);
   return {
     score: round(game.baseScore + adjustments.reduce((s, a) => s + a.points, 0)),
     adjustments,
   };
 }
 
-/** gameId -> pontos flat definidos pelo usuário (ausente = 0). */
-export type ManualPoints = Readonly<Record<string, number>>;
+/** Posição fixada pelo usuário ao arrastar um jogo na fila (1 = primeiro). */
+export interface ManualPin {
+  gameId: string;
+  position: number;
+}
 
+/**
+ * Ordem de inserção dos pins: X crescente; no empate, o mais recente (mais ao fim de `pins`)
+ * entra primeiro e fica em X, o outro vai para X+1. Um jogo com dois pins usa o último.
+ */
+function orderPins(pins: readonly ManualPin[], eligible: Set<string>) {
+  const latest = new Map<string, { pin: ManualPin; index: number }>();
+  pins.forEach((pin, index) => {
+    if (eligible.has(pin.gameId) && Number.isFinite(pin.position))
+      latest.set(pin.gameId, { pin, index });
+  });
+  return [...latest.values()]
+    .sort((a, b) => a.pin.position - b.pin.position || b.index - a.index)
+    .map((x) => x.pin);
+}
+
+/**
+ * Fila exibida = merge, em memória, de dois modelos:
+ * (a) fila por pontuação, gulosa: a cada posição o maior score contextual entre os jogos
+ *     disponíveis; jogos com vontade "Imediata" vêm antes de todos (entre si, pelo score).
+ *     Os jogos fixados ficam FORA deste cálculo, inclusive do contexto dos vizinhos;
+ * (b) posições fixas (`pins`, do mais antigo ao mais recente): inseridas depois, em X
+ *     crescente, empurrando o resto para baixo; X além do fim vai para o fim.
+ * O contexto não é recalculado ao redor dos fixos (simples e previsível).
+ */
 export function recommendGames(
   games: Game[],
   config: ScoringConfig = defaultConfig,
-  manual: ManualPoints = {},
+  pins: readonly ManualPin[] = [],
 ): Recommendations {
   const r = config.rules;
-  const manualOf = (id: string) =>
-    r.manual && Object.hasOwn(manual, id) && Number.isFinite(manual[id]) ? manual[id] : 0;
   const scored = scoreGames(games, config),
     all = new Map(scored.games.map((g) => [g.id, g]));
   const filtered: Recommendations['excluded'] = [];
   const reasonOf = contentFilter(config.filters);
-  const remaining = new Map<string, ScoredGame>();
+  const inQueue: ScoredGame[] = [];
   for (const g of scored.games.filter((g) => eligible(g, r))) {
     const reason = reasonOf(g);
     if (reason) filtered.push({ gameId: g.id, reason });
-    else remaining.set(g.id, g);
+    else inQueue.push(g);
   }
+  // Filtrado pela lista também perde o pin.
+  const pinOrder = r.manual ? orderPins(pins, new Set(inQueue.map((g) => g.id))) : [];
+  const pinnedIds = new Set(pinOrder.map((p) => p.gameId));
+  const remaining = new Map(inQueue.filter((g) => !pinnedIds.has(g.id)).map((g) => [g.id, g]));
+  // Fixados não bloqueiam continuações: a posição deles é decidida pelo usuário.
   const candidates = new Set(remaining.keys());
   const played = scored.games
     .filter((g) => g.status === 'Finalizado' && g.finishedAt)
     .sort((a, b) => a.finishedAt!.localeCompare(b.finishedAt!))
     .slice(-3);
-  const selected = new Set<string>(),
-    items: QueueEntry[] = [];
+  const selected = new Set<string>();
+  type Pick = { game: ScoredGame; score: number; adjustments: QueueEntry['adjustments'] };
+  const picks: (Pick & { pinned: boolean })[] = [];
   const available = (g: Game) => {
     if (!r.prerequisites) return true;
     const seen = new Set<string>([g.id]);
@@ -343,34 +379,65 @@ export function recommendGames(
     }
     return true;
   };
-  let cumulativeHours = 0;
   while (remaining.size) {
-    const history = [...played, ...items.map((i) => i.game)].slice(-3);
-    const options = [...remaining.values()].filter(available).map((game) => ({
+    const history = [...played, ...picks.map((i) => i.game)].slice(-3);
+    const open = [...remaining.values()].filter(available);
+    if (!open.length) break;
+    const urgent = open.filter((g) => g.desire === 'Imediata');
+    const options = (urgent.length ? urgent : open).map((game) => ({
       game,
-      ...contextual(game, history, config, manualOf(game.id)),
+      ...contextual(game, history, config),
     }));
-    if (!options.length) break;
     // Mesmo critério de antes (maior score, empate pelo ID), sem ordenar tudo.
     let winner = options[0];
     for (const c of options)
       if ((c.score - winner.score || winner.game.id.localeCompare(c.game.id)) > 0) winner = c;
-    cumulativeHours = round(cumulativeHours + (winner.game.plannedHours ?? 0));
-    items.push({
-      ...winner,
-      position: items.length + 1,
-      cumulativeHours,
-      manualPoints: round(manualOf(winner.game.id)),
-      reasons: [
-        ...(winner.adjustments.length
-          ? winner.adjustments.map((a) => a.label)
-          : ['Maior prioridade disponível']),
-        ...(winner.game.plannedHours === null ? ['Tempo a confirmar'] : []),
-      ],
-    });
+    picks.push({ ...winner, pinned: false });
     selected.add(winner.game.id);
     remaining.delete(winner.game.id);
   }
+  // (b) sobre (a): cada fixo entra em X (ou logo depois do fixo anterior, no empate).
+  let last = 0;
+  for (const pin of pinOrder) {
+    const game = all.get(pin.gameId)!;
+    const at = Math.min(Math.max(Math.round(pin.position), last + 1), picks.length + 1);
+    picks.splice(at - 1, 0, { game, ...contextual(game, [], config), pinned: true });
+    last = at;
+  }
+  const index = new Map(picks.map((p, i) => [p.game.id, i]));
+  /** Fica antes do primeiro predecessor que está na fila (só acontece por causa de um fixo). */
+  const beforePrerequisite = (g: Game) => {
+    if (!r.prerequisites) return false;
+    const seen = new Set([g.id]);
+    for (let p = g.prerequisiteId; p && !seen.has(p); p = all.get(p)?.prerequisiteId ?? null) {
+      if (index.has(p)) return index.get(p)! > index.get(g.id)!;
+      seen.add(p);
+    }
+    return false;
+  };
+  let cumulativeHours = 0;
+  const items: QueueEntry[] = picks.map(({ pinned, ...pick }, i) => {
+    cumulativeHours = round(cumulativeHours + (pick.game.plannedHours ?? 0));
+    const early = beforePrerequisite(pick.game);
+    return {
+      ...pick,
+      position: i + 1,
+      cumulativeHours,
+      pinnedPosition: pinned ? i + 1 : null,
+      pinnedBeforePrerequisite: early,
+      reasons: [
+        ...(pinned ? ['Posição fixada por você'] : []),
+        ...(early ? ['Antes do jogo anterior da série'] : []),
+        ...(pick.game.desire === 'Imediata' && !pinned ? ['Vontade imediata'] : []),
+        ...(pick.adjustments.length
+          ? pick.adjustments.map((a) => a.label)
+          : pinned || pick.game.desire === 'Imediata'
+            ? []
+            : ['Maior prioridade disponível']),
+        ...(pick.game.plannedHours === null ? ['Tempo a confirmar'] : []),
+      ],
+    };
+  });
   return {
     items,
     total: items.length,
@@ -425,127 +492,35 @@ export function filterOptions(games: Game[], config: ScoringConfig = defaultConf
   };
 }
 
-export interface ManualSolution {
+/** Plano de um arraste: posições a gravar para que a fila fique igual à que o usuário vê. */
+export interface MovePlan {
   gameId: string;
   fromPosition: number;
-  requestedPosition: number;
-  effectivePosition: number;
-  exact: boolean;
-  /** Novo total de pontos manuais do jogo (acumulado). */
-  manualPoints: number;
-  /** Diferença entre o novo total e o anterior. */
-  pointsDelta: number;
-  evaluations: number;
+  toPosition: number;
+  /** Pins novos ou alterados (o jogo movido + fixos que mudaram de índice na tela). */
+  pins: ManualPin[];
 }
 
 /**
- * Descobre quantos pontos manuais um jogo precisa para cair em `target`.
- *
- * O algoritmo da fila é guloso e contextual, então não há fórmula fechada:
- * 1. palpite inicial = diferença de score para o jogo hoje na posição alvo + margem;
- * 2. expande (dobrando) o delta até a posição alvo ser alcançada ou o limite estourar;
- *    se nem no limite ela for alcançada (predecessor, contexto), o alvo passa a ser
- *    a melhor posição alcançável;
- * 3. busca binária (resolução 0,1 ponto) pelo menor |delta| que alcança o alvo;
- * 4. tenta somar uma pequena margem, mantida só se não mudar a posição.
- * Cada passo é verificado rodando `recommendGames` de novo.
+ * Aplica o arraste sobre a fila atual exatamente como o front (remove e insere) e devolve os
+ * pins a gravar: o jogo movido em `toPosition` e os fixos que o arraste deslocou no índice
+ * visível (senão a próxima leitura os devolveria ao X antigo). Pré-requisito não bloqueia:
+ * o jogo fica onde foi solto e o item sai marcado com `pinnedBeforePrerequisite`.
+ * Lança RangeError se o jogo não estiver na fila ou a posição estiver fora dela.
  */
-export function solveManualPoints(
-  games: Game[],
-  gameId: string,
-  target: number,
-  manual: ManualPoints = {},
-  config: ScoringConfig = defaultConfig,
-  options: { maxEvaluations?: number; maxDelta?: number; margin?: number } = {},
-): ManualSolution {
-  const maxEvaluations = options.maxEvaluations ?? 48;
-  const limit = Math.round((options.maxDelta ?? 1000) * 10); // décimos de ponto
-  const marginTenths = Math.round((options.margin ?? 0.5) * 10);
-  const current = round(
-    Object.hasOwn(manual, gameId) && Number.isFinite(manual[gameId]) ? manual[gameId] : 0,
+export function planMove(queue: Recommendations, gameId: string, toPosition: number): MovePlan {
+  const order = queue.items.map((i) => i.game.id);
+  const from = order.indexOf(gameId);
+  if (from < 0) throw new RangeError('O jogo não está na fila');
+  if (!Number.isInteger(toPosition) || toPosition < 1 || toPosition > order.length)
+    throw new RangeError(`toPosition deve estar entre 1 e ${order.length}`);
+  order.splice(from, 1);
+  order.splice(toPosition - 1, 0, gameId);
+  const pinned = new Map(queue.items.map((i) => [i.game.id, i.pinnedPosition]));
+  const pins = order.flatMap((id, i) =>
+    id === gameId || (pinned.get(id) != null && pinned.get(id) !== i + 1)
+      ? [{ gameId: id, position: i + 1 }]
+      : [],
   );
-  const currentTenths = Math.round(current * 10);
-  const base = recommendGames(games, config, manual).items;
-  const fromIndex = base.findIndex((i) => i.game.id === gameId);
-  if (fromIndex < 0) throw new RangeError('Jogo fora da fila');
-  const from = fromIndex + 1;
-  const to = clamp(Math.round(target), 1, base.length);
-  let evaluations = 0;
-  const cache = new Map<number, number>([[currentTenths, from]]);
-  const positionAt = (tenths: number) => {
-    const hit = cache.get(tenths);
-    if (hit !== undefined) return hit;
-    evaluations++;
-    const items = recommendGames(games, config, {
-      ...manual,
-      [gameId]: tenths / 10,
-    }).items;
-    const pos = items.findIndex((i) => i.game.id === gameId) + 1;
-    cache.set(tenths, pos);
-    return pos;
-  };
-  const result = (tenths: number, requested = to): ManualSolution => {
-    const effectivePosition = positionAt(tenths);
-    return {
-      gameId,
-      fromPosition: from,
-      requestedPosition: requested,
-      effectivePosition,
-      exact: effectivePosition === requested,
-      manualPoints: round(tenths / 10),
-      pointsDelta: round((tenths - currentTenths) / 10),
-      evaluations,
-    };
-  };
-  if (to === from) return result(currentTenths);
-  const forward = to < from,
-    dir = forward ? 1 : -1;
-  const reaches = (pos: number, goal: number) => pos > 0 && (forward ? pos <= goal : pos >= goal);
-
-  // 1-2. Palpite inicial e expansão até cercar o alvo.
-  const gap = Math.abs(base[to - 1].score - base[fromIndex].score);
-  let step = Math.max(1, Math.round(gap * 10) + marginTenths);
-  let failing = currentTenths;
-  let passing = currentTenths,
-    found = false;
-  let probe = currentTenths + dir * Math.min(step, limit);
-  while (evaluations < maxEvaluations) {
-    if (reaches(positionAt(probe), to)) {
-      passing = probe;
-      found = true;
-      break;
-    }
-    failing = probe;
-    if (Math.abs(probe - currentTenths) >= limit) break;
-    step *= 2;
-    probe = currentTenths + dir * Math.min(step, limit);
-  }
-  let goal = to;
-  if (!found) {
-    // Posição exata impossível: mira na melhor posição vista no extremo.
-    const best = positionAt(failing);
-    if (!best || best === from || (forward ? best > from : best < from))
-      return result(currentTenths);
-    goal = best;
-    passing = failing;
-    failing = currentTenths;
-  }
-  // 3. Busca binária pelo menor |delta| que ainda alcança `goal`.
-  while (Math.abs(passing - failing) > 1 && evaluations < maxEvaluations) {
-    const mid: number = failing + Math.trunc((passing - failing) / 2);
-    if (reaches(positionAt(mid), goal)) passing = mid;
-    else failing = mid;
-  }
-  let chosen = passing;
-  // Saltos não monotônicos podem ultrapassar o alvo: fica com o mais próximo.
-  const passPos = positionAt(passing),
-    failPos = positionAt(failing);
-  if (passPos !== to && Math.abs(failPos - to) < Math.abs(passPos - to) && failPos !== from)
-    chosen = failing;
-  // 4. Margem de segurança contra empates, apenas se não mudar a posição.
-  if (marginTenths && evaluations < maxEvaluations) {
-    const padded = chosen + dir * marginTenths;
-    if (positionAt(padded) === positionAt(chosen)) chosen = padded;
-  }
-  return result(chosen);
+  return { gameId, fromPosition: from + 1, toPosition, pins };
 }

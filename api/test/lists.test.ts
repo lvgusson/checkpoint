@@ -58,8 +58,9 @@ test('cada lista tem regras e ajustes próprios; não apaga a última', async ()
 
     // Ajuste manual numa lista não afeta a outra.
     const last = a.items.at(-1)!.game.id;
-    const moved = await service.reorder(last, 1, main.id);
-    assert.equal(moved.recommendations.listId, main.id);
+    await (
+      await service.reorder(last, 1, main.id)
+    ).done;
     assert.equal((await service.recommendations(main.id)).items[0].game.id, last);
     assert.equal((await service.manualState(main.id)).adjustments.length, 1);
     assert.equal((await service.manualState(short.id)).adjustments.length, 0);
@@ -103,7 +104,7 @@ test('arquivos antigos (sem lista) caem na lista padrão', async () => {
     const service = makeService(dir);
     const [main] = await service.allLists();
     assert.equal(main.id, LOCAL_DEFAULT_LIST_ID);
-    assert.equal((await service.manualState()).adjustments[0].manualPoints, 42);
+    assert.equal((await service.manualState()).adjustments[0].manualPosition, 1);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

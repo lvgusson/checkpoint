@@ -79,33 +79,54 @@ test(
         assert.equal(loaded.list.id, main.id);
         assert.deepEqual(cold, {
           listId: main.id,
-          ...recommendGames(loaded.games, undefined, loaded.manual),
+          ...recommendGames(loaded.games, undefined, loaded.pins),
           configVersion: 0,
         });
 
-        // Reordenação: apply_queue_move grava o delta; a próxima leitura já reflete.
-        const last = cold.items.at(-1)!.game.id;
+        // Reordenação: aceita na hora, grava os pins em background; a leitura seguinte reflete.
+        const order = cold.items.map((i) => i.game.id);
+        const last = order.at(-1)!;
         const moved = await service.reorder(last, 1);
-        assert.equal(moved.recommendations.items[0].game.id, last);
+        assert.equal(moved.accepted.fromPosition, order.length);
+        await moved.done;
         const after = await service.recommendations();
         assert.equal(after.items[0].game.id, last);
-        assert.equal(after.items[0].manualPoints, moved.manualPoints);
+        assert.equal(after.items[0].pinnedPosition, 1);
+        // Segundo arraste: o pin anterior muda de índice na tela e é reindexado no banco.
+        const second = after.items[5].game.id;
+        await (
+          await service.reorder(second, 1)
+        ).done;
+        const twice = await service.recommendations();
+        assert.equal(twice.items[0].game.id, second);
+        assert.equal(twice.items[1].game.id, last);
+        assert.equal(twice.items[1].pinnedPosition, 2);
         const state = await service.manualState();
-        assert.equal(state.adjustments.length, 1);
-        assert.equal(state.adjustments[0].gameId, last);
-        assert.equal(state.adjustments[0].manualPoints, moved.manualPoints);
+        assert.deepEqual(
+          state.adjustments.map((a) => [a.gameId, a.manualPosition]),
+          [
+            [last, 2],
+            [second, 1],
+          ],
+        );
+        // Mesma gravação repetida (retentativa após sucesso) não duplica o movimento.
+        const replay = state.moves.at(-1)!;
+        await manual.pin(main.id, [{ gameId: second, position: 3 }], replay);
+        assert.equal((await service.manualState()).moves.length, 2);
+        assert.equal((await inputs.load())!.pins.find((p) => p.gameId === second)!.position, 1);
 
+        await service.resetManual(second);
         const reset = await service.resetManual(last);
-        assert.equal(reset.manualPoints, 0);
+        assert.equal(reset.removed, true);
         assert.deepEqual(
           reset.recommendations.items.map((i) => i.game.id),
-          cold.items.map((i) => i.game.id),
+          order,
         );
         const final = await service.manualState();
         assert.equal(final.adjustments.length, 0);
         assert.deepEqual(
           final.moves.map((m) => m.kind),
-          ['reorder', 'reset'],
+          ['reorder', 'reorder', 'reset', 'reset'],
         );
 
         // Configuração: sem linha = padrão (versão 0); gravar sobe a versão e invalida a fila.

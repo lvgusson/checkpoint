@@ -4,9 +4,10 @@ import type {
   Game,
   GameList,
   ManualResetResult,
+  ManualMove,
   ManualState,
   Recommendations,
-  ReorderResult,
+  ReorderAccepted,
   ScoringConfig,
   ScoringSettings,
 } from '../../shared/models.ts';
@@ -14,15 +15,20 @@ import type { GameRepository, QueueInputs, QueueInputsReader } from './repositor
 import { LocalListRepository, type ListRepository } from './list-repository.ts';
 import {
   LocalManualAdjustmentRepository,
+  toPins,
   type ManualAdjustmentRepository,
 } from './manual-repository.ts';
 import {
   scoreGames,
   recommendGames,
-  solveManualPoints,
+  planMove,
   defaultConfig,
   filterOptions,
+  type ManualPin,
+  type MovePlan,
 } from './scoring.ts';
+import { getContext, runWithContext } from './context.ts';
+import { retry, type RetryOptions } from './retry.ts';
 import { parseScoringConfig, scoringFactors } from './scoring-config.ts';
 import {
   LocalScoringConfigRepository,
@@ -30,7 +36,7 @@ import {
   type StoredScoringConfig,
 } from './settings-repository.ts';
 export const statuses = ['Não iniciado', 'Jogando', 'Abandonado', 'Finalizado'];
-export const desires = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
+export const desires = ['Imediata', 'Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
 export class AppError extends Error {
   code: number;
   constructor(message: string, code = 400) {
@@ -42,13 +48,18 @@ export class AppError extends Error {
 const queue = (
   listId: string,
   games: Game[],
-  manual: Record<string, number>,
+  pins: ManualPin[],
   s: StoredScoringConfig,
 ): Recommendations => ({
   listId,
-  ...recommendGames(games, s.config, manual),
+  ...recommendGames(games, s.config, pins),
   configVersion: s.version,
 });
+/** Reorder aceito: a resposta sai já; `done` termina quando a gravação acabar (nunca rejeita). */
+export interface ReorderTicket {
+  accepted: ReorderAccepted;
+  done: Promise<void>;
+}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const listNotFound = () => new AppError('Lista não encontrada', 404);
 /** Nome de lista: texto de 1 a 60 caracteres (espaços nas pontas são removidos). */
@@ -68,7 +79,10 @@ export class GameService {
   inputsReader: QueueInputsReader | null;
   settings: ScoringConfigRepository;
   lists: ListRepository;
-  private queueLock: Promise<unknown> = Promise.resolve();
+  /** Retentativa da gravação em background (padrões de retry.ts; testes trocam o sleep). */
+  retryOptions: RetryOptions = {};
+  /** Cadeia de operações da fila por usuário (movimentos rápidos aplicados em ordem). */
+  private chains = new Map<string, Promise<unknown>>();
   constructor(
     repository: GameRepository,
     manual: ManualAdjustmentRepository = new LocalManualAdjustmentRepository(),
@@ -89,7 +103,7 @@ export class GameService {
     if (!list) throw listNotFound();
     return list;
   }
-  /** Jogos + pontos manuais + config da lista (numa única leitura quando há `inputsReader`). */
+  /** Jogos + pins + config da lista (numa única leitura quando há `inputsReader`). */
   private async inputs(listId?: string): Promise<QueueInputs> {
     if (listId !== undefined && !UUID.test(listId)) throw listNotFound();
     if (this.inputsReader) {
@@ -100,25 +114,28 @@ export class GameService {
       return (await this.inputsReader.load())!;
     }
     const list = await this.list(listId);
-    const [games, manual, settings] = await Promise.all([
+    const [games, adjustments, settings] = await Promise.all([
       this.repository.list(),
-      this.manualPoints(list.id),
+      this.manual.list(list.id),
       this.settings.get(list.id),
     ]);
-    return { list, games, manual, settings };
+    return { list, games, pins: toPins(adjustments), settings };
   }
-  /** Serializa operações de leitura-cálculo-gravação dos ajustes manuais. */
-  private exclusive<T>(fn: () => Promise<T>): Promise<T> {
-    const run = this.queueLock.catch(() => {}).then(fn);
-    this.queueLock = run;
+  /**
+   * Serializa as operações da fila do usuário atual nesta instância. Só vale dentro do
+   * processo: entre instâncias serverless, a idempotência por move.id evita duplicar.
+   */
+  private serial<T>(fn: () => Promise<T>): Promise<T> {
+    const ctx = getContext();
+    const key = ctx?.userId ?? ctx?.appUserId ?? '';
+    const run = (this.chains.get(key) ?? Promise.resolve()).catch(() => {}).then(fn);
+    this.chains.set(key, run);
+    const cleanup = () => {
+      if (this.chains.get(key) === run) this.chains.delete(key);
+    };
+    run.then(cleanup, cleanup);
     return run;
   }
-  private async manualPoints(listId: string): Promise<Record<string, number>> {
-    return Object.fromEntries(
-      (await this.manual.list(listId)).map((a) => [a.gameId, a.manualPoints]),
-    );
-  }
-
   // ---------------------------------------------------------------- listas
   allLists(): Promise<GameList[]> {
     return this.lists.list();
@@ -200,9 +217,12 @@ export class GameService {
       },
     };
   }
-  async recommendations(listId?: string) {
-    const { list, games, manual, settings } = await this.inputs(listId);
-    return queue(list.id, games, manual, settings);
+  /** Entra na cadeia do usuário: espera gravações de reorder pendentes nesta instância. */
+  recommendations(listId?: string) {
+    return this.serial(async () => {
+      const { list, games, pins, settings } = await this.inputs(listId);
+      return queue(list.id, games, pins, settings);
+    });
   }
   async manualState(listId?: string): Promise<ManualState> {
     const list = await this.list(listId);
@@ -213,10 +233,11 @@ export class GameService {
     return { adjustments, moves };
   }
   /**
-   * Move um jogo da fila da lista para `toPosition` convertendo o gesto em pontos flat
-   * acumulados ("Ajuste manual"), verificados contra o algoritmo real.
+   * Arraste na fila da lista. Valida já (o front mostra o jogo onde foi solto sem esperar)
+   * e devolve `accepted`; o recálculo e a gravação dos pins seguem em `done`, com até 5
+   * tentativas (retry.ts). Erros de validação rejeitam a própria chamada (4xx).
    */
-  reorder(gameId: unknown, toPosition: unknown, listId?: string): Promise<ReorderResult> {
+  async reorder(gameId: unknown, toPosition: unknown, listId?: string): Promise<ReorderTicket> {
     if (typeof gameId !== 'string' || !gameId || gameId.length > 200)
       throw new AppError('gameId inválido');
     if (
@@ -226,95 +247,96 @@ export class GameService {
       toPosition > 100000
     )
       throw new AppError('toPosition deve ser um inteiro a partir de 1');
-    return this.exclusive(async () => {
-      const { list, games, manual, settings } = await this.inputs(listId);
-      if (!games.some((g) => g.id === gameId)) throw new AppError('Jogo não encontrado', 404);
-      if (!settings.config.rules.manual)
-        throw new AppError('O ajuste manual está desativado nas configurações', 409);
-      let solution;
-      try {
-        solution = solveManualPoints(games, gameId, toPosition, manual, settings.config);
-      } catch (e) {
-        if (e instanceof RangeError) throw new AppError('O jogo não está na fila', 409);
-        throw e;
-      }
-      const now = new Date().toISOString();
-      const nextManual: Record<string, number> = { ...manual };
-      if (solution.pointsDelta !== 0) {
-        if (solution.manualPoints === 0) delete nextManual[gameId];
-        else nextManual[gameId] = solution.manualPoints;
-        const move = {
-          id: randomUUID(),
-          gameId,
-          kind: 'reorder' as const,
-          fromPosition: solution.fromPosition,
-          toPosition: solution.requestedPosition,
-          effectivePosition: solution.effectivePosition,
-          pointsDelta: solution.pointsDelta,
-          manualPointsAfter: solution.manualPoints,
-          createdAt: now,
-        };
-        if (solution.manualPoints === 0) await this.manual.remove(list.id, gameId, move);
-        else
-          await this.manual.save(
-            list.id,
-            {
-              gameId,
-              manualPoints: solution.manualPoints,
-              manualPosition: solution.requestedPosition,
-              updatedAt: now,
-            },
-            move,
-          );
-      }
-      return {
-        gameId,
-        fromPosition: solution.fromPosition,
-        requestedPosition: solution.requestedPosition,
-        effectivePosition: solution.effectivePosition,
-        exact: solution.exact,
-        pointsDelta: solution.pointsDelta,
-        manualPoints: solution.manualPoints,
-        recommendations: queue(list.id, games, nextManual, settings),
-      };
+    // Usuário capturado agora: o job roda depois da resposta, ainda como ele.
+    const ctx = getContext() ?? {};
+    let accept!: (a: ReorderAccepted) => void, refuse!: (e: unknown) => void;
+    const accepted = new Promise<ReorderAccepted>((res, rej) => {
+      accept = res;
+      refuse = rej;
     });
+    // Validação entra na cadeia: vê a fila já com os movimentos anteriores gravados.
+    const done = this.serial(async () => {
+      let plan: MovePlan, id: string;
+      try {
+        const inputs = await this.inputs(listId);
+        id = inputs.list.id;
+        plan = this.planReorder(inputs, gameId, toPosition);
+      } catch (e) {
+        refuse(e);
+        return;
+      }
+      accept({ accepted: true, gameId, fromPosition: plan.fromPosition, toPosition });
+      await runWithContext(ctx, () => this.persistMove(id, plan));
+    });
+    return { accepted: await accepted, done };
   }
-  /** Zera o ajuste manual de um jogo na lista e devolve a fila recalculada. */
+  private planReorder({ games, pins, settings }: QueueInputs, gameId: string, to: number) {
+    if (!games.some((g) => g.id === gameId)) throw new AppError('Jogo não encontrado', 404);
+    if (!settings.config.rules.manual)
+      throw new AppError('O ajuste manual está desativado nas configurações', 409);
+    const current = recommendGames(games, settings.config, pins);
+    if (!current.items.some((i) => i.game.id === gameId))
+      throw new AppError('O jogo não está na fila', 409);
+    try {
+      return planMove(current, gameId, to);
+    } catch (e) {
+      if (e instanceof RangeError) throw new AppError(e.message);
+      throw e;
+    }
+  }
+  /** Grava os pins com retentativa; falha final só é registrada (a resposta já saiu). */
+  private async persistMove(listId: string, plan: MovePlan): Promise<void> {
+    const move: ManualMove = {
+      id: randomUUID(),
+      gameId: plan.gameId,
+      kind: 'reorder',
+      fromPosition: plan.fromPosition,
+      toPosition: plan.toPosition,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await retry(
+        async (attempt) => {
+          // Depois de uma falha o estado pode ter mudado: refaz o plano (mesmo move.id,
+          // então uma gravação que chegou a acontecer não é aplicada de novo).
+          const p =
+            attempt === 1
+              ? plan
+              : this.planReorder(await this.inputs(listId), plan.gameId, plan.toPosition);
+          await this.manual.pin(listId, p.pins, move);
+        },
+        {
+          ...this.retryOptions,
+          shouldRetry: (e) => !(e instanceof AppError),
+          onRetry: (e, attempt, delay) =>
+            console.warn(`[reorder] tentativa ${attempt} falhou; nova em ${delay} ms`, e),
+        },
+      );
+    } catch (e) {
+      console.error(`[reorder] ${plan.gameId} → ${plan.toPosition} não foi gravado`, e);
+    }
+  }
+  /** Solta o pin de um jogo (volta à posição do algoritmo) e devolve a fila recalculada. */
   resetManual(gameId: string, listId?: string): Promise<ManualResetResult> {
-    return this.exclusive(async () => {
-      const { list, games, manual, settings } = await this.inputs(listId);
+    return this.serial(async () => {
+      const { list, games, pins, settings } = await this.inputs(listId);
       if (!games.some((g) => g.id === gameId)) throw new AppError('Jogo não encontrado', 404);
-      const previous = manual[gameId] ?? 0;
-      if (previous !== 0) {
-        const before = queue(list.id, games, manual, settings);
-        const next = { ...manual };
-        delete next[gameId];
-        const after = queue(list.id, games, next, settings);
-        const pos = (q: typeof before) =>
-          q.items.find((i) => i.game.id === gameId)?.position ?? null;
-        await this.manual.remove(list.id, gameId, {
+      const before = queue(list.id, games, pins, settings);
+      const rest = pins.filter((p) => p.gameId !== gameId);
+      const removed =
+        rest.length !== pins.length &&
+        (await this.manual.remove(list.id, gameId, {
           id: randomUUID(),
           gameId,
           kind: 'reset',
-          fromPosition: pos(before),
+          fromPosition: before.items.find((i) => i.game.id === gameId)?.position ?? null,
           toPosition: null,
-          effectivePosition: pos(after),
-          pointsDelta: -previous,
-          manualPointsAfter: 0,
           createdAt: new Date().toISOString(),
-        });
-        return {
-          gameId,
-          pointsDelta: -previous,
-          manualPoints: 0,
-          recommendations: after,
-        };
-      }
+        }));
       return {
         gameId,
-        pointsDelta: 0,
-        manualPoints: 0,
-        recommendations: queue(list.id, games, manual, settings),
+        removed,
+        recommendations: removed ? queue(list.id, games, rest, settings) : before,
       };
     });
   }
@@ -410,6 +432,17 @@ export class GameService {
       next.finishedAt = null;
     next.updatedAt = new Date().toISOString();
     await this.repository.save(next);
+    // Finalizado sai da fila: a posição fixa perde o sentido em todas as listas.
+    if (next.status === 'Finalizado' && old.status !== 'Finalizado')
+      for (const list of await this.lists.list())
+        await this.manual.remove(list.id, id, {
+          id: randomUUID(),
+          gameId: id,
+          kind: 'reset',
+          fromPosition: null,
+          toPosition: null,
+          createdAt: next.updatedAt,
+        });
     return (await this.all()).find((g) => g.id === id)!;
   }
 }

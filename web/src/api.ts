@@ -6,7 +6,7 @@ import type {
   GamePage,
   ScoredGame,
   Recommendations,
-  ReorderResult,
+  ReorderAccepted,
   ManualResetResult,
 } from '../../shared/models';
 /** Prefixo das rotas de uma lista (fila, ajustes manuais e configuração são por lista). */
@@ -26,9 +26,10 @@ export class Api {
   queue(listId: string) {
     return firstValueFrom(this.http.get<Recommendations>(listUrl(listId) + '/recommendations'));
   }
+  /** Responde assim que valida; o servidor recalcula e grava depois. */
   reorder(listId: string, gameId: string, toPosition: number) {
     return firstValueFrom(
-      this.http.post<ReorderResult>(listUrl(listId) + '/queue/reorder', {
+      this.http.post<ReorderAccepted>(listUrl(listId) + '/queue/reorder', {
         gameId,
         toPosition,
       }),
@@ -48,6 +49,7 @@ export class Api {
   }
 }
 export const color = (v: string) => {
+  if (v === 'Imediata') return 'rose';
   if (v === 'Finalizado' || v === 'Muito Alta') return 'green';
   if (v === 'Jogando' || v === 'Alta') return 'blue';
   if (v === 'Abandonado' || v === 'Muito Baixa') return 'gray';

@@ -48,13 +48,15 @@ Contrato OpenAPI: `docs/openapi.json`, também servido em `/api/v1/openapi.json`
 - `PATCH /api/v1/games/{id}`: edição parcial validada.
 - `GET /api/v1/catalog`: opções de filtros e contagens.
 - `GET /api/v1/recommendations`: fila completa, fatores e motivos.
-- `POST /api/v1/queue/reorder` `{ gameId, toPosition }`: converte um arraste na fila em ajuste manual de pontos e devolve a fila recalculada.
-- `GET /api/v1/queue/adjustments`: ajustes manuais e histórico de movimentos.
-- `DELETE /api/v1/queue/adjustments/{gameId}`: zera o ajuste manual do jogo.
+- `POST /api/v1/queue/reorder` `{ gameId, toPosition }`: valida e responde 200 na hora (`{ accepted: true, … }`); o jogo é fixado em `toPosition` e a gravação segue em background.
+- `GET /api/v1/queue/adjustments`: posições fixas e histórico de movimentos.
+- `DELETE /api/v1/queue/adjustments/{gameId}`: solta a posição fixa do jogo.
 
-### Ajuste manual da fila
+### Posições fixas na fila
 
-Na tela **Ordem de jogos**, arraste um jogo pelo puxador ⠿ (mouse, toque com long-press na linha, ou teclado: espaço pega, setas movem, espaço solta, Esc cancela). O servidor calcula quantos pontos flat (“Ajuste manual”) o jogo precisa para cair na posição escolhida: palpite = diferença de score para o jogo na posição alvo + margem, depois expansão e busca binária (0,1 ponto) rodando o algoritmo real a cada passo. Como a fila é gulosa e contextual, nem toda posição é alcançável (predecessores, saltos de contexto); nesse caso o jogo fica na posição possível mais próxima e a resposta traz `exact: false`. Os pontos se acumulam por jogo, ficam separados do registro importado (`ManualAdjustmentRepository`, arquivo `api/data/manual-adjustments.json`, configurável por `MANUAL_FILE`) e podem ser removidos no × do chip “Manual +X”. Com ajuste 0, a fila é idêntica à original.
+Na tela **Ordem de jogos**, arraste um jogo pelo puxador ⠿ (mouse, toque com long-press na linha, ou teclado: espaço pega, setas movem, espaço solta, Esc cancela). O front deixa o jogo onde foi solto sem esperar e envia os movimentos em sequência; a API só valida e responde 200, e o recálculo e a gravação continuam depois da resposta (`waitUntil` na Vercel), com até 5 tentativas e espera exponencial de 200, 400, 800 e 1600 ms (`api/src/retry.ts`).
+
+A fila exibida é calculada na leitura, em memória, juntando dois modelos: (a) a fila por pontuação, sem os jogos fixados (eles saem do cálculo, inclusive do contexto dos vizinhos), e (b) as posições fixas, inseridas em X crescente, empurrando o resto para baixo. Empate na mesma X: o movimento mais recente fica em X. X além do fim vai para o fim. Fixos que o arraste deslocou na tela têm o X reindexado, então a fila fica exatamente igual à tela. Pré-requisito não bloqueia: o item aparece com aviso ⚠ (`pinnedBeforePrerequisite`). Finalizar um jogo remove a posição fixa dele. Jogos com vontade **Imediata** vão para o topo da fila por pontuação, entre si pelo score; os fixos entram depois. Os pins ficam separados do registro importado (`ManualAdjustmentRepository`, arquivo `api/data/manual-adjustments.json`, configurável por `MANUAL_FILE`) e podem ser soltos no × do chip “Fixado”.
 
 `GameService` recebe a interface `GameRepository` (`list`, `get`, `save`). Para migrar, implemente um `SqlGameRepository`, mantendo o ID estável, e injete-o no lugar de `LocalGameRepository` em `server.ts`. Nenhuma tela precisa mudar. O adaptador atual grava atomicamente e serializa as gravações.
 

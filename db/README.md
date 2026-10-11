@@ -14,7 +14,7 @@ Schema para PostgreSQL 15+ (Supabase). Validado em PostgreSQL 18 via PGlite, inc
 | `migrations/002_queue_snapshot.sql`   | Fila materializada (`queue_snapshot`, `queue_snapshot_item`), `user_queue_state.inputs_version` e os triggers de invalidação. Também cria a view `queue_freshness`.                                                                                                                                                       |
 | `migrations/003_rls.sql`              | RLS e grants. Também cria `current_app_user_id()` e `ensure_app_user()`, a FK opcional para `auth.users` e os shims `auth.uid()`/roles para Postgres puro.                                                                                                                                                                |
 | `migrations/007_scoring_settings.sql` | `user_score_weights.rules` (regras ligadas/desligadas) e `version` (sobe a cada gravação da tela de configurações).                                                                                                                                                                                                       |
-| `migrations/009_game_lists.sql`       | Várias listas por usuário (`game_list`: só o nome; todas mostram todos os jogos). `user_score_weights` passa a ter PK `list_id`; `queue_manual_adjustment` PK `(list_id, game_id)`; `queue_move_event.list_id`. FKs compostas `(user_id, list_id)` → `game_list` com CASCADE. Dados antigos vão para a lista "Principal". |
+| `migrations/011_game_lists.sql`       | Várias listas por usuário (`game_list`: só o nome; todas mostram todos os jogos). `user_score_weights` passa a ter PK `list_id`; `queue_manual_adjustment` PK `(list_id, game_id)`; `queue_move_event.list_id`. FKs compostas `(user_id, list_id)` → `game_list` com CASCADE. Dados antigos vão para a lista "Principal". |
 | `seed/import.mjs`                     | Gera `seed/seed.sql` a partir de `api/src/seed.ts` e de `data/metadata/game-metadata.json` (se o arquivo existir). Não precisa de banco nem de dependências npm.                                                                                                                                                          |
 
 ```bash
@@ -280,7 +280,7 @@ ORDER BY i.position;
 
 ## Reordenação manual (drag-and-drop)
 
-> Desde `009_game_lists.sql` o estado e o histórico são **por lista**: PK `(list_id, game_id)`, `queue_move_event.list_id`, e `apply_queue_move`/`reset_queue_adjustments` recebem `p_list_id`. O texto abaixo descreve o desenho original por usuário.
+> Desde `011_game_lists.sql` o estado e o histórico são **por lista**: PK `(list_id, game_id)`, `queue_move_event.list_id`, e `apply_queue_move`/`reset_queue_adjustments` recebem `p_list_id`. O texto abaixo descreve o desenho original por usuário.
 
 **`queue_manual_adjustment`** (estado acumulado; PK `(user_id, game_id)`; FK `(user_id, game_id)` → `library_entry`, com CASCADE):
 

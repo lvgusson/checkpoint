@@ -372,8 +372,8 @@
     },
     "/queue/reorder": {
       "post": {
-        "summary": "Reordenar jogo da fila via ajuste manual de pontos",
-        "description": "Calcula o delta de pontos flat (\"Ajuste manual\") para que o jogo caia em toPosition ao recalcular a fila gulosa. Verifica rodando o algoritmo (expansão + busca binária, resolução 0,1 ponto). Se a posição exata for impossível (predecessores, saltos de contexto), aplica a mais próxima e devolve exact=false. Acumula manualPoints e registra o movimento no histórico. Sem /lists/{listId}: usa a lista padrão do usuário.",
+        "summary": "Fixar o jogo na posição onde foi solto",
+        "description": "Valida e responde 200 na hora; o recálculo e a gravação seguem em background (até 5 tentativas, espera exponencial 200/400/800/1600 ms). O jogo vira uma posição fixa (pin) em toPosition: a fila exibida é a fila por pontuação sem os fixados, com os fixados inseridos em X crescente (empate: o mais recente fica em X). Fixos que o arraste deslocou na tela têm o X reindexado para a fila ficar igual à tela. Pré-requisito não bloqueia: o item sai com pinnedBeforePrerequisite=true. Idempotente por movimento. Sem /lists/{listId}: usa a lista padrão do usuário.",
         "requestBody": {
           "required": true,
           "content": {
@@ -386,30 +386,30 @@
         },
         "responses": {
           "200": {
-            "description": "Sucesso",
+            "description": "Aceito (gravação em background)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReorderResult"
+                  "$ref": "#/components/schemas/ReorderAccepted"
                 }
               }
             }
           },
           "400": {
-            "description": "Entrada inválida"
+            "description": "Entrada inválida ou toPosition fora da fila"
           },
           "404": {
             "description": "Jogo não encontrado"
           },
           "409": {
-            "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou bloqueado) ou ajuste manual desativado nas configurações"
+            "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou filtrado) ou ajuste manual desativado nas configurações"
           }
         }
       }
     },
     "/queue/adjustments": {
       "get": {
-        "summary": "Ajustes manuais e histórico de movimentos",
+        "summary": "Posições fixas e histórico de movimentos",
         "responses": {
           "200": {
             "description": "Sucesso",
@@ -437,7 +437,7 @@
         }
       ],
       "delete": {
-        "summary": "Zerar ajuste manual do jogo e recalcular",
+        "summary": "Soltar a posição fixa do jogo e recalcular",
         "responses": {
           "200": {
             "description": "Sucesso",
@@ -852,7 +852,7 @@
           },
           "desire": {
             "type": "string",
-            "enum": ["Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"]
+            "enum": ["Imediata", "Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"]
           },
           "store": {
             "type": "string"
@@ -1037,7 +1037,7 @@
           },
           "desire": {
             "type": "string",
-            "enum": ["Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"]
+            "enum": ["Imediata", "Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"]
           },
           "rating": {
             "type": ["number", "null"],
@@ -1115,9 +1115,13 @@
               }
             }
           },
-          "manualPoints": {
-            "type": "number",
-            "description": "Pontos flat do usuário somados ao score como adjustment \"Ajuste manual\" (0 = sem ajuste)"
+          "pinnedPosition": {
+            "type": ["integer", "null"],
+            "description": "Posição fixada pelo usuário ao arrastar (null = posição decidida pela pontuação)"
+          },
+          "pinnedBeforePrerequisite": {
+            "type": "boolean",
+            "description": "Ficou antes do jogo anterior da série por causa de uma posição fixa"
           }
         }
       },
@@ -1236,36 +1240,25 @@
           "toPosition": {
             "type": "integer",
             "minimum": 1,
-            "description": "Posição 1-based desejada; valores além do fim viram a última posição"
+            "description": "Posição 1-based onde o jogo foi solto (entre 1 e o tamanho da fila)"
           }
         }
       },
-      "ReorderResult": {
+      "ReorderAccepted": {
         "type": "object",
         "properties": {
+          "accepted": {
+            "type": "boolean",
+            "const": true
+          },
           "gameId": {
             "type": "string"
           },
           "fromPosition": {
             "type": "integer"
           },
-          "requestedPosition": {
+          "toPosition": {
             "type": "integer"
-          },
-          "effectivePosition": {
-            "type": "integer"
-          },
-          "exact": {
-            "type": "boolean"
-          },
-          "pointsDelta": {
-            "type": "number"
-          },
-          "manualPoints": {
-            "type": "number"
-          },
-          "recommendations": {
-            "$ref": "#/components/schemas/Recommendations"
           }
         }
       },
@@ -1275,11 +1268,9 @@
           "gameId": {
             "type": "string"
           },
-          "pointsDelta": {
-            "type": "number"
-          },
-          "manualPoints": {
-            "type": "number"
+          "removed": {
+            "type": "boolean",
+            "description": "false quando o jogo não tinha posição fixa"
           },
           "recommendations": {
             "$ref": "#/components/schemas/Recommendations"
@@ -1288,16 +1279,13 @@
       },
       "ManualAdjustment": {
         "type": "object",
-        "description": "SQL: manual_points, manual_position, updated_at por game_id",
+        "description": "Posição fixa (pin). SQL: queue_manual_adjustment.manual_position por game_id",
         "properties": {
           "gameId": {
             "type": "string"
           },
-          "manualPoints": {
-            "type": "number"
-          },
           "manualPosition": {
-            "type": ["integer", "null"]
+            "type": "integer"
           },
           "updatedAt": {
             "type": "string",
@@ -1307,7 +1295,7 @@
       },
       "ManualMove": {
         "type": "object",
-        "description": "SQL: from_position, to_position, effective_position, points_delta, manual_points_after, created_at",
+        "description": "SQL: queue_move_event (from_position, to_position, created_at)",
         "properties": {
           "id": {
             "type": "string"
@@ -1324,15 +1312,6 @@
           },
           "toPosition": {
             "type": ["integer", "null"]
-          },
-          "effectivePosition": {
-            "type": ["integer", "null"]
-          },
-          "pointsDelta": {
-            "type": "number"
-          },
-          "manualPointsAfter": {
-            "type": "number"
           },
           "createdAt": {
             "type": "string",
