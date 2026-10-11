@@ -112,6 +112,13 @@ export function makeServer(
         const manualMatch = path.match(/^\/api\/v1\/queue\/adjustments\/([^/]+)$/);
         if (manualMatch && req.method === 'DELETE')
           return send(await service.resetManual(decodeURIComponent(manualMatch[1])));
+        if (path === '/api/v1/settings/scoring') {
+          if (req.method === 'GET') return send(await service.scoringSettings());
+          if (req.method === 'PUT')
+            return send(await service.saveScoringSettings(await readJson()));
+        }
+        if (path === '/api/v1/settings/scoring/reset' && req.method === 'POST')
+          return send(await service.resetScoringSettings());
         if (path.startsWith('/api/')) throw new AppError('Rota não encontrada', 404);
         if (req.method !== 'GET') throw new AppError('Método não permitido', 405);
         const base = resolve(root, 'dist/web/browser');

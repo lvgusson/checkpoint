@@ -5,13 +5,21 @@ import type {
   ManualResetResult,
   ManualState,
   ReorderResult,
+  ScoringConfig,
+  ScoringSettings,
 } from '../../shared/models.ts';
 import { hydrateQueue, type GameRepository, type QueueSnapshotStore } from './repository.ts';
 import {
   LocalManualAdjustmentRepository,
   type ManualAdjustmentRepository,
 } from './manual-repository.ts';
-import { scoreGames, recommendGames, solveManualPoints, defaultWeights } from './scoring.ts';
+import { scoreGames, recommendGames, solveManualPoints, defaultConfig } from './scoring.ts';
+import { parseScoringConfig, scoringFactors } from './scoring-config.ts';
+import {
+  LocalScoringConfigRepository,
+  type ScoringConfigRepository,
+  type StoredScoringConfig,
+} from './settings-repository.ts';
 export const statuses = ['Não iniciado', 'Jogando', 'Abandonado', 'Finalizado'];
 export const desires = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
 export class AppError extends Error {
@@ -21,25 +29,41 @@ export class AppError extends Error {
     this.code = code;
   }
 }
+/** Fila com a config do usuário, carimbada com a versão dessa config. */
+const queue = (games: Game[], manual: Record<string, number>, s: StoredScoringConfig) => ({
+  ...recommendGames(games, s.config, manual),
+  configVersion: s.version,
+});
 export class GameService {
   repository: GameRepository;
   manual: ManualAdjustmentRepository;
   snapshots: QueueSnapshotStore | null;
+  settings: ScoringConfigRepository;
   private queueLock: Promise<unknown> = Promise.resolve();
   constructor(
     repository: GameRepository,
     manual: ManualAdjustmentRepository = new LocalManualAdjustmentRepository(),
     snapshots: QueueSnapshotStore | null = null,
+    settings: ScoringConfigRepository = new LocalScoringConfigRepository(),
   ) {
     this.repository = repository;
     this.manual = manual;
     this.snapshots = snapshots;
+    this.settings = settings;
   }
-  /** Jogos + pontos manuais; com snapshot store, numa única leitura consistente. */
-  private async inputs(): Promise<{ games: Game[]; manual: Record<string, number> }> {
+  /** Jogos + pontos manuais + config; com snapshot store, numa única leitura consistente. */
+  private async inputs(): Promise<{
+    games: Game[];
+    manual: Record<string, number>;
+    settings: StoredScoringConfig;
+  }> {
     if (this.snapshots) return this.snapshots.load();
-    const [games, manual] = await Promise.all([this.repository.list(), this.manualPoints()]);
-    return { games, manual };
+    const [games, manual, settings] = await Promise.all([
+      this.repository.list(),
+      this.manualPoints(),
+      this.settings.get(),
+    ]);
+    return { games, manual, settings };
   }
   /** Serializa operações de leitura-cálculo-gravação dos ajustes manuais. */
   private exclusive<T>(fn: () => Promise<T>): Promise<T> {
@@ -51,7 +75,28 @@ export class GameService {
     return Object.fromEntries((await this.manual.list()).map((a) => [a.gameId, a.manualPoints]));
   }
   async all() {
-    return scoreGames(await this.repository.list()).games;
+    const [games, settings] = await Promise.all([this.repository.list(), this.settings.get()]);
+    return scoreGames(games, settings.config).games;
+  }
+  private toSettings(s: StoredScoringConfig): ScoringSettings {
+    return { ...s, defaults: defaultConfig, factors: scoringFactors };
+  }
+  async scoringSettings(): Promise<ScoringSettings> {
+    return this.toSettings(await this.settings.get());
+  }
+  /** Valida e grava pesos + regras; a fila é invalidada pela nova versão das entradas. */
+  async saveScoringSettings(body: unknown): Promise<ScoringSettings> {
+    let config: ScoringConfig;
+    try {
+      config = parseScoringConfig(body);
+    } catch (e) {
+      if (e instanceof RangeError) throw new AppError(e.message);
+      throw e;
+    }
+    return this.toSettings(await this.settings.save(config));
+  }
+  async resetScoringSettings(): Promise<ScoringSettings> {
+    return this.toSettings(await this.settings.save(structuredClone(defaultConfig)));
   }
   async catalog(): Promise<Catalog> {
     const games = await this.repository.list();
@@ -77,15 +122,15 @@ export class GameService {
    */
   async recommendations() {
     if (!this.snapshots) {
-      const { games, manual } = await this.inputs();
-      return recommendGames(games, defaultWeights, manual);
+      const { games, manual, settings } = await this.inputs();
+      return queue(games, manual, settings);
     }
     const input = await this.snapshots.load();
-    const cached = input.snapshot && hydrateQueue(input.snapshot, input.games);
+    const cached = input.snapshot && hydrateQueue(input.snapshot, input.games, input.settings);
     if (cached) return cached;
-    const queue = recommendGames(input.games, defaultWeights, input.manual);
-    await this.snapshots.save(input.version, queue);
-    return queue;
+    const fresh = queue(input.games, input.manual, input.settings);
+    await this.snapshots.save(input.version, fresh);
+    return fresh;
   }
   async manualState(): Promise<ManualState> {
     return {
@@ -108,11 +153,13 @@ export class GameService {
     )
       throw new AppError('toPosition deve ser um inteiro a partir de 1');
     return this.exclusive(async () => {
-      const { games, manual } = await this.inputs();
+      const { games, manual, settings } = await this.inputs();
       if (!games.some((g) => g.id === gameId)) throw new AppError('Jogo não encontrado', 404);
+      if (!settings.config.rules.manual)
+        throw new AppError('O ajuste manual está desativado nas configurações', 409);
       let solution;
       try {
-        solution = solveManualPoints(games, gameId, toPosition, manual, defaultWeights);
+        solution = solveManualPoints(games, gameId, toPosition, manual, settings.config);
       } catch (e) {
         if (e instanceof RangeError) throw new AppError('O jogo não está na fila', 409);
         throw e;
@@ -153,21 +200,21 @@ export class GameService {
         exact: solution.exact,
         pointsDelta: solution.pointsDelta,
         manualPoints: solution.manualPoints,
-        recommendations: recommendGames(games, defaultWeights, nextManual),
+        recommendations: queue(games, nextManual, settings),
       };
     });
   }
   /** Zera o ajuste manual de um jogo e devolve a fila recalculada. */
   resetManual(gameId: string): Promise<ManualResetResult> {
     return this.exclusive(async () => {
-      const { games, manual } = await this.inputs();
+      const { games, manual, settings } = await this.inputs();
       if (!games.some((g) => g.id === gameId)) throw new AppError('Jogo não encontrado', 404);
       const previous = manual[gameId] ?? 0;
       if (previous !== 0) {
-        const before = recommendGames(games, defaultWeights, manual);
+        const before = queue(games, manual, settings);
         const next = { ...manual };
         delete next[gameId];
-        const after = recommendGames(games, defaultWeights, next);
+        const after = queue(games, next, settings);
         const pos = (q: typeof before) =>
           q.items.find((i) => i.game.id === gameId)?.position ?? null;
         await this.manual.remove(gameId, {
@@ -192,7 +239,7 @@ export class GameService {
         gameId,
         pointsDelta: 0,
         manualPoints: 0,
-        recommendations: recommendGames(games, defaultWeights, manual),
+        recommendations: queue(games, manual, settings),
       };
     });
   }

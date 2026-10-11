@@ -24,7 +24,11 @@
           "200": {
             "description": "Sucesso",
             "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/VersionInfo" } }
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionInfo"
+                }
+              }
             }
           }
         }
@@ -265,7 +269,7 @@
             "description": "Jogo não encontrado"
           },
           "409": {
-            "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou bloqueado)"
+            "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou bloqueado) ou ajuste manual desativado nas configurações"
           }
         }
       }
@@ -316,6 +320,71 @@
           }
         }
       }
+    },
+    "/settings/scoring": {
+      "get": {
+        "summary": "Configuração do algoritmo do usuário",
+        "description": "Pesos, regras ligadas/desligadas, versão, padrões e metadados de cada fator (rótulo, descrição, unidade e faixa).",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Salvar pesos e regras",
+        "description": "Valida (números finitos dentro da faixa de cada fator; regras booleanas; chaves desconhecidas são rejeitadas), grava, sobe a versão e invalida a fila.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuração salva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Configuração inválida"
+          }
+        }
+      }
+    },
+    "/settings/scoring/reset": {
+      "post": {
+        "summary": "Restaurar configuração padrão",
+        "description": "Grava os padrões (nova versão) e invalida a fila.",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringSettings"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -332,10 +401,21 @@
         "type": "object",
         "required": ["version", "gitSha", "environment", "deployedAt"],
         "properties": {
-          "version": { "type": "string", "description": "semver do package.json" },
-          "gitSha": { "type": ["string", "null"] },
-          "environment": { "type": "string", "enum": ["production", "preview", "development"] },
-          "deployedAt": { "type": ["string", "null"], "format": "date-time" }
+          "version": {
+            "type": "string",
+            "description": "semver do package.json"
+          },
+          "gitSha": {
+            "type": ["string", "null"]
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["production", "preview", "development"]
+          },
+          "deployedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
         }
       },
       "PublicConfig": {
@@ -671,10 +751,7 @@
             "type": "number"
           },
           "weights": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "number"
-            }
+            "$ref": "#/components/schemas/ScoreWeights"
           },
           "excluded": {
             "type": "array",
@@ -689,6 +766,13 @@
                 }
               }
             }
+          },
+          "rules": {
+            "$ref": "#/components/schemas/ScoringRules"
+          },
+          "configVersion": {
+            "type": "integer",
+            "description": "Versão da configuração usada no cálculo (compare com o cache local)."
           }
         }
       },
@@ -872,6 +956,156 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ManualMove"
+            }
+          }
+        }
+      },
+      "ScoringRules": {
+        "type": "object",
+        "description": "Regra -> ligada? Desligada = contribuição 0 ou filtro não aplicado. Chaves ausentes no PUT usam o padrão.",
+        "properties": {
+          "desire": {
+            "type": "boolean"
+          },
+          "affinity": {
+            "type": "boolean"
+          },
+          "duration": {
+            "type": "boolean"
+          },
+          "timeFactor": {
+            "type": "boolean"
+          },
+          "inProgress": {
+            "type": "boolean"
+          },
+          "repeatGenre": {
+            "type": "boolean"
+          },
+          "repeatGenreTwoBack": {
+            "type": "boolean"
+          },
+          "repeatMechanic": {
+            "type": "boolean"
+          },
+          "repeatTag": {
+            "type": "boolean"
+          },
+          "repeatTagTwoBack": {
+            "type": "boolean"
+          },
+          "consecutiveLong": {
+            "type": "boolean"
+          },
+          "longAfterHeavy": {
+            "type": "boolean"
+          },
+          "repeatPace": {
+            "type": "boolean"
+          },
+          "contrastingPace": {
+            "type": "boolean"
+          },
+          "shortAfterLong": {
+            "type": "boolean"
+          },
+          "excludeEndless": {
+            "type": "boolean"
+          },
+          "excludeAbandoned": {
+            "type": "boolean"
+          },
+          "excludeCompetitive": {
+            "type": "boolean"
+          },
+          "prerequisites": {
+            "type": "boolean"
+          },
+          "manual": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScoreWeights": {
+        "type": "object",
+        "description": "Pesos e parâmetros do algoritmo (faixas em ScoringFactor.min/max).",
+        "additionalProperties": {
+          "type": "number"
+        }
+      },
+      "ScoringConfig": {
+        "type": "object",
+        "required": ["weights", "rules"],
+        "properties": {
+          "weights": {
+            "$ref": "#/components/schemas/ScoreWeights"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/ScoringRules"
+          }
+        }
+      },
+      "ScoringFactor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string",
+            "enum": ["base", "context", "filter", "manual", "params"]
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "string",
+            "nullable": true
+          },
+          "rule": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string"
+          },
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "step": {
+            "type": "number"
+          }
+        }
+      },
+      "ScoringSettings": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/ScoringConfig"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Sobe a cada gravação; 0 = nunca salvo (padrão)."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/ScoringConfig"
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringFactor"
             }
           }
         }

@@ -16,6 +16,7 @@ import type {
   ManualAdjustment,
   ManualMove,
   Recommendations,
+  ScoringConfig,
 } from '../../shared/models.ts';
 import postgres from 'postgres';
 import type { Sql } from './db.ts';
@@ -25,9 +26,11 @@ import type { AppUserResolver } from './app-user.ts';
 import type { GameRepository, QueueInputs, QueueSnapshotStore, StoredQueue } from './repository.ts';
 import type { ManualAdjustmentRepository } from './manual-repository.ts';
 import { AppError } from './service.ts';
+import { storedScoringConfig } from './scoring-config.ts';
+import type { ScoringConfigRepository, StoredScoringConfig } from './settings-repository.ts';
 
 /** Muda quando a regra de scoring.ts muda: invalida todos os snapshots da fila. */
-export const ALGORITHM_VERSION = 'scoring-1';
+export const ALGORITHM_VERSION = 'scoring-2';
 
 const statusCode: Record<GameStatus, string> = {
   'Não iniciado': 'not_started',
@@ -308,6 +311,52 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
   }
 }
 
+/** Linha de user_score_weights como json (sem linha = config padrão, versão 0). */
+const SETTINGS_JSON = `SELECT json_build_object('weights', w.weights, 'rules', w.rules,
+  'version', w.version, 'updatedAt', ${isoTs('w.updated_at')}) FROM user_score_weights w`;
+interface RawSettings {
+  weights: unknown;
+  rules: unknown;
+  version: number;
+  updatedAt: string;
+}
+const toSettings = (raw: RawSettings | null | undefined): StoredScoringConfig => ({
+  config: storedScoringConfig(raw?.weights, raw?.rules),
+  version: raw?.version ?? 0,
+  updatedAt: raw?.updatedAt ?? null,
+});
+
+/** Pesos + regras do usuário em user_score_weights (trg_weights_bump invalida a fila). */
+export class PgScoringConfigRepository implements ScoringConfigRepository {
+  private sql: Sql;
+  private user: AppUserResolver;
+  constructor(sql: Sql, user: AppUserResolver) {
+    this.sql = sql;
+    this.user = user;
+  }
+  async get(): Promise<StoredScoringConfig> {
+    const sql = this.sql;
+    const u = await this.user();
+    const [row] = await sql<
+      { settings: RawSettings | null }[]
+    >`SELECT (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings`;
+    return toSettings(row?.settings);
+  }
+  /** Upsert numa instrução; `version` sobe atomicamente. */
+  async save(config: ScoringConfig): Promise<StoredScoringConfig> {
+    const sql = this.sql;
+    const u = await this.user();
+    const [row] = await sql<{ settings: RawSettings }[]>`
+      INSERT INTO user_score_weights AS w (user_id, weights, rules)
+      VALUES (${u}, ${sql.json(json(config.weights))}::jsonb, ${sql.json(json(config.rules))}::jsonb)
+      ON CONFLICT (user_id) DO UPDATE
+         SET weights = EXCLUDED.weights, rules = EXCLUDED.rules, version = w.version + 1
+      RETURNING json_build_object('weights', w.weights, 'rules', w.rules, 'version', w.version,
+                'updatedAt', ${sql.unsafe(isoTs('w.updated_at'))}) AS settings`.catch(asAppError);
+    return toSettings(row.settings);
+  }
+}
+
 /**
  * Snapshot da fila (queue_snapshot + queue_snapshot_item) com frescor por
  * user_queue_state.inputs_version, mantido por triggers (ver db/README.md).
@@ -331,6 +380,7 @@ export class PgQueueSnapshotStore implements QueueSnapshotStore {
         version: string;
         games: RawGame[];
         manual: Record<string, number>;
+        settings: RawSettings | null;
         snapshot: StoredQueue | null;
       }[]
     >`
@@ -342,6 +392,7 @@ export class PgQueueSnapshotStore implements QueueSnapshotStore {
              (SELECT coalesce(json_object_agg(g.code, a.flat_points), '{}')
                 FROM queue_manual_adjustment a JOIN game g ON g.id = a.game_id
                WHERE a.user_id = ${u} AND a.flat_points <> 0) AS manual,
+             (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings,
              (SELECT json_build_object(
                        'total', s.total, 'estimatedHours', s.estimated_hours,
                        'timeFactor', s.time_factor, 'weights', s.weights, 'excluded', s.excluded,
@@ -359,6 +410,7 @@ export class PgQueueSnapshotStore implements QueueSnapshotStore {
       version: row.version,
       games: row.games.map(toGame),
       manual: row.manual,
+      settings: toSettings(row.settings),
       snapshot: row.snapshot,
     };
   }

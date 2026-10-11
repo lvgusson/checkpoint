@@ -61,6 +61,64 @@ export interface ScoreWeights {
   repeatTag: number;
   repeatTagTwoBack: number;
 }
+/**
+ * Regras do algoritmo que podem ser ligadas/desligadas. Desligada = contribuição 0
+ * (termos/ajustes) ou filtro não aplicado (elegibilidade).
+ */
+export type ScoringRuleId =
+  // score base
+  | 'desire'
+  | 'affinity'
+  | 'duration'
+  | 'timeFactor'
+  // ajustes contextuais
+  | 'inProgress'
+  | 'repeatGenre'
+  | 'repeatGenreTwoBack'
+  | 'repeatMechanic'
+  | 'repeatTag'
+  | 'repeatTagTwoBack'
+  | 'consecutiveLong'
+  | 'longAfterHeavy'
+  | 'repeatPace'
+  | 'contrastingPace'
+  | 'shortAfterLong'
+  // elegibilidade
+  | 'excludeEndless'
+  | 'excludeAbandoned'
+  | 'excludeCompetitive'
+  | 'prerequisites'
+  // ajuste manual (reordenação)
+  | 'manual';
+export type ScoringRules = Record<ScoringRuleId, boolean>;
+export interface ScoringConfig {
+  weights: ScoreWeights;
+  rules: ScoringRules;
+}
+export type ScoringSection = 'base' | 'context' | 'filter' | 'manual' | 'params';
+/** Uma linha da tabela de configuração (fator, regra e/ou parâmetro). */
+export interface ScoringFactor {
+  id: string;
+  section: ScoringSection;
+  label: string;
+  description: string;
+  /** Peso/parâmetro editável desta linha (null = regra sem peso, só liga/desliga). */
+  weight: keyof ScoreWeights | null;
+  /** Regra que liga/desliga a linha (null = parâmetro sempre usado pelas regras). */
+  rule: ScoringRuleId | null;
+  unit: string;
+  min: number;
+  max: number;
+  step: number;
+}
+export interface ScoringSettings {
+  config: ScoringConfig;
+  /** Sobe a cada gravação (0 = nunca salvo, usando o padrão). */
+  version: number;
+  updatedAt: string | null;
+  defaults: ScoringConfig;
+  factors: ScoringFactor[];
+}
 export interface ScoredGame extends Game {
   plannedHours: number | null;
   affinity: number;
@@ -135,6 +193,9 @@ export interface Recommendations {
   estimatedHours: number;
   timeFactor: number;
   weights: ScoreWeights;
+  rules: ScoringRules;
+  /** Versão da configuração usada (o front compara com o cache local). */
+  configVersion: number;
   excluded: { gameId: string; reason: string }[];
 }
 export interface GamePage {

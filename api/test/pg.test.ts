@@ -12,10 +12,11 @@ import {
   PgGameRepository,
   PgManualAdjustmentRepository,
   PgQueueSnapshotStore,
+  PgScoringConfigRepository,
 } from '../src/pg-repository.ts';
 import { GameService } from '../src/service.ts';
 import { runWithContext } from '../src/context.ts';
-import { recommendGames } from '../src/scoring.ts';
+import { recommendGames, defaultConfig } from '../src/scoring.ts';
 import { seedGames } from '../src/seed.ts';
 
 const url = process.env.DATABASE_URL;
@@ -30,7 +31,8 @@ test(
     const games = new PgGameRepository(sql, user);
     const manual = new PgManualAdjustmentRepository(sql, user);
     const snapshots = new PgQueueSnapshotStore(sql, user);
-    const service = new GameService(games, manual, snapshots);
+    const settings = new PgScoringConfigRepository(sql, user);
+    const service = new GameService(games, manual, snapshots, settings);
     try {
       await sql`INSERT INTO app_user (id, display_name) VALUES (${userId}, 'pg.test')`;
       // 16 jogos do seed com campanha finita, todos pendentes (entram na fila).
@@ -105,6 +107,28 @@ test(
           final.moves.map((m) => m.kind),
           ['reorder', 'reset'],
         );
+
+        // Configuração: sem linha = padrão (versão 0); gravar sobe a versão e invalida a fila.
+        const initial = await service.scoringSettings();
+        assert.equal(initial.version, 0);
+        assert.deepEqual(initial.config, defaultConfig);
+        await service.recommendations();
+        const off = structuredClone(defaultConfig);
+        off.rules.manual = false;
+        off.weights.desire = 0.9;
+        const saved = await service.saveScoringSettings(off);
+        assert.equal(saved.version, 1);
+        assert.deepEqual((await settings.get()).config, off);
+        const inputs = await snapshots.load();
+        assert.equal(inputs.snapshot, null, 'config nova invalida o snapshot');
+        assert.equal(inputs.settings.version, 1);
+        const custom = await service.recommendations();
+        assert.equal(custom.configVersion, 1);
+        assert.deepEqual(custom.weights, off.weights);
+        await assert.rejects(service.reorder(last, 1), /desativado/);
+        const restored = await service.resetScoringSettings();
+        assert.equal(restored.version, 2);
+        assert.deepEqual(restored.config, defaultConfig);
       });
     } finally {
       // library_entry antes: o trigger de invalidação (por statement) grava em
@@ -116,7 +140,8 @@ test(
       const [left] = await sql`
         SELECT (SELECT count(*) FROM library_entry WHERE user_id = ${userId})::int
              + (SELECT count(*) FROM queue_move_event WHERE user_id = ${userId})::int
-             + (SELECT count(*) FROM queue_snapshot WHERE user_id = ${userId})::int AS n`;
+             + (SELECT count(*) FROM queue_snapshot WHERE user_id = ${userId})::int
+             + (SELECT count(*) FROM user_score_weights WHERE user_id = ${userId})::int AS n`;
       assert.equal(left.n, 0);
       await closeDb();
     }

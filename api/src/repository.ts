@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Game, Recommendations } from '../../shared/models.ts';
 import { scoreGames } from './scoring.ts';
+import type { StoredScoringConfig } from './settings-repository.ts';
 export interface GameRepository {
   list(): Promise<Game[]>;
   get(id: string): Promise<Game | undefined>;
@@ -33,6 +34,8 @@ export interface QueueInputs {
   games: Game[];
   /** gameId -> pontos manuais (só ≠ 0). */
   manual: Record<string, number>;
+  /** Configuração do algoritmo (pesos + regras); mudar a config também sobe `version`. */
+  settings: StoredScoringConfig;
   /** Snapshot da fila, apenas se estiver fresco para `version`. */
   snapshot: StoredQueue | null;
 }
@@ -43,9 +46,16 @@ export interface QueueSnapshotStore {
   save(version: string, queue: Recommendations): Promise<void>;
 }
 
-/** Junta os cards (pontuados agora) às posições do snapshot; null se faltar algum jogo. */
-export function hydrateQueue(stored: StoredQueue, games: Game[]): Recommendations | null {
-  const scored = new Map(scoreGames(games, stored.weights).games.map((g) => [g.id, g]));
+/**
+ * Junta os cards (pontuados agora, com a config das mesmas entradas) às posições do snapshot;
+ * null se faltar algum jogo.
+ */
+export function hydrateQueue(
+  stored: StoredQueue,
+  games: Game[],
+  settings: StoredScoringConfig,
+): Recommendations | null {
+  const scored = new Map(scoreGames(games, settings.config).games.map((g) => [g.id, g]));
   const items: Recommendations['items'] = [];
   for (const i of stored.items) {
     const game = scored.get(i.gameId);
@@ -65,7 +75,9 @@ export function hydrateQueue(stored: StoredQueue, games: Game[]): Recommendation
     total: stored.total,
     estimatedHours: stored.estimatedHours,
     timeFactor: stored.timeFactor,
-    weights: stored.weights,
+    weights: settings.config.weights,
+    rules: settings.config.rules,
+    configVersion: settings.version,
     excluded: stored.excluded,
   };
 }
