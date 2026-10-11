@@ -7,9 +7,14 @@ INSERT INTO app_user (id, email, display_name)
 VALUES ('00000000-0000-4000-8000-000000000001'::uuid, NULL::text, 'Default')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO user_score_weights (user_id, weights)
-VALUES ('00000000-0000-4000-8000-000000000001'::uuid, '{"desire":0.5,"affinity":0.35,"duration":0.15,"inProgress":8,"repeatGenre":18,"repeatGenreTwoBack":8,"repeatMechanic":10,"longHours":40,"consecutiveLong":24,"recentHours":90,"longAfterHeavy":12,"repeatPace":6,"contrastingPace":8,"shortAfterLong":6,"shortHours":12,"freeDurationHours":8,"priorStrength":2,"neutralAffinity":50,"repeatTag":8,"repeatTagTwoBack":4}'::jsonb)
-ON CONFLICT (user_id) DO NOTHING;
+INSERT INTO game_list (user_id, name)
+SELECT '00000000-0000-4000-8000-000000000001'::uuid, 'Principal'
+ WHERE NOT EXISTS (SELECT 1 FROM game_list WHERE user_id = '00000000-0000-4000-8000-000000000001'::uuid);
+
+INSERT INTO user_score_weights (list_id, user_id, weights)
+SELECT l.id, l.user_id, '{"desire":0.5,"affinity":0.35,"duration":0.15,"inProgress":8,"repeatGenre":18,"repeatGenreTwoBack":8,"repeatMechanic":10,"longHours":40,"consecutiveLong":24,"recentHours":90,"longAfterHeavy":12,"repeatPace":6,"contrastingPace":8,"shortAfterLong":6,"shortHours":12,"freeDurationHours":8,"priorStrength":2,"neutralAffinity":50,"repeatTag":8,"repeatTagTwoBack":4}'::jsonb FROM game_list l
+ WHERE l.user_id = '00000000-0000-4000-8000-000000000001'::uuid ORDER BY l.created_at, l.id LIMIT 1
+ON CONFLICT (list_id) DO NOTHING;
 
 INSERT INTO genre (name) VALUES
   ('Roguelike e roguelite'),

@@ -126,9 +126,12 @@ bootstrapApplication(App, {
       { path: 'login', component: Login, canActivate: [guestGuard], data: { mode: 'login' } },
       { path: 'redefinir-senha', component: Login, data: { mode: 'reset' } },
       { path: 'jogos', component: Library, canActivate: [authGuard] },
+      // Sem :listId, a tela redireciona para a lista padrão (ver routeListId em lists.ts).
       { path: 'ordem', component: Queue, canActivate: [authGuard] },
+      { path: 'ordem/:listId', component: Queue, canActivate: [authGuard] },
       { path: 'jogos/:id', component: Detail, canActivate: [authGuard] },
       { path: 'configuracoes', component: Settings, canActivate: [authGuard] },
+      { path: 'configuracoes/:listId', component: Settings, canActivate: [authGuard] },
       { path: '', redirectTo: 'jogos', pathMatch: 'full' },
       { path: '**', redirectTo: 'jogos' },
     ]),

@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { recommendGames, defaultConfig, defaultRules, isCompetitive } from '../src/scoring.ts';
 import { parseScoringConfig, scoringFactors } from '../src/scoring-config.ts';
 import { LocalScoringConfigRepository } from '../src/settings-repository.ts';
+import { LOCAL_DEFAULT_LIST_ID } from '../src/list-repository.ts';
 import { LocalGameRepository } from '../src/repository.ts';
 import { LocalManualAdjustmentRepository } from '../src/manual-repository.ts';
 import { GameService } from '../src/service.ts';
@@ -204,15 +205,21 @@ test('repositório JSON: versão sobe, persiste e tolera arquivo antigo', async 
   const dir = await mkdtemp(join(tmpdir(), 'settings-'));
   try {
     const file = join(dir, 'scoring-settings.json');
+    const L = LOCAL_DEFAULT_LIST_ID;
     const repo = new LocalScoringConfigRepository(file);
-    assert.equal((await repo.get()).version, 0);
+    assert.equal((await repo.get(L)).version, 0);
     const custom = withRules({ repeatPace: false });
-    const saved = await repo.save(custom);
+    const saved = await repo.save(L, custom);
     assert.equal(saved.version, 1);
     const again = new LocalScoringConfigRepository(file);
-    assert.deepEqual((await again.get()).config, custom);
-    assert.equal((await again.get()).version, 1);
-    assert.equal((await again.save(defaultConfig)).version, 2);
+    assert.deepEqual((await again.get(L)).config, custom);
+    assert.equal((await again.get(L)).version, 1);
+    assert.equal((await again.save(L, defaultConfig)).version, 2);
+    assert.equal((await again.get('outra')).version, 0);
+    // Arquivo antigo (uma config só, sem listas) vira a config da lista padrão.
+    const old = join(dir, 'old.json');
+    await writeFile(old, JSON.stringify({ config: custom, version: 7, updatedAt: null }));
+    assert.equal((await new LocalScoringConfigRepository(old).get(L)).version, 7);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

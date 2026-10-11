@@ -57,8 +57,6 @@ export function makeServer(
         }
         if (path === '/api/v1/catalog' && req.method === 'GET')
           return send(await service.catalog());
-        if (path === '/api/v1/recommendations' && req.method === 'GET')
-          return send(await service.recommendations());
         if (path === '/api/v1/games' && req.method === 'GET') {
           let games = await service.all();
           const normalize = (s: string) =>
@@ -103,22 +101,48 @@ export function makeServer(
           }
           if (req.method === 'PATCH') return send(await service.patch(id, await readJson()));
         }
-        if (path === '/api/v1/queue/reorder' && req.method === 'POST') {
-          const body = await readJson();
-          return send(await service.reorder(body.gameId, body.toPosition));
+        if (path === '/api/v1/lists') {
+          if (req.method === 'GET') return send(await service.allLists());
+          if (req.method === 'POST') return send(await service.createList(await readJson()), 201);
         }
-        if (path === '/api/v1/queue/adjustments' && req.method === 'GET')
-          return send(await service.manualState());
-        const manualMatch = path.match(/^\/api\/v1\/queue\/adjustments\/([^/]+)$/);
-        if (manualMatch && req.method === 'DELETE')
-          return send(await service.resetManual(decodeURIComponent(manualMatch[1])));
-        if (path === '/api/v1/settings/scoring') {
-          if (req.method === 'GET') return send(await service.scoringSettings());
-          if (req.method === 'PUT')
-            return send(await service.saveScoringSettings(await readJson()));
+        const listMatch = path.match(/^\/api\/v1\/lists\/([^/]+)$/);
+        if (listMatch) {
+          const listId = decodeURIComponent(listMatch[1]);
+          if (req.method === 'PATCH')
+            return send(await service.renameList(listId, await readJson()));
+          if (req.method === 'DELETE') {
+            await service.deleteList(listId);
+            res.writeHead(204, { 'Cache-Control': 'no-store' });
+            return res.end();
+          }
         }
-        if (path === '/api/v1/settings/scoring/reset' && req.method === 'POST')
-          return send(await service.resetScoringSettings());
+        // Rotas da fila/configuração: /api/v1/lists/{listId}/... ou, sem o prefixo, a lista padrão.
+        const scoped = path.match(
+          /^\/api\/v1(?:\/lists\/([^/]+))?(\/recommendations|\/queue\/reorder|\/queue\/adjustments(?:\/[^/]+)?|\/settings\/scoring(?:\/reset)?)$/,
+        );
+        if (scoped) {
+          const listId = scoped[1] === undefined ? undefined : decodeURIComponent(scoped[1]);
+          const route = scoped[2];
+          const method = req.method;
+          if (route === '/recommendations' && method === 'GET')
+            return send(await service.recommendations(listId));
+          if (route === '/queue/reorder' && method === 'POST') {
+            const body = await readJson();
+            return send(await service.reorder(body.gameId, body.toPosition, listId));
+          }
+          if (route === '/queue/adjustments' && method === 'GET')
+            return send(await service.manualState(listId));
+          if (route.startsWith('/queue/adjustments/') && method === 'DELETE') {
+            const gameId = decodeURIComponent(route.slice('/queue/adjustments/'.length));
+            return send(await service.resetManual(gameId, listId));
+          }
+          if (route === '/settings/scoring' && method === 'GET')
+            return send(await service.scoringSettings(listId));
+          if (route === '/settings/scoring' && method === 'PUT')
+            return send(await service.saveScoringSettings(await readJson(), listId));
+          if (route === '/settings/scoring/reset' && method === 'POST')
+            return send(await service.resetScoringSettings(listId));
+        }
         if (path.startsWith('/api/')) throw new AppError('Rota não encontrada', 404);
         if (req.method !== 'GET') throw new AppError('Método não permitido', 405);
         const base = resolve(root, 'dist/web/browser');

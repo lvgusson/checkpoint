@@ -1,10 +1,11 @@
-// Cache da configuração do algoritmo no localStorage (uma chave por usuário).
+// Cache da configuração do algoritmo no localStorage (uma chave por usuário e lista).
 // Todo acesso fica em try/catch: sem localStorage (modo privado, bloqueado), só busca na API.
 import type { ScoringSettings } from '../../shared/models';
 
 const PREFIX = 'checkpoint:scoring-settings:';
 
-export const scoringCacheKey = (userId: string | null | undefined) => PREFIX + (userId ?? 'local');
+export const scoringCacheKey = (userId: string | null | undefined, listId: string) =>
+  PREFIX + (userId ?? 'local') + ':' + listId;
 
 export function readScoringCache(key: string): ScoringSettings | null {
   try {

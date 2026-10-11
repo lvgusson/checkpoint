@@ -1,7 +1,7 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Api } from './api';
 import { ScoringSettingsStore } from './scoring-settings';
+import { ListPicker, routeListId } from './lists';
 import type {
   ScoreWeights,
   ScoringConfig,
@@ -40,14 +40,18 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
 
 @Component({
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ListPicker],
   template: `<div class="page-heading">
       <div>
         <span class="eyebrow">COMO A FILA É CALCULADA</span>
         <h1>Configurações<span class="heading-dot">.</span></h1>
-        <p>Ajuste o peso de cada fator e desligue as regras que não fazem sentido para você.</p>
+        <p>
+          Cada lista tem os próprios pesos e regras. Ajuste o peso de cada fator e desligue as
+          regras que não fazem sentido para esta lista.
+        </p>
       </div>
     </div>
+    <app-list-picker base="/configuracoes" [current]="listId()" />
     @if (error()) {
       <div class="error" role="alert">
         {{ error() }}
@@ -58,7 +62,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
     }
     @if (success()) {
       <div class="reorder-notice" role="status">
-        <span>{{ success() }} <a routerLink="/ordem">Ver a fila ↗</a></span>
+        <span>{{ success() }} <a [routerLink]="['/ordem', listId()]">Ver a fila ↗</a></span>
         <button type="button" (click)="success.set('')" aria-label="Fechar aviso">×</button>
       </div>
     }
@@ -503,7 +507,6 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
 })
 export class Settings {
   private store = inject(ScoringSettingsStore);
-  private api = inject(Api);
   readonly sections = SECTIONS;
   readonly settings = signal<ScoringSettings | null>(null);
   readonly draft = signal<ScoringConfig | null>(null);
@@ -525,15 +528,24 @@ export class Settings {
     );
   });
 
+  /** Lista cujas regras estão sendo editadas (da URL). */
+  readonly listId = routeListId('/configuracoes');
+
   constructor() {
-    void this.load();
+    effect(() => {
+      if (this.listId()) untracked(() => void this.load());
+    });
   }
 
   async load() {
+    const listId = this.listId();
+    if (!listId) return;
     this.loading.set(true);
     this.error.set('');
+    this.success.set('');
     try {
-      this.apply(await this.store.get());
+      const s = await this.store.get(listId);
+      if (listId === this.listId()) this.apply(s);
     } catch {
       this.error.set('Não foi possível carregar as configurações. Confira se a API está no ar.');
     } finally {
@@ -583,11 +595,19 @@ export class Settings {
   async save() {
     const d = this.draft();
     if (!d || !this.dirty() || this.invalid()) return;
-    await this.persist(() => this.store.save(d), 'Configuração salva. A fila foi recalculada.');
+    const listId = this.listId()!;
+    await this.persist(
+      () => this.store.save(listId, d),
+      'Configuração salva. A fila desta lista foi recalculada.',
+    );
   }
   async restoreDefaults() {
-    if (!confirm('Voltar todos os pesos e regras para o padrão?')) return;
-    await this.persist(() => this.store.reset(), 'Padrão restaurado. A fila foi recalculada.');
+    if (!confirm('Voltar todos os pesos e regras desta lista para o padrão?')) return;
+    const listId = this.listId()!;
+    await this.persist(
+      () => this.store.reset(listId),
+      'Padrão restaurado. A fila desta lista foi recalculada.',
+    );
   }
 
   private apply(s: ScoringSettings) {
@@ -600,8 +620,6 @@ export class Settings {
     this.success.set('');
     try {
       this.apply(await action());
-      // Recalcula a fila já com a nova config (o servidor regrava o snapshot).
-      await this.api.queue().catch(() => undefined);
       this.success.set(message);
     } catch (e) {
       const msg = (e as { error?: { error?: { message?: string } } })?.error?.error?.message;

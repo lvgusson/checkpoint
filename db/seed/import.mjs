@@ -126,9 +126,14 @@ emit(`INSERT INTO app_user (id, email, display_name)
 VALUES (${q(USER_ID)}::uuid, ${t(USER_EMAIL)}, 'Default')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO user_score_weights (user_id, weights)
-VALUES (${q(USER_ID)}::uuid, ${json(defaultWeights)})
-ON CONFLICT (user_id) DO NOTHING;
+INSERT INTO game_list (user_id, name)
+SELECT ${q(USER_ID)}::uuid, 'Principal'
+ WHERE NOT EXISTS (SELECT 1 FROM game_list WHERE user_id = ${q(USER_ID)}::uuid);
+
+INSERT INTO user_score_weights (list_id, user_id, weights)
+SELECT l.id, l.user_id, ${json(defaultWeights)} FROM game_list l
+ WHERE l.user_id = ${q(USER_ID)}::uuid ORDER BY l.created_at, l.id LIMIT 1
+ON CONFLICT (list_id) DO NOTHING;
 `);
 
 // ---------------------------------------------------------------- vocabulários

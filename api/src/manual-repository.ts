@@ -1,34 +1,35 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { ManualAdjustment, ManualMove } from '../../shared/models.ts';
+import { LOCAL_DEFAULT_LIST_ID } from './list-repository.ts';
 
 /**
- * Ajustes manuais da fila (pontos flat por jogo) e histórico de movimentos.
+ * Ajustes manuais da fila (pontos flat por jogo) e histórico de movimentos, POR LISTA.
  * Fica separado de `GameRepository` para que o registro importado do jogo não
- * seja alterado. Um adaptador SQL pode implementar esta interface com duas
- * tabelas: ajustes (game_id, manual_points, manual_position, updated_at) e
- * movimentos (game_id, kind, from_position, to_position, effective_position,
- * points_delta, manual_points_after, created_at).
+ * seja alterado. No Postgres: queue_manual_adjustment (list_id, game_id, ...) e
+ * queue_move_event (list_id, game_id, kind, ...).
  */
 export interface ManualAdjustmentRepository {
-  list(): Promise<ManualAdjustment[]>;
-  get(gameId: string): Promise<ManualAdjustment | undefined>;
+  list(listId: string): Promise<ManualAdjustment[]>;
+  get(listId: string, gameId: string): Promise<ManualAdjustment | undefined>;
   /** Grava o ajuste e o movimento que o originou, juntos. */
-  save(adjustment: ManualAdjustment, move: ManualMove): Promise<void>;
+  save(listId: string, adjustment: ManualAdjustment, move: ManualMove): Promise<void>;
   /** Remove o ajuste (volta a 0) registrando o movimento de reset. */
-  remove(gameId: string, move: ManualMove): Promise<void>;
-  moves(gameId?: string): Promise<ManualMove[]>;
+  remove(listId: string, gameId: string, move: ManualMove): Promise<void>;
+  moves(listId: string, gameId?: string): Promise<ManualMove[]>;
 }
 
+type Stored<T> = T & { listId?: string };
 interface ManualFile {
-  adjustments: ManualAdjustment[];
-  moves: ManualMove[];
+  adjustments: Stored<ManualAdjustment>[];
+  moves: Stored<ManualMove>[];
 }
 
-/** Adaptador local em JSON. Sem `path`, mantém tudo só em memória. */
+/** Adaptador local em JSON. Sem `path`, mantém tudo só em memória. Itens sem lista = lista padrão. */
 export class LocalManualAdjustmentRepository implements ManualAdjustmentRepository {
-  private adjustments = new Map<string, ManualAdjustment>();
-  private history: ManualMove[] = [];
+  /** chave `${listId}\n${gameId}` */
+  private adjustments = new Map<string, Stored<ManualAdjustment>>();
+  private history: Stored<ManualMove>[] = [];
   private ready: Promise<void>;
   private writing = Promise.resolve();
   private path: string | null;
@@ -38,14 +39,24 @@ export class LocalManualAdjustmentRepository implements ManualAdjustmentReposito
     this.maxMoves = maxMoves;
     this.ready = this.load();
   }
+  private static key(listId: string, gameId: string) {
+    return listId + '\n' + gameId;
+  }
   private async load() {
     if (!this.path) return;
     try {
       const data = JSON.parse(await readFile(this.path, 'utf8')) as Partial<ManualFile>;
       for (const a of data.adjustments ?? [])
-        if (a && typeof a.gameId === 'string' && Number.isFinite(a.manualPoints))
-          this.adjustments.set(a.gameId, a);
-      this.history = Array.isArray(data.moves) ? data.moves : [];
+        if (a && typeof a.gameId === 'string' && Number.isFinite(a.manualPoints)) {
+          const listId = a.listId ?? LOCAL_DEFAULT_LIST_ID;
+          this.adjustments.set(LocalManualAdjustmentRepository.key(listId, a.gameId), {
+            ...a,
+            listId,
+          });
+        }
+      this.history = Array.isArray(data.moves)
+        ? data.moves.map((m) => ({ ...m, listId: m.listId ?? LOCAL_DEFAULT_LIST_ID }))
+        : [];
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
     }
@@ -71,28 +82,39 @@ export class LocalManualAdjustmentRepository implements ManualAdjustmentReposito
       });
     await this.writing;
   }
-  async list() {
-    await this.ready;
-    return structuredClone([...this.adjustments.values()]);
+  private static strip<T>({ listId: _listId, ...rest }: Stored<T>): T {
+    return structuredClone(rest) as T;
   }
-  async get(gameId: string) {
+  async list(listId: string) {
     await this.ready;
-    return structuredClone(this.adjustments.get(gameId));
+    return [...this.adjustments.values()]
+      .filter((a) => a.listId === listId)
+      .map((a) => LocalManualAdjustmentRepository.strip(a));
   }
-  async save(adjustment: ManualAdjustment, move: ManualMove) {
+  async get(listId: string, gameId: string) {
     await this.ready;
-    this.adjustments.set(adjustment.gameId, structuredClone(adjustment));
-    this.history.push(structuredClone(move));
+    const a = this.adjustments.get(LocalManualAdjustmentRepository.key(listId, gameId));
+    return a && LocalManualAdjustmentRepository.strip(a);
+  }
+  async save(listId: string, adjustment: ManualAdjustment, move: ManualMove) {
+    await this.ready;
+    this.adjustments.set(LocalManualAdjustmentRepository.key(listId, adjustment.gameId), {
+      ...structuredClone(adjustment),
+      listId,
+    });
+    this.history.push({ ...structuredClone(move), listId });
     await this.persist();
   }
-  async remove(gameId: string, move: ManualMove) {
+  async remove(listId: string, gameId: string, move: ManualMove) {
     await this.ready;
-    this.adjustments.delete(gameId);
-    this.history.push(structuredClone(move));
+    this.adjustments.delete(LocalManualAdjustmentRepository.key(listId, gameId));
+    this.history.push({ ...structuredClone(move), listId });
     await this.persist();
   }
-  async moves(gameId?: string) {
+  async moves(listId: string, gameId?: string) {
     await this.ready;
-    return structuredClone(gameId ? this.history.filter((m) => m.gameId === gameId) : this.history);
+    return this.history
+      .filter((m) => m.listId === listId && (!gameId || m.gameId === gameId))
+      .map((m) => LocalManualAdjustmentRepository.strip(m));
   }
 }

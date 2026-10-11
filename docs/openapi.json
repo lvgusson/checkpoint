@@ -211,7 +211,8 @@
           "404": {
             "description": "Não encontrado"
           }
-        }
+        },
+        "description": "Sem /lists/{listId}: usa a lista padrão do usuário."
       }
     },
     "/catalog": {
@@ -237,10 +238,142 @@
         }
       }
     },
+    "/lists": {
+      "get": {
+        "summary": "Listas do usuário",
+        "description": "Mais antiga primeiro (a primeira é a lista padrão). Cria a lista \"Principal\" se o usuário ainda não tiver nenhuma.",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameList"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Criar lista",
+        "description": "Uma lista é só um nome: mostra todos os jogos, com pesos, regras e ordem manual próprios.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Criada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Nome vazio ou com mais de 60 caracteres"
+          },
+          "409": {
+            "description": "Já existe uma lista com esse nome (sem diferenciar maiúsculas)"
+          }
+        }
+      }
+    },
+    "/lists/{listId}": {
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "patch": {
+        "summary": "Renomear lista",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Nome inválido"
+          },
+          "404": {
+            "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          },
+          "409": {
+            "description": "Nome repetido"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Apagar lista",
+        "description": "Apaga a configuração, os ajustes manuais e o histórico da lista. Os jogos não são afetados.",
+        "responses": {
+          "204": {
+            "description": "Apagada"
+          },
+          "404": {
+            "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          },
+          "409": {
+            "description": "É a única lista do usuário"
+          }
+        }
+      }
+    },
     "/queue/reorder": {
       "post": {
         "summary": "Reordenar jogo da fila via ajuste manual de pontos",
-        "description": "Calcula o delta de pontos flat (\"Ajuste manual\") para que o jogo caia em toPosition ao recalcular a fila gulosa. Verifica rodando o algoritmo (expansão + busca binária, resolução 0,1 ponto). Se a posição exata for impossível (predecessores, saltos de contexto), aplica a mais próxima e devolve exact=false. Acumula manualPoints e registra o movimento no histórico.",
+        "description": "Calcula o delta de pontos flat (\"Ajuste manual\") para que o jogo caia em toPosition ao recalcular a fila gulosa. Verifica rodando o algoritmo (expansão + busca binária, resolução 0,1 ponto). Se a posição exata for impossível (predecessores, saltos de contexto), aplica a mais próxima e devolve exact=false. Acumula manualPoints e registra o movimento no histórico. Sem /lists/{listId}: usa a lista padrão do usuário.",
         "requestBody": {
           "required": true,
           "content": {
@@ -288,7 +421,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Sem /lists/{listId}: usa a lista padrão do usuário."
       }
     },
     "/queue/adjustments/{gameId}": {
@@ -318,13 +452,14 @@
           "404": {
             "description": "Jogo não encontrado"
           }
-        }
+        },
+        "description": "Sem /lists/{listId}: usa a lista padrão do usuário."
       }
     },
     "/settings/scoring": {
       "get": {
         "summary": "Configuração do algoritmo do usuário",
-        "description": "Pesos, regras ligadas/desligadas, versão, padrões e metadados de cada fator (rótulo, descrição, unidade e faixa).",
+        "description": "Pesos, regras ligadas/desligadas, versão, padrões e metadados de cada fator (rótulo, descrição, unidade e faixa). Sem /lists/{listId}: usa a lista padrão do usuário.",
         "responses": {
           "200": {
             "description": "Sucesso",
@@ -340,7 +475,7 @@
       },
       "put": {
         "summary": "Salvar pesos e regras",
-        "description": "Valida (números finitos dentro da faixa de cada fator; regras booleanas; chaves desconhecidas são rejeitadas), grava, sobe a versão e invalida a fila.",
+        "description": "Valida (números finitos dentro da faixa de cada fator; regras booleanas; chaves desconhecidas são rejeitadas), grava, sobe a versão e invalida a fila. Sem /lists/{listId}: usa a lista padrão do usuário.",
         "requestBody": {
           "required": true,
           "content": {
@@ -371,7 +506,7 @@
     "/settings/scoring/reset": {
       "post": {
         "summary": "Restaurar configuração padrão",
-        "description": "Grava os padrões (nova versão) e invalida a fila.",
+        "description": "Grava os padrões (nova versão) e invalida a fila. Sem /lists/{listId}: usa a lista padrão do usuário.",
         "responses": {
           "200": {
             "description": "Sucesso",
@@ -385,6 +520,260 @@
           }
         }
       }
+    },
+    "/lists/{listId}/recommendations": {
+      "get": {
+        "summary": "Fila recalculada com contexto",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendations"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    "/lists/{listId}/queue/reorder": {
+      "post": {
+        "summary": "Reordenar jogo da fila via ajuste manual de pontos",
+        "description": "Calcula o delta de pontos flat (\"Ajuste manual\") para que o jogo caia em toPosition ao recalcular a fila gulosa. Verifica rodando o algoritmo (expansão + busca binária, resolução 0,1 ponto). Se a posição exata for impossível (predecessores, saltos de contexto), aplica a mais próxima e devolve exact=false. Acumula manualPoints e registra o movimento no histórico.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorderResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          },
+          "409": {
+            "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou bloqueado) ou ajuste manual desativado nas configurações"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    "/lists/{listId}/queue/adjustments": {
+      "get": {
+        "summary": "Ajustes manuais e histórico de movimentos",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    "/lists/{listId}/queue/adjustments/{gameId}": {
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "gameId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "summary": "Zerar ajuste manual do jogo e recalcular",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualResetResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          }
+        }
+      }
+    },
+    "/lists/{listId}/settings/scoring": {
+      "get": {
+        "summary": "Configuração do algoritmo do usuário",
+        "description": "Pesos, regras ligadas/desligadas, versão, padrões e metadados de cada fator (rótulo, descrição, unidade e faixa).",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          }
+        }
+      },
+      "put": {
+        "summary": "Salvar pesos e regras",
+        "description": "Valida (números finitos dentro da faixa de cada fator; regras booleanas; chaves desconhecidas são rejeitadas), grava, sobe a versão e invalida a fila.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuração salva",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Configuração inválida"
+          },
+          "404": {
+            "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    "/lists/{listId}/settings/scoring/reset": {
+      "post": {
+        "summary": "Restaurar configuração padrão",
+        "description": "Grava os padrões (nova versão) e invalida a fila.",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "description": "Id (uuid) de uma lista do usuário",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     }
   },
   "components": {
@@ -735,6 +1124,11 @@
       "Recommendations": {
         "type": "object",
         "properties": {
+          "listId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Lista dona desta fila/configuração"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -1087,6 +1481,11 @@
       "ScoringSettings": {
         "type": "object",
         "properties": {
+          "listId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Lista dona desta fila/configuração"
+          },
           "config": {
             "$ref": "#/components/schemas/ScoringConfig"
           },
@@ -1107,6 +1506,25 @@
             "items": {
               "$ref": "#/components/schemas/ScoringFactor"
             }
+          }
+        }
+      },
+      "GameList": {
+        "type": "object",
+        "required": ["id", "name", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
