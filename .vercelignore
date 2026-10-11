@@ -1,0 +1,15 @@
+node_modules
+dist
+.angular
+.claude
+.env
+.env.*
+!.env.example
+*.env
+local-env.env
+api/test
+api/data
+supabase/.temp
+supabase/.branches
+*.tmp
+*.log

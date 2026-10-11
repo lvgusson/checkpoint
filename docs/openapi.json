@@ -1,0 +1,856 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Checkpoint API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/config": {
+      "get": {
+        "summary": "Configuração pública do front (Supabase Auth)",
+        "description": "Pública (sem token). URL do projeto e publishable key são públicas por design; auth é null quando a autenticação não está configurada.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games": {
+      "get": {
+        "summary": "Biblioteca paginada",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "primaryGenre",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "store",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/games/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Metadados do jogo",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Salvar edição e recalcular",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/recommendations": {
+      "get": {
+        "summary": "Fila recalculada com contexto",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendations"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/catalog": {
+      "get": {
+        "summary": "Filtros e contagens",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          }
+        }
+      }
+    },
+    "/queue/reorder": {
+      "post": {
+        "summary": "Reordenar jogo da fila via ajuste manual de pontos",
+        "description": "Calcula o delta de pontos flat (\"Ajuste manual\") para que o jogo caia em toPosition ao recalcular a fila gulosa. Verifica rodando o algoritmo (expansão + busca binária, resolução 0,1 ponto). Se a posição exata for impossível (predecessores, saltos de contexto), aplica a mais próxima e devolve exact=false. Acumula manualPoints e registra o movimento no histórico.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorderResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          },
+          "409": {
+            "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou bloqueado)"
+          }
+        }
+      }
+    },
+    "/queue/adjustments": {
+      "get": {
+        "summary": "Ajustes manuais e histórico de movimentos",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue/adjustments/{gameId}": {
+      "parameters": [
+        {
+          "name": "gameId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "summary": "Zerar ajuste manual do jogo e recalcular",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualResetResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "access_token da sessão do Supabase Auth. Sem token válido as rotas protegidas respondem 401 (503 se a verificação de chaves estiver indisponível)."
+      }
+    },
+    "schemas": {
+      "PublicConfig": {
+        "type": "object",
+        "required": ["auth"],
+        "properties": {
+          "auth": {
+            "type": ["object", "null"],
+            "required": ["supabaseUrl", "supabasePublishableKey", "providers"],
+            "properties": {
+              "supabaseUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "supabasePublishableKey": {
+                "type": "string"
+              },
+              "providers": {
+                "type": "object",
+                "properties": {
+                  "github": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Game": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "primaryGenre": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["Não iniciado", "Jogando", "Abandonado", "Finalizado"]
+          },
+          "desire": {
+            "type": "string",
+            "enum": ["Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"]
+          },
+          "store": {
+            "type": "string"
+          },
+          "actualHours": {
+            "type": ["number", "null"]
+          },
+          "startedAt": {
+            "type": ["string", "null"]
+          },
+          "finishedAt": {
+            "type": ["string", "null"]
+          },
+          "rating": {
+            "type": ["number", "null"]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "secondaryTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pace": {
+            "type": "string"
+          },
+          "structure": {
+            "type": "string"
+          },
+          "mainHours": {
+            "type": ["number", "null"]
+          },
+          "extraHours": {
+            "type": ["number", "null"]
+          },
+          "completionistHours": {
+            "type": ["number", "null"]
+          },
+          "size": {
+            "type": "string"
+          },
+          "timeVerification": {
+            "type": "string"
+          },
+          "timeSource": {
+            "type": "string"
+          },
+          "reviewNotes": {
+            "type": "string"
+          },
+          "previousEstimatedHours": {
+            "type": ["number", "null"]
+          },
+          "coop": {
+            "type": "string"
+          },
+          "mechanic": {
+            "type": "string"
+          },
+          "prerequisiteId": {
+            "type": ["string", "null"]
+          },
+          "imported": {
+            "type": "object",
+            "properties": {
+              "plannedHours": {
+                "type": ["number", "null"]
+              },
+              "affinity": {
+                "type": ["number", "null"]
+              },
+              "baseScore": {
+                "type": ["number", "null"]
+              },
+              "queueScore": {
+                "type": ["number", "null"]
+              },
+              "previousPendingId": {
+                "type": ["string", "null"]
+              }
+            }
+          },
+          "updatedAt": {
+            "type": ["string", "null"]
+          },
+          "plannedHours": {
+            "type": ["number", "null"]
+          },
+          "affinity": {
+            "type": "number"
+          },
+          "baseScore": {
+            "type": "number"
+          },
+          "coverUrl": {
+            "type": ["string", "null"]
+          },
+          "steamAppId": {
+            "type": ["number", "null"]
+          },
+          "steamHours": {
+            "type": ["number", "null"]
+          },
+          "steamUpdatedAt": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["id", "name", "status", "desire"]
+      },
+      "GamePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "primaryGenre": {
+            "type": "string"
+          },
+          "store": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "pace": {
+            "type": "string"
+          },
+          "structure": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "timeVerification": {
+            "type": "string"
+          },
+          "timeSource": {
+            "type": "string"
+          },
+          "reviewNotes": {
+            "type": "string"
+          },
+          "coop": {
+            "type": "string"
+          },
+          "mechanic": {
+            "type": "string"
+          },
+          "actualHours": {
+            "type": ["number", "null"]
+          },
+          "mainHours": {
+            "type": ["number", "null"]
+          },
+          "extraHours": {
+            "type": ["number", "null"]
+          },
+          "completionistHours": {
+            "type": ["number", "null"]
+          },
+          "previousEstimatedHours": {
+            "type": ["number", "null"]
+          },
+          "startedAt": {
+            "type": ["string", "null"]
+          },
+          "finishedAt": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["Não iniciado", "Jogando", "Abandonado", "Finalizado"]
+          },
+          "desire": {
+            "type": "string",
+            "enum": ["Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"]
+          },
+          "rating": {
+            "type": ["number", "null"],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "secondaryTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3
+          },
+          "prerequisiteId": {
+            "type": ["string", "null"]
+          },
+          "autoFinish": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "GamePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Game"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          }
+        }
+      },
+      "QueueEntry": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer"
+          },
+          "game": {
+            "$ref": "#/components/schemas/Game"
+          },
+          "score": {
+            "type": "number"
+          },
+          "cumulativeHours": {
+            "type": "number"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "adjustments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "points": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "manualPoints": {
+            "type": "number",
+            "description": "Pontos flat do usuário somados ao score como adjustment \"Ajuste manual\" (0 = sem ajuste)"
+          }
+        }
+      },
+      "Recommendations": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueEntry"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "estimatedHours": {
+            "type": "number"
+          },
+          "timeFactor": {
+            "type": "number"
+          },
+          "weights": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "gameId": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Catalog": {
+        "type": "object",
+        "properties": {
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stores": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "desires": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "playing": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "ReorderRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gameId", "toPosition"],
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "toPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Posição 1-based desejada; valores além do fim viram a última posição"
+          }
+        }
+      },
+      "ReorderResult": {
+        "type": "object",
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "fromPosition": {
+            "type": "integer"
+          },
+          "requestedPosition": {
+            "type": "integer"
+          },
+          "effectivePosition": {
+            "type": "integer"
+          },
+          "exact": {
+            "type": "boolean"
+          },
+          "pointsDelta": {
+            "type": "number"
+          },
+          "manualPoints": {
+            "type": "number"
+          },
+          "recommendations": {
+            "$ref": "#/components/schemas/Recommendations"
+          }
+        }
+      },
+      "ManualResetResult": {
+        "type": "object",
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "pointsDelta": {
+            "type": "number"
+          },
+          "manualPoints": {
+            "type": "number"
+          },
+          "recommendations": {
+            "$ref": "#/components/schemas/Recommendations"
+          }
+        }
+      },
+      "ManualAdjustment": {
+        "type": "object",
+        "description": "SQL: manual_points, manual_position, updated_at por game_id",
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "manualPoints": {
+            "type": "number"
+          },
+          "manualPosition": {
+            "type": ["integer", "null"]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ManualMove": {
+        "type": "object",
+        "description": "SQL: from_position, to_position, effective_position, points_delta, manual_points_after, created_at",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["reorder", "reset"]
+          },
+          "fromPosition": {
+            "type": ["integer", "null"]
+          },
+          "toPosition": {
+            "type": ["integer", "null"]
+          },
+          "effectivePosition": {
+            "type": ["integer", "null"]
+          },
+          "pointsDelta": {
+            "type": "number"
+          },
+          "manualPointsAfter": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ManualState": {
+        "type": "object",
+        "properties": {
+          "adjustments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManualAdjustment"
+            }
+          },
+          "moves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManualMove"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+# Dependências e builds
+node_modules/
+dist/
+.angular/
+out-tsc/
+*.tsbuildinfo
+
+# Segredos / variáveis de ambiente (nunca commitar)
+.env
+.env.*
+!.env.example
+*.env
+!.env.example
+local-env.env
+
+# Configuração local do Claude Code (pode conter permissões/tokens locais)
+.claude/settings.local.json
+
+# Vercel
+.vercel/
+
+# Supabase CLI (estado local)
+supabase/.temp/
+supabase/.branches/
+
+# Dados privados gravados pelos repositórios locais (api/src/repository.ts, manual-repository.ts)
+api/data/*.json
+api/data/*.tmp
+*.tmp
+
+# Logs e lixo de SO/editor
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

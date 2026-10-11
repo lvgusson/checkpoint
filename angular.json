@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "projects": {
+    "web": {
+      "projectType": "application",
+      "root": "web",
+      "sourceRoot": "web/src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "web/src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "index": "web/src/index.html",
+            "styles": ["web/src/styles.css"],
+            "outputPath": "dist/web"
+          }
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "web:build",
+            "proxyConfig": "web/proxy.conf.json"
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": "d175c3c2-e2c5-4948-bb79-0713b9eb97c7"
+  }
+}

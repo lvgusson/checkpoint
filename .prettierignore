@@ -1,0 +1,11 @@
+dist
+.angular
+node_modules
+package-lock.json
+supabase/.temp
+data/
+.vercel
+# Snapshot gerado (570 KB): formatar só gera diff ruidoso
+api/src/seed.ts
+# Skills de terceiros (vendorizadas; skills-lock.json guarda o hash)
+.agents/
