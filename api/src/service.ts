@@ -8,7 +8,7 @@ import type {
   ScoringConfig,
   ScoringSettings,
 } from '../../shared/models.ts';
-import { hydrateQueue, type GameRepository, type QueueSnapshotStore } from './repository.ts';
+import type { GameRepository, QueueInputs, QueueInputsReader } from './repository.ts';
 import {
   LocalManualAdjustmentRepository,
   type ManualAdjustmentRepository,
@@ -37,27 +37,23 @@ const queue = (games: Game[], manual: Record<string, number>, s: StoredScoringCo
 export class GameService {
   repository: GameRepository;
   manual: ManualAdjustmentRepository;
-  snapshots: QueueSnapshotStore | null;
+  inputsReader: QueueInputsReader | null;
   settings: ScoringConfigRepository;
   private queueLock: Promise<unknown> = Promise.resolve();
   constructor(
     repository: GameRepository,
     manual: ManualAdjustmentRepository = new LocalManualAdjustmentRepository(),
-    snapshots: QueueSnapshotStore | null = null,
+    inputsReader: QueueInputsReader | null = null,
     settings: ScoringConfigRepository = new LocalScoringConfigRepository(),
   ) {
     this.repository = repository;
     this.manual = manual;
-    this.snapshots = snapshots;
+    this.inputsReader = inputsReader;
     this.settings = settings;
   }
-  /** Jogos + pontos manuais + config; com snapshot store, numa única leitura consistente. */
-  private async inputs(): Promise<{
-    games: Game[];
-    manual: Record<string, number>;
-    settings: StoredScoringConfig;
-  }> {
-    if (this.snapshots) return this.snapshots.load();
+  /** Jogos + pontos manuais + config (numa única leitura quando há `inputsReader`). */
+  private async inputs(): Promise<QueueInputs> {
+    if (this.inputsReader) return this.inputsReader.load();
     const [games, manual, settings] = await Promise.all([
       this.repository.list(),
       this.manualPoints(),
@@ -116,21 +112,9 @@ export class GameService {
       },
     };
   }
-  /**
-   * Fila. Com snapshot store: serve o snapshot quando fresco (mesma versão das entradas);
-   * senão recalcula e regrava. Sem store: sempre recalcula.
-   */
   async recommendations() {
-    if (!this.snapshots) {
-      const { games, manual, settings } = await this.inputs();
-      return queue(games, manual, settings);
-    }
-    const input = await this.snapshots.load();
-    const cached = input.snapshot && hydrateQueue(input.snapshot, input.games, input.settings);
-    if (cached) return cached;
-    const fresh = queue(input.games, input.manual, input.settings);
-    await this.snapshots.save(input.version, fresh);
-    return fresh;
+    const { games, manual, settings } = await this.inputs();
+    return queue(games, manual, settings);
   }
   async manualState(): Promise<ManualState> {
     return {

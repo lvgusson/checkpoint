@@ -1,7 +1,7 @@
 // Integração dos repositórios Postgres. Só roda com DATABASE_URL definida:
 //   node --env-file=.env --test api/test/pg.test.ts
 // Cria um app_user temporário com cópias de algumas entradas do seed e o apaga no fim
-// (ON DELETE CASCADE limpa biblioteca, ajustes, eventos, estado e snapshot da fila).
+// (ON DELETE CASCADE limpa biblioteca, ajustes, eventos e configuração).
 // Só edita campos pessoais (library_entry): o catálogo global (game) não é alterado.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import { createAppUserResolver, SEED_APP_USER_ID } from '../src/app-user.ts';
 import {
   PgGameRepository,
   PgManualAdjustmentRepository,
-  PgQueueSnapshotStore,
+  PgQueueInputsReader,
   PgScoringConfigRepository,
 } from '../src/pg-repository.ts';
 import { GameService } from '../src/service.ts';
@@ -22,7 +22,7 @@ import { seedGames } from '../src/seed.ts';
 const url = process.env.DATABASE_URL;
 
 test(
-  'repositórios Pg: lista, edita, fila com snapshot, reordena e zera',
+  'repositórios Pg: lista, edita, calcula a fila, reordena e zera',
   { skip: !url && 'DATABASE_URL não definida' },
   async () => {
     const sql = db(url);
@@ -30,9 +30,9 @@ test(
     const user = createAppUserResolver(sql);
     const games = new PgGameRepository(sql, user);
     const manual = new PgManualAdjustmentRepository(sql, user);
-    const snapshots = new PgQueueSnapshotStore(sql, user);
+    const inputs = new PgQueueInputsReader(sql, user);
     const settings = new PgScoringConfigRepository(sql, user);
-    const service = new GameService(games, manual, snapshots, settings);
+    const service = new GameService(games, manual, inputs, settings);
     try {
       await sql`INSERT INTO app_user (id, display_name) VALUES (${userId}, 'pg.test')`;
       // 16 jogos do seed com campanha finita, todos pendentes (entram na fila).
@@ -67,28 +67,20 @@ test(
         assert.equal(reread.actualHours, 7.25);
         assert.match(reread.finishedAt!, /^\d{4}-\d{2}-\d{2}$/);
 
-        // Fila: 1ª leitura calcula e grava o snapshot; 2ª serve do snapshot (igual).
+        // Fila: calculada em memória sobre a leitura única das entradas.
         const cold = await service.recommendations();
-        const [snap] =
-          await sql`SELECT inputs_version::text AS v, total FROM queue_snapshot WHERE user_id = ${userId}`;
-        assert.equal(snap.total, cold.total);
-        const loaded = await snapshots.load();
-        assert(loaded.snapshot, 'snapshot deveria estar fresco');
-        const warm = await service.recommendations();
-        assert.deepEqual(warm, cold);
-        assert.deepEqual(warm, recommendGames(loaded.games, undefined, loaded.manual));
+        const loaded = await inputs.load();
+        assert.deepEqual(cold, {
+          ...recommendGames(loaded.games, undefined, loaded.manual),
+          configVersion: 0,
+        });
 
-        // Reordenação: apply_queue_move invalida o snapshot (inputs_version sobe).
+        // Reordenação: apply_queue_move grava o delta; a próxima leitura já reflete.
         const last = cold.items.at(-1)!.game.id;
         const moved = await service.reorder(last, 1);
         assert.equal(moved.recommendations.items[0].game.id, last);
-        assert((await snapshots.load()).snapshot === null);
         const after = await service.recommendations();
         assert.equal(after.items[0].game.id, last);
-        // Regravação sobre itens existentes (DELETE + INSERT na mesma instrução) deu certo.
-        const resaved = await snapshots.load();
-        assert(resaved.snapshot, 'snapshot regravado deveria estar fresco');
-        assert.equal(resaved.snapshot.items[0].gameId, last);
         assert.equal(after.items[0].manualPoints, moved.manualPoints);
         const state = await service.manualState();
         assert.equal(state.adjustments.length, 1);
@@ -119,9 +111,7 @@ test(
         const saved = await service.saveScoringSettings(off);
         assert.equal(saved.version, 1);
         assert.deepEqual((await settings.get()).config, off);
-        const inputs = await snapshots.load();
-        assert.equal(inputs.snapshot, null, 'config nova invalida o snapshot');
-        assert.equal(inputs.settings.version, 1);
+        assert.equal((await inputs.load()).settings.version, 1);
         const custom = await service.recommendations();
         assert.equal(custom.configVersion, 1);
         assert.deepEqual(custom.weights, off.weights);
@@ -131,16 +121,10 @@ test(
         assert.deepEqual(restored.config, defaultConfig);
       });
     } finally {
-      // library_entry antes: o trigger de invalidação (por statement) grava em
-      // user_queue_state, que não aceita um app_user já apagado na mesma cascata.
-      await sql.begin((tx) => [
-        tx`DELETE FROM library_entry WHERE user_id = ${userId}`,
-        tx`DELETE FROM app_user WHERE id = ${userId}`,
-      ]);
+      await sql`DELETE FROM app_user WHERE id = ${userId}`;
       const [left] = await sql`
         SELECT (SELECT count(*) FROM library_entry WHERE user_id = ${userId})::int
              + (SELECT count(*) FROM queue_move_event WHERE user_id = ${userId})::int
-             + (SELECT count(*) FROM queue_snapshot WHERE user_id = ${userId})::int
              + (SELECT count(*) FROM user_score_weights WHERE user_id = ${userId})::int AS n`;
       assert.equal(left.n, 0);
       await closeDb();

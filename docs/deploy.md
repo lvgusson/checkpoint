@@ -72,10 +72,10 @@ Decisões de performance (Postgres):
 
 - Cada leitura é **um round trip**: os jogos do usuário vêm num `json_agg` já no formato da
   API (sem N+1); o algoritmo continua em TypeScript sobre essa lista.
-- `GET /recommendations` usa o snapshot da fila (`queue_snapshot*`): uma única query lê a
-  versão das entradas (`user_queue_state.inputs_version`), os jogos, os ajustes e o snapshot
-  (só se fresco). Fresco → nada é recalculado; velho → recalcula e regrava numa transação com
-  advisory lock. Os cards vêm sempre da leitura atual (notas/capa nunca ficam velhas).
+- `GET /recommendations` lê jogos, ajustes e configuração numa única query e calcula a fila
+  em memória (~50 ms para ~500 jogos). Não há cache da fila no banco: ele poupava só esse
+  cálculo e custava uma regravação a cada mudança. As tabelas `queue_snapshot*` e
+  `user_queue_state` (migração 002) não são mais usadas pela API.
 - Reordenação grava só o **delta** via `apply_queue_move` (atômica e idempotente por
   `client_request_id`); zerar usa um único statement (delete + evento `reset`).
 - As colunas materializadas `library_entry.planned_hours/affinity/base_score` **não** são

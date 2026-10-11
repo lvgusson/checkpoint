@@ -1,7 +1,6 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { Game, Recommendations } from '../../shared/models.ts';
-import { scoreGames } from './scoring.ts';
+import type { Game } from '../../shared/models.ts';
 import type { StoredScoringConfig } from './settings-repository.ts';
 export interface GameRepository {
   list(): Promise<Game[]>;
@@ -9,77 +8,20 @@ export interface GameRepository {
   save(game: Game): Promise<void>;
 }
 
-/** Fila calculada e persistida (sem o card do jogo, que é juntado na leitura). */
-export interface StoredQueue {
-  total: number;
-  estimatedHours: number;
-  timeFactor: number;
-  weights: Recommendations['weights'];
-  excluded: Recommendations['excluded'];
-  items: {
-    gameId: string;
-    position: number;
-    score: number;
-    manualPoints: number;
-    cumulativeHours: number;
-    reasons: string[];
-    adjustments: { label: string; points: number }[];
-  }[];
-}
-
-/** Entradas do algoritmo lidas de forma consistente (uma única leitura). */
+/** Entradas do algoritmo da fila. */
 export interface QueueInputs {
-  /** Versão das entradas (opaca) no momento da leitura. */
-  version: string;
   games: Game[];
   /** gameId -> pontos manuais (só ≠ 0). */
   manual: Record<string, number>;
-  /** Configuração do algoritmo (pesos + regras); mudar a config também sobe `version`. */
   settings: StoredScoringConfig;
-  /** Snapshot da fila, apenas se estiver fresco para `version`. */
-  snapshot: StoredQueue | null;
-}
-
-/** Cache persistente da fila (opcional): evita rodar o algoritmo O(n²) a cada leitura. */
-export interface QueueSnapshotStore {
-  load(): Promise<QueueInputs>;
-  save(version: string, queue: Recommendations): Promise<void>;
 }
 
 /**
- * Junta os cards (pontuados agora, com a config das mesmas entradas) às posições do snapshot;
- * null se faltar algum jogo.
+ * Lê todas as entradas da fila de uma vez (opcional). Com banco remoto, uma única
+ * consulta em vez de três; a fila é calculada em memória (~50 ms para ~500 jogos).
  */
-export function hydrateQueue(
-  stored: StoredQueue,
-  games: Game[],
-  settings: StoredScoringConfig,
-): Recommendations | null {
-  const scored = new Map(scoreGames(games, settings.config).games.map((g) => [g.id, g]));
-  const items: Recommendations['items'] = [];
-  for (const i of stored.items) {
-    const game = scored.get(i.gameId);
-    if (!game) return null;
-    items.push({
-      position: i.position,
-      game,
-      score: i.score,
-      cumulativeHours: i.cumulativeHours,
-      reasons: i.reasons,
-      adjustments: i.adjustments,
-      manualPoints: i.manualPoints,
-    });
-  }
-  return {
-    items,
-    total: stored.total,
-    estimatedHours: stored.estimatedHours,
-    timeFactor: stored.timeFactor,
-    weights: settings.config.weights,
-    rules: settings.config.rules,
-    configVersion: settings.version,
-    excluded: stored.excluded,
-  };
+export interface QueueInputsReader {
+  load(): Promise<QueueInputs>;
 }
 
 export class LocalGameRepository implements GameRepository {

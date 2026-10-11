@@ -1,5 +1,5 @@
 // Monta o GameService com a persistência certa para o ambiente:
-//   DATABASE_URL definida → Postgres (Supabase), com snapshot da fila;
+//   DATABASE_URL definida → Postgres (Supabase);
 //   senão               → arquivos JSON locais (dev offline e testes).
 // Os módulos de cada lado são importados sob demanda: em produção o snapshot do seed
 // (~570 KB) nunca é carregado, e sem banco o driver não é carregado.
@@ -37,7 +37,7 @@ export async function createService({
       service: new GameService(
         new pg.PgGameRepository(sql, user),
         new pg.PgManualAdjustmentRepository(sql, user),
-        new pg.PgQueueSnapshotStore(sql, user),
+        new pg.PgQueueInputsReader(sql, user),
         new pg.PgScoringConfigRepository(sql, user),
       ),
     };

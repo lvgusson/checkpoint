@@ -7,7 +7,7 @@ import { LocalGameRepository } from '../src/repository.ts';
 import { GameService } from '../src/service.ts';
 import { seedGames } from '../src/seed.ts';
 import { makeServer } from '../src/server.ts';
-import type { QueueEntry } from '../../shared/models.ts';
+import type { GamePage, QueueEntry, Recommendations, ScoredGame } from '../../shared/models.ts';
 test('snapshot completo, pontuações válidas e IDs únicos', async () => {
   assert.equal(seedGames.length, 481);
   assert.equal(new Set(seedGames.map((g) => g.id)).size, 481);
@@ -90,7 +90,7 @@ test('API HTTP filtra, avalia, recalcula, retorna erros e serve contrato', async
   const base = 'http://127.0.0.1:' + address.port;
   try {
     let r = await fetch(base + '/api/v1/games?pageSize=2');
-    const page = await r.json();
+    const page = (await r.json()) as GamePage;
     assert.equal(page.total, 481);
     assert.equal(page.items.length, 2);
     const id = page.items[0].id;
@@ -100,9 +100,9 @@ test('API HTTP filtra, avalia, recalcula, retorna erros e serve contrato', async
       body: JSON.stringify({ rating: 4.5, actualHours: 9 }),
     });
     assert.equal(r.status, 200);
-    const game = await r.json();
+    const game = (await r.json()) as ScoredGame;
     assert.equal(game.status, 'Finalizado');
-    const queue = await (await fetch(base + '/api/v1/recommendations')).json();
+    const queue = (await (await fetch(base + '/api/v1/recommendations')).json()) as Recommendations;
     assert(!queue.items.some((i: QueueEntry) => i.game.id === id));
     assert.equal(
       (
@@ -114,7 +114,7 @@ test('API HTTP filtra, avalia, recalcula, retorna erros e serve contrato', async
       400,
     );
     assert.equal((await fetch(base + '/api/v1/games/absent')).status, 404);
-    const spec = await (await fetch(base + '/api/v1/openapi.json')).json();
+    const spec = (await (await fetch(base + '/api/v1/openapi.json')).json()) as { openapi: string };
     assert.equal(spec.openapi, '3.1.0');
     const html = await (await fetch(base + '/ordem')).text();
     assert(html.includes('<app-root>'));

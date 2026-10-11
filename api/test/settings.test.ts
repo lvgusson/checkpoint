@@ -13,7 +13,13 @@ import { LocalManualAdjustmentRepository } from '../src/manual-repository.ts';
 import { GameService } from '../src/service.ts';
 import { makeServer } from '../src/server.ts';
 import { seedGames } from '../src/seed.ts';
-import type { Game, Recommendations, ScoringConfig, ScoringRuleId } from '../../shared/models.ts';
+import type {
+  Game,
+  Recommendations,
+  ScoringConfig,
+  ScoringRuleId,
+  ScoringSettings,
+} from '../../shared/models.ts';
 
 const withRules = (patch: Partial<Record<ScoringRuleId, boolean>>): ScoringConfig => ({
   weights: defaultConfig.weights,
@@ -230,7 +236,8 @@ test('API: GET/PUT/reset de /settings/scoring e fila usando a config', async () 
         headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-    const first = await (await call('/settings/scoring')).json();
+    const json = async <T>(r: Promise<Response> | Response) => (await (await r).json()) as T;
+    const first = await json<ScoringSettings>(call('/settings/scoring'));
     assert.equal(first.version, 0);
     assert.deepEqual(first.defaults, defaultConfig);
     assert(first.factors.length >= 20);
@@ -241,14 +248,14 @@ test('API: GET/PUT/reset de /settings/scoring e fila usando a config', async () 
       rules: { ...first.config.rules, excludeCompetitive: true },
     });
     assert.equal(put.status, 200);
-    assert.equal((await put.json()).version, 1);
-    const q = await (await call('/recommendations')).json();
+    assert.equal((await json<ScoringSettings>(put)).version, 1);
+    const q = await json<Recommendations>(call('/recommendations'));
     assert.equal(q.configVersion, 1);
-    assert(q.items.every((i: { game: Game }) => !isCompetitive(i.game)));
-    const reset = await (await call('/settings/scoring/reset', 'POST')).json();
+    assert(q.items.every((i) => !isCompetitive(i.game)));
+    const reset = await json<ScoringSettings>(call('/settings/scoring/reset', 'POST'));
     assert.equal(reset.version, 2);
     assert.deepEqual(reset.config, defaultConfig);
-    assert.equal((await (await call('/recommendations')).json()).total, 394);
+    assert.equal((await json<Recommendations>(call('/recommendations'))).total, 394);
   } finally {
     server.close();
     await rm(dir, { recursive: true, force: true });

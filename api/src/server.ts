@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { resolve, extname } from 'node:path';
+import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GameService, AppError } from './service.ts';
 import { createService } from './setup.ts';
@@ -123,7 +123,7 @@ export function makeServer(
         if (req.method !== 'GET') throw new AppError('Método não permitido', 405);
         const base = resolve(root, 'dist/web/browser');
         let target = resolve(base, '.' + decodeURIComponent(path));
-        if (!target.startsWith(base + '/')) target = resolve(base, 'index.html');
+        if (!target.startsWith(base + sep)) target = resolve(base, 'index.html');
         let content;
         try {
           content = await readFile(target);

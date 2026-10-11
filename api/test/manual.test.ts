@@ -9,7 +9,15 @@ import { LocalManualAdjustmentRepository } from '../src/manual-repository.ts';
 import { GameService } from '../src/service.ts';
 import { makeServer } from '../src/server.ts';
 import { seedGames } from '../src/seed.ts';
-import type { Game, Desire, QueueEntry } from '../../shared/models.ts';
+import type {
+  Game,
+  Desire,
+  ManualResetResult,
+  ManualState,
+  QueueEntry,
+  Recommendations,
+  ReorderResult,
+} from '../../shared/models.ts';
 
 const genres = ['FPS', 'Puzzle', 'RPG', 'Plataforma', 'Corrida', 'Luta'];
 const paces = ['Calmo', 'Moderado', 'Frenético'];
@@ -198,11 +206,11 @@ test('API HTTP reordena, valida e zera ajuste manual', async () => {
       body: JSON.stringify(body),
     });
   try {
-    const queue = await (await fetch(base + '/recommendations')).json();
-    const last = queue.items.at(-1).game.id;
+    const queue = (await (await fetch(base + '/recommendations')).json()) as Recommendations;
+    const last = queue.items.at(-1)!.game.id;
     let r = await post({ gameId: last, toPosition: 1 });
     assert.equal(r.status, 200);
-    const moved = await r.json();
+    const moved = (await r.json()) as ReorderResult;
     assert.equal(moved.recommendations.items[0].game.id, last);
     assert.equal(moved.effectivePosition, 1);
     assert(moved.manualPoints > 0);
@@ -210,11 +218,11 @@ test('API HTTP reordena, valida e zera ajuste manual', async () => {
     assert.equal((await post({ gameId: 'ausente', toPosition: 1 })).status, 404);
     const done = seedGames.find((g) => g.status === 'Finalizado')!.id;
     assert.equal((await post({ gameId: done, toPosition: 1 })).status, 409);
-    const state = await (await fetch(base + '/queue/adjustments')).json();
+    const state = (await (await fetch(base + '/queue/adjustments')).json()) as ManualState;
     assert.equal(state.adjustments[0].gameId, last);
     r = await fetch(base + '/queue/adjustments/' + last, { method: 'DELETE' });
     assert.equal(r.status, 200);
-    const reset = await r.json();
+    const reset = (await r.json()) as ManualResetResult;
     assert.equal(reset.manualPoints, 0);
     assert.deepEqual(
       reset.recommendations.items.map((i: QueueEntry) => i.game.id),

@@ -228,6 +228,8 @@ Em `game` há trigram em `search_text` para a busca global ("adicionar jogo") e 
 
 ## Fila: snapshot e invalidação
 
+> **Fora de uso.** A API não lê nem grava mais o snapshot: ela lê as entradas numa única query e calcula a fila em memória (~50 ms). O snapshot poupava só esse cálculo e custava uma regravação a cada mudança. As tabelas e os triggers abaixo continuam no banco até uma migração removê-los.
+
 O algoritmo é guloso e contextual e vive em TypeScript, por isso não pode ser uma `MATERIALIZED VIEW`. A fila funciona com duas versões:
 
 - `user_queue_state.inputs_version` é incrementado por triggers sempre que uma **entrada** do algoritmo muda:

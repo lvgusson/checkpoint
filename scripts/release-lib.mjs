@@ -107,13 +107,19 @@ export function currentRelease(rows, environment = 'production') {
   );
 }
 
-/** Comandos do rollback instantâneo na Vercel (sem build: re-aponta os domínios). */
+/**
+ * Comandos do rollback instantâneo na Vercel (sem build: re-aponta os domínios).
+ * @returns {[string, string[]][]}
+ */
 export function vercelRollbackCommands(target) {
   if (!target?.vercel_url) throw new Error('Release alvo sem vercel_url: use --git.');
   return [['vercel', ['rollback', `https://${stripProtocol(target.vercel_url)}`, '--yes']]];
 }
 
-/** Comandos do rollback por git: reverte alvo..HEAD (commits novos) e faz push (novo deploy). */
+/**
+ * Comandos do rollback por git: reverte alvo..HEAD (commits novos) e faz push (novo deploy).
+ * @returns {[string, string[]][]}
+ */
 export function gitRollbackCommands(targetSha, branch = 'main') {
   if (!/^[0-9a-f]{7,40}$/i.test(String(targetSha ?? '')))
     throw new Error(`SHA inválido: ${targetSha}`);
@@ -133,6 +139,7 @@ export function migrationWarning(current, target) {
   return base;
 }
 
+/** @param {[string, string[]]} command */
 export function formatCommand([cmd, args]) {
   return [cmd, ...args].join(' ');
 }

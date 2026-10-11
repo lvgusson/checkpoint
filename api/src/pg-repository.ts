@@ -15,7 +15,6 @@ import type {
   GameStatus,
   ManualAdjustment,
   ManualMove,
-  Recommendations,
   ScoringConfig,
 } from '../../shared/models.ts';
 import postgres from 'postgres';
@@ -23,14 +22,11 @@ import type { Sql } from './db.ts';
 /** Valor serializado como json pelo driver (sql.json). */
 const json = (v: unknown) => v as postgres.JSONValue;
 import type { AppUserResolver } from './app-user.ts';
-import type { GameRepository, QueueInputs, QueueSnapshotStore, StoredQueue } from './repository.ts';
+import type { GameRepository, QueueInputs, QueueInputsReader } from './repository.ts';
 import type { ManualAdjustmentRepository } from './manual-repository.ts';
 import { AppError } from './service.ts';
 import { storedScoringConfig } from './scoring-config.ts';
 import type { ScoringConfigRepository, StoredScoringConfig } from './settings-repository.ts';
-
-/** Muda quando a regra de scoring.ts muda: invalida todos os snapshots da fila. */
-export const ALGORITHM_VERSION = 'scoring-2';
 
 const statusCode: Record<GameStatus, string> = {
   'Não iniciado': 'not_started',
@@ -357,120 +353,30 @@ export class PgScoringConfigRepository implements ScoringConfigRepository {
   }
 }
 
-/**
- * Snapshot da fila (queue_snapshot + queue_snapshot_item) com frescor por
- * user_queue_state.inputs_version, mantido por triggers (ver db/README.md).
- */
-export class PgQueueSnapshotStore implements QueueSnapshotStore {
+/** Jogos, ajustes manuais e config da fila numa única consulta (um round trip, leitura consistente). */
+export class PgQueueInputsReader implements QueueInputsReader {
   private sql: Sql;
   private user: AppUserResolver;
   constructor(sql: Sql, user: AppUserResolver) {
     this.sql = sql;
     this.user = user;
   }
-  /**
-   * Um statement = um snapshot MVCC: a versão, os jogos, os ajustes e o snapshot (só se
-   * fresco) são lidos de forma consistente, num único round trip.
-   */
   async load(): Promise<QueueInputs> {
     const sql = this.sql;
     const u = await this.user();
     const [row] = await sql<
-      {
-        version: string;
-        games: RawGame[];
-        manual: Record<string, number>;
-        settings: RawSettings | null;
-        snapshot: StoredQueue | null;
-      }[]
+      { games: RawGame[]; manual: Record<string, number>; settings: RawSettings | null }[]
     >`
-      WITH v AS (
-        SELECT coalesce((SELECT inputs_version FROM user_queue_state WHERE user_id = ${u}), 1) AS version)
-      SELECT v.version::text AS version,
-             (SELECT coalesce(json_agg(${sql.unsafe(GAME_JSON)} ORDER BY e.id), '[]')
+      SELECT (SELECT coalesce(json_agg(${sql.unsafe(GAME_JSON)} ORDER BY e.id), '[]')
                 FROM ${sql.unsafe(GAME_FROM)} WHERE e.user_id = ${u}) AS games,
              (SELECT coalesce(json_object_agg(g.code, a.flat_points), '{}')
                 FROM queue_manual_adjustment a JOIN game g ON g.id = a.game_id
                WHERE a.user_id = ${u} AND a.flat_points <> 0) AS manual,
-             (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings,
-             (SELECT json_build_object(
-                       'total', s.total, 'estimatedHours', s.estimated_hours,
-                       'timeFactor', s.time_factor, 'weights', s.weights, 'excluded', s.excluded,
-                       'items', (SELECT coalesce(json_agg(json_build_object(
-                                   'gameId', g.code, 'position', i.position, 'score', i.score,
-                                   'manualPoints', i.manual_points, 'cumulativeHours', i.cumulative_hours,
-                                   'reasons', i.reasons, 'adjustments', i.adjustments) ORDER BY i.position), '[]')
-                                   FROM queue_snapshot_item i JOIN game g ON g.id = i.game_id
-                                  WHERE i.user_id = ${u}))
-                FROM queue_snapshot s
-               WHERE s.user_id = ${u} AND s.inputs_version = v.version
-                 AND s.algorithm_version = ${ALGORITHM_VERSION}) AS snapshot
-        FROM v`;
+             (${sql.unsafe(SETTINGS_JSON)} WHERE w.user_id = ${u}) AS settings`;
     return {
-      version: row.version,
       games: row.games.map(toGame),
       manual: row.manual,
       settings: toSettings(row.settings),
-      snapshot: row.snapshot,
     };
-  }
-  /**
-   * Regrava o snapshot calculado a partir das entradas de `version`, numa única instrução
-   * (cabeçalho + troca dos itens; o INSERT depende do DELETE, que roda antes). Se as
-   * entradas mudaram no meio tempo, o snapshot nasce velho (inputs_version menor) e será
-   * recalculado — nunca servido errado. É um cache: se outra requisição gravar o mesmo
-   * usuário ao mesmo tempo (conflito de chave/deadlock), esta gravação é descartada.
-   */
-  async save(version: string, queue: Recommendations): Promise<void> {
-    const sql = this.sql;
-    const u = await this.user();
-    const round2 = (n: number) => Math.round(n * 100) / 100;
-    const items = json(
-      queue.items.map((i) => ({
-        code: i.game.id,
-        position: i.position,
-        algorithm_score: round2(i.score - i.manualPoints),
-        manual_points: i.manualPoints,
-        score: i.score,
-        cumulative_hours: i.cumulativeHours,
-        planned_hours: i.game.plannedHours,
-        base_score: i.game.baseScore,
-        affinity: i.game.affinity,
-        reasons: i.reasons,
-        adjustments: i.adjustments,
-      })),
-    );
-    try {
-      await sql`
-        WITH hdr AS (
-               INSERT INTO queue_snapshot (user_id, inputs_version, algorithm_version, computed_at,
-                                           time_factor, total, estimated_hours, weights, excluded)
-               VALUES (${u}, ${version}::bigint, ${ALGORITHM_VERSION}, now(), ${queue.timeFactor}::numeric,
-                       ${queue.total}::int, ${queue.estimatedHours}::numeric,
-                       ${sql.json(json(queue.weights))}::jsonb, ${sql.json(json(queue.excluded))}::jsonb)
-               ON CONFLICT (user_id) DO UPDATE SET
-                 inputs_version = EXCLUDED.inputs_version, algorithm_version = EXCLUDED.algorithm_version,
-                 computed_at = EXCLUDED.computed_at, time_factor = EXCLUDED.time_factor,
-                 total = EXCLUDED.total, estimated_hours = EXCLUDED.estimated_hours,
-                 weights = EXCLUDED.weights, excluded = EXCLUDED.excluded
-               RETURNING 1),
-             del AS (DELETE FROM queue_snapshot_item WHERE user_id = ${u} RETURNING 1)
-        INSERT INTO queue_snapshot_item (user_id, position, game_id, library_entry_id, algorithm_score,
-                                         manual_points, score, cumulative_hours, planned_hours,
-                                         base_score, affinity, reasons, adjustments)
-        SELECT ${u}, x.position, e.game_id, e.id, x.algorithm_score, x.manual_points, x.score,
-               x.cumulative_hours, x.planned_hours, x.base_score, x.affinity, x.reasons, x.adjustments
-          FROM jsonb_to_recordset(${sql.json(items)}::jsonb) AS x(
-                 code text, position int, algorithm_score numeric, manual_points numeric,
-                 score numeric, cumulative_hours numeric, planned_hours numeric,
-                 base_score numeric, affinity numeric, reasons text[], adjustments jsonb)
-          JOIN game g ON g.code = x.code
-          JOIN library_entry e ON e.user_id = ${u} AND e.game_id = g.id
-         WHERE (SELECT count(*) FROM del) >= 0 AND (SELECT count(*) FROM hdr) = 1`;
-    } catch (e) {
-      if (e instanceof postgres.PostgresError && ['23505', '23503', '40P01'].includes(e.code))
-        return;
-      throw e;
-    }
   }
 }
