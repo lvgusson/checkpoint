@@ -15,6 +15,8 @@ export function readScoringCache(key: string): ScoringSettings | null {
       Number.isInteger(s?.version) &&
       typeof s.config?.weights === 'object' &&
       typeof s.config?.rules === 'object' &&
+      typeof s.config?.filters === 'object' &&
+      typeof s.filterOptions === 'object' &&
       Array.isArray(s.factors);
     return valid ? s : null;
   } catch {

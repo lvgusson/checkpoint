@@ -1,5 +1,8 @@
 import type {
+  FilterOption,
+  FilterOptions,
   Game,
+  QueueFilters,
   ScoredGame,
   ScoreWeights,
   ScoringConfig,
@@ -56,7 +59,23 @@ export const defaultRules: ScoringRules = {
   prerequisites: true,
   manual: true,
 };
-export const defaultConfig: ScoringConfig = { weights: defaultWeights, rules: defaultRules };
+/** Filtros neutros: nenhum jogo removido. */
+export const defaultFilters: QueueFilters = {
+  excludedGenres: [],
+  excludedTags: [],
+  stores: [],
+  paces: [],
+  minHours: null,
+  maxHours: null,
+  excludeUnknownHours: false,
+  coopOnly: false,
+  minDesire: null,
+};
+export const defaultConfig: ScoringConfig = {
+  weights: defaultWeights,
+  rules: defaultRules,
+  filters: defaultFilters,
+};
 const round = (n: number, places = 1) =>
   Math.round((n + Number.EPSILON) * 10 ** places) / 10 ** places;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -94,6 +113,44 @@ const pending = (g: Game, r: ScoringRules) =>
     g.status === 'Jogando' ||
     (g.status === 'Abandonado' && !r.excludeAbandoned)) &&
   (finiteCampaign(g) || !r.excludeEndless);
+const desires: Record<string, number> = {
+  'Muito Alta': 100,
+  Alta: 75,
+  Média: 50,
+  Baixa: 25,
+  'Muito Baixa': 0,
+};
+/** Coop: qualquer valor preenchido diferente de "Não". */
+const hasCoop = (g: Game) => !!g.coop?.trim() && normal(g.coop) !== 'nao';
+const normalSet = (values: string[]) => new Set(values.map(normal));
+
+/**
+ * Predicado dos filtros de conteúdo: devolve o motivo de exclusão ou null.
+ * Horas = plannedHours (o que a fila mostra e soma); sem tempo passa pelos limites,
+ * exceto com `excludeUnknownHours`.
+ */
+export function contentFilter(f: QueueFilters): (g: ScoredGame) => string | null {
+  const genres = normalSet(f.excludedGenres),
+    tags = normalSet(f.excludedTags),
+    stores = normalSet(f.stores),
+    paces = normalSet(f.paces);
+  const minDesire = f.minDesire === null ? null : desires[f.minDesire];
+  return (g) => {
+    if (genres.has(normal(g.primaryGenre))) return 'Filtro: gênero ' + g.primaryGenre;
+    const tag = g.secondaryTags.find((t) => tags.has(normal(t)));
+    if (tag) return 'Filtro: tag ' + tag;
+    if (stores.size && !stores.has(normal(g.store))) return 'Filtro: loja ' + (g.store || '—');
+    if (paces.size && !paces.has(normal(g.pace))) return 'Filtro: ritmo ' + (g.pace || '—');
+    if (f.coopOnly && !hasCoop(g)) return 'Filtro: sem coop';
+    if (minDesire !== null && (desires[g.desire] ?? 50) < minDesire)
+      return 'Filtro: vontade ' + g.desire;
+    const h = g.plannedHours;
+    if (h === null) return f.excludeUnknownHours ? 'Filtro: sem tempo estimado' : null;
+    if (f.minHours !== null && h < f.minHours) return `Filtro: menos de ${f.minHours} h`;
+    if (f.maxHours !== null && h > f.maxHours) return `Filtro: mais de ${f.maxHours} h`;
+    return null;
+  };
+}
 
 export function scoreGames(
   games: Game[],
@@ -122,13 +179,6 @@ export function scoreGames(
         matched.reduce((sum, g) => sum + 25 * (g.rating! - 1), 0)) /
       (w.priorStrength + matched.length)
     );
-  };
-  const desires: Record<string, number> = {
-    'Muito Alta': 100,
-    Alta: 75,
-    Média: 50,
-    Baixa: 25,
-    'Muito Baixa': 0,
   };
   return {
     timeFactor,
@@ -262,11 +312,14 @@ export function recommendGames(
     r.manual && Object.hasOwn(manual, id) && Number.isFinite(manual[id]) ? manual[id] : 0;
   const scored = scoreGames(games, config),
     all = new Map(scored.games.map((g) => [g.id, g]));
-  const remaining = new Map(
-    scored.games
-      .filter((g) => pending(g, r) && !(r.excludeCompetitive && isCompetitive(g)))
-      .map((g) => [g.id, g]),
-  );
+  const filtered: Recommendations['excluded'] = [];
+  const reasonOf = contentFilter(config.filters);
+  const remaining = new Map<string, ScoredGame>();
+  for (const g of scored.games.filter((g) => eligible(g, r))) {
+    const reason = reasonOf(g);
+    if (reason) filtered.push({ gameId: g.id, reason });
+    else remaining.set(g.id, g);
+  }
   const candidates = new Set(remaining.keys());
   const played = scored.games
     .filter((g) => g.status === 'Finalizado' && g.finishedAt)
@@ -325,11 +378,50 @@ export function recommendGames(
     timeFactor: round(scored.timeFactor, 4),
     weights: config.weights,
     rules: config.rules,
+    filters: config.filters,
     configVersion: 0,
-    excluded: [...remaining.keys()].map((gameId) => ({
-      gameId,
-      reason: 'Dependência circular ou predecessor indisponível',
+    excluded: [
+      ...[...remaining.keys()].map((gameId) => ({
+        gameId,
+        reason: 'Dependência circular ou predecessor indisponível',
+      })),
+      ...filtered,
+    ],
+  };
+}
+
+/** Elegível pelas regras de status/fim/competitivos (antes dos filtros de conteúdo). */
+const eligible = (g: Game, r: ScoringRules) =>
+  pending(g, r) && !(r.excludeCompetitive && isCompetitive(g));
+
+/** Valores dos filtros com contagem sobre os candidatos da fila sem filtros de conteúdo. */
+export function filterOptions(games: Game[], config: ScoringConfig = defaultConfig): FilterOptions {
+  const candidates = scoreGames(games, config).games.filter((g) => eligible(g, config.rules));
+  const count = (values: string[]): FilterOption[] => {
+    const m = new Map<string, FilterOption>();
+    for (const v of values) {
+      if (!v.trim()) continue;
+      const key = normal(v);
+      const o = m.get(key);
+      if (o) o.count++;
+      else m.set(key, { value: v.trim(), count: 1 });
+    }
+    return [...m.values()].sort(
+      (a, b) => b.count - a.count || a.value.localeCompare(b.value, 'pt-BR'),
+    );
+  };
+  return {
+    total: candidates.length,
+    genres: count(candidates.map((g) => g.primaryGenre)),
+    tags: count(candidates.flatMap((g) => [...new Set(g.secondaryTags)])),
+    stores: count(candidates.map((g) => g.store)),
+    paces: count(candidates.map((g) => g.pace)),
+    desires: Object.keys(desires).map((value) => ({
+      value,
+      count: candidates.filter((g) => g.desire === value).length,
     })),
+    coop: candidates.filter(hasCoop).length,
+    hours: candidates.map((g) => g.plannedHours),
   };
 }
 

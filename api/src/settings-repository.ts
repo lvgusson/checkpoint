@@ -19,7 +19,7 @@ export interface ScoringConfigRepository {
 /** Adaptador local em JSON (dev/testes). Sem `path`, mantém só em memória. */
 export class LocalScoringConfigRepository implements ScoringConfigRepository {
   private current: StoredScoringConfig = {
-    config: storedScoringConfig(null, null),
+    config: storedScoringConfig(null, null, null),
     version: 0,
     updatedAt: null,
   };
@@ -34,7 +34,7 @@ export class LocalScoringConfigRepository implements ScoringConfigRepository {
     try {
       const data = JSON.parse(await readFile(this.path, 'utf8'));
       this.current = {
-        config: storedScoringConfig(data.config?.weights, data.config?.rules),
+        config: storedScoringConfig(data.config?.weights, data.config?.rules, data.config?.filters),
         version: Number.isInteger(data.version) ? data.version : 0,
         updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : null,
       };

@@ -286,9 +286,9 @@ const LONG_PRESS_MS = 320;
       }
       @if (d.excluded.length) {
         <details class="method">
-          <summary>{{ d.excluded.length }} jogos aguardam correção de predecessores</summary>
-          @for (e of d.excluded; track e.gameId) {
-            <p>{{ e.gameId }}: {{ e.reason }}</p>
+          <summary>{{ d.excluded.length }} jogos fora da fila</summary>
+          @for (r of excludedReasons(d); track r.reason) {
+            <p>{{ r.reason }}: {{ r.count }}</p>
           }
         </details>
       }
@@ -301,6 +301,12 @@ export class Queue {
   private settings = inject(ScoringSettingsStore);
   color = color;
   data = signal<Recommendations | null>(null);
+  /** Jogos fora da fila agrupados por motivo (filtros, predecessores). */
+  excludedReasons(d: Recommendations) {
+    const counts = new Map<string, number>();
+    for (const e of d.excluded) counts.set(e.reason, (counts.get(e.reason) ?? 0) + 1);
+    return [...counts].map(([reason, count]) => ({ reason, count }));
+  }
   visible = signal(30);
   error = signal('');
   loading = signal(false);

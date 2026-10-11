@@ -91,9 +91,50 @@ export type ScoringRuleId =
   // ajuste manual (reordenação)
   | 'manual';
 export type ScoringRules = Record<ScoringRuleId, boolean>;
+/**
+ * Filtros de conteúdo da fila (quem entra). Padrão neutro: listas vazias, limites null
+ * e booleanos false não removem nada. Textos comparados sem acento/maiúsculas.
+ */
+export interface QueueFilters {
+  /** Gêneros principais que ficam fora. */
+  excludedGenres: string[];
+  /** Fica fora o jogo com qualquer uma destas tags secundárias. */
+  excludedTags: string[];
+  /** Só estas lojas (vazio = todas). */
+  stores: string[];
+  /** Só estes ritmos (vazio = todos). */
+  paces: string[];
+  /** Limites em horas previstas (plannedHours: estimativa × seu ritmo); null = sem limite. */
+  minHours: number | null;
+  maxHours: number | null;
+  /** Tira jogos sem tempo estimado (por padrão eles passam pelos limites de horas). */
+  excludeUnknownHours: boolean;
+  /** Só jogos com coop (local e/ou online). */
+  coopOnly: boolean;
+  /** Vontade mínima (null = qualquer). */
+  minDesire: Desire | null;
+}
 export interface ScoringConfig {
   weights: ScoreWeights;
   rules: ScoringRules;
+  filters: QueueFilters;
+}
+/** Valor possível de um filtro e quantos jogos da fila (sem filtros) o têm. */
+export interface FilterOption {
+  value: string;
+  count: number;
+}
+/** Opções dos filtros, contadas sobre a fila sem filtros de conteúdo. */
+export interface FilterOptions {
+  total: number;
+  genres: FilterOption[];
+  tags: FilterOption[];
+  stores: FilterOption[];
+  paces: FilterOption[];
+  desires: FilterOption[];
+  coop: number;
+  /** Horas previstas de cada candidato (null = sem tempo), para contar o efeito dos limites. */
+  hours: (number | null)[];
 }
 export type ScoringSection = 'base' | 'context' | 'filter' | 'manual' | 'params';
 /** Uma linha da tabela de configuração (fator, regra e/ou parâmetro). */
@@ -118,6 +159,7 @@ export interface ScoringSettings {
   updatedAt: string | null;
   defaults: ScoringConfig;
   factors: ScoringFactor[];
+  filterOptions: FilterOptions;
 }
 export interface ScoredGame extends Game {
   plannedHours: number | null;
@@ -194,6 +236,7 @@ export interface Recommendations {
   timeFactor: number;
   weights: ScoreWeights;
   rules: ScoringRules;
+  filters: QueueFilters;
   /** Versão da configuração usada (o front compara com o cache local). */
   configVersion: number;
   excluded: { gameId: string; reason: string }[];
