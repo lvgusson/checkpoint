@@ -1,11 +1,18 @@
-import { test } from 'node:test';
+﻿import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
-import { recommendGames, defaultConfig, defaultRules, isCompetitive } from '../src/scoring.ts';
+import {
+  recommendGames,
+  defaultConfig,
+  defaultFilters,
+  defaultRules,
+  filterOptions,
+  isCompetitive,
+} from '../src/scoring.ts';
 import { parseScoringConfig, scoringFactors } from '../src/scoring-config.ts';
 import { LocalScoringConfigRepository } from '../src/settings-repository.ts';
 import { LocalGameRepository } from '../src/repository.ts';
@@ -15,6 +22,7 @@ import { makeServer } from '../src/server.ts';
 import { seedGames } from '../src/seed.ts';
 import type {
   Game,
+  QueueFilters,
   Recommendations,
   ScoringConfig,
   ScoringRuleId,
@@ -24,6 +32,11 @@ import type {
 const withRules = (patch: Partial<Record<ScoringRuleId, boolean>>): ScoringConfig => ({
   weights: defaultConfig.weights,
   rules: { ...defaultRules, ...patch },
+  filters: defaultFilters,
+});
+const withFilters = (patch: Partial<QueueFilters>): ScoringConfig => ({
+  ...defaultConfig,
+  filters: { ...defaultFilters, ...patch },
 });
 const game = (id: string, patch: Partial<Game> = {}): Game => ({
   ...seedGames[0],
@@ -161,6 +174,65 @@ test('filtros de elegibilidade podem ser desligados', () => {
   assert(seedGames.some(isCompetitive));
 });
 
+test('filtros de conteúdo removem jogos e informam o motivo', () => {
+  const games = [
+    game('fps'),
+    game('rpg', { primaryGenre: 'RPG', secondaryTags: ['Terror'], pace: 'Calmo' }),
+    game('curto', { mainHours: 2, extraHours: null, store: 'GOG', coop: 'Online' }),
+    game('longo', { mainHours: 80, extraHours: 90, desire: 'Alta' }),
+    game('sem-tempo', { mainHours: null, extraHours: null }),
+  ];
+  const run = (f: Partial<QueueFilters>) => {
+    const q = recommendGames(games, withFilters({ ...f }));
+    return { ids: q.items.map((i) => i.game.id).sort(), excluded: q.excluded };
+  };
+  const all = ['curto', 'fps', 'longo', 'rpg', 'sem-tempo'];
+  assert.deepEqual(run({}).ids, all);
+  assert.deepEqual(run({}).excluded, []);
+  const genre = run({ excludedGenres: ['fps'] }); // sem diferenciar maiúsculas
+  assert.deepEqual(genre.ids, ['rpg']);
+  assert(genre.excluded.every((e) => e.reason === 'Filtro: gênero FPS'));
+  assert.deepEqual(run({ excludedTags: ['terror'] }).ids, ['curto', 'fps', 'longo', 'sem-tempo']);
+  assert.deepEqual(run({ stores: ['GOG'] }).ids, ['curto']);
+  assert.deepEqual(run({ paces: ['Calmo'] }).ids, ['rpg']);
+  assert.deepEqual(run({ coopOnly: true }).ids, ['curto']);
+  assert.deepEqual(run({ minDesire: 'Alta' }).ids, ['longo']);
+  // Horas = plannedHours (estimativa × ritmo); sem tempo passa pelos limites...
+  assert.deepEqual(run({ maxHours: 20 }).ids, ['curto', 'fps', 'rpg', 'sem-tempo']);
+  assert.deepEqual(run({ minHours: 20 }).ids, ['longo', 'sem-tempo']);
+  assert.deepEqual(run({ minHours: 5, maxHours: 20 }).ids, ['fps', 'rpg', 'sem-tempo']);
+  // ...exceto quando pedido.
+  const unknown = run({ excludeUnknownHours: true });
+  assert.deepEqual(unknown.ids, ['curto', 'fps', 'longo', 'rpg']);
+  assert.deepEqual(unknown.excluded, [
+    { gameId: 'sem-tempo', reason: 'Filtro: sem tempo estimado' },
+  ]);
+});
+
+test('filtro não bloqueia a sequência de um predecessor filtrado', () => {
+  const games = [game('a', { primaryGenre: 'RPG' }), game('b', { prerequisiteId: 'a' })];
+  const q = recommendGames(games, withFilters({ excludedGenres: ['RPG'] }));
+  assert.deepEqual(
+    q.items.map((i) => i.game.id),
+    ['b'],
+  );
+});
+
+test('opções dos filtros contam os candidatos da fila', () => {
+  const o = filterOptions(seedGames);
+  assert.equal(o.total, 394); // mesma base da fila padrão
+  assert.equal(o.hours.length, o.total);
+  const sum = (xs: { count: number }[]) => xs.reduce((s, x) => s + x.count, 0);
+  assert.equal(sum(o.genres), o.total);
+  assert.equal(sum(o.stores), o.total);
+  assert.equal(sum(o.desires), o.total);
+  assert(o.genres.every((g, i) => i === 0 || o.genres[i - 1].count >= g.count));
+  const top = o.genres[0];
+  const q = recommendGames(seedGames, withFilters({ excludedGenres: [top.value] }));
+  assert.equal(q.total, o.total - top.count);
+  assert.equal(q.excluded.length, top.count);
+});
+
 test('pré-requisitos e ajuste manual desligáveis', () => {
   const games = [game('a', { desire: 'Baixa' }), game('b', { prerequisiteId: 'a' })];
   assert.equal(recommendGames(games).items[0].game.id, 'a');
@@ -191,8 +263,28 @@ test('validação da configuração', () => {
     { weights: { nope: 1 }, rules: {} },
     { weights: {}, rules: { manual: 'sim' } },
     { weights: {}, rules: { nope: true } },
+    { weights: {}, rules: {}, filters: [] },
+    { weights: {}, rules: {}, filters: { nope: 1 } },
+    { weights: {}, rules: {}, filters: { excludedGenres: 'FPS' } },
+    { weights: {}, rules: {}, filters: { excludedGenres: [''] } },
+    { weights: {}, rules: {}, filters: { minHours: -1 } },
+    { weights: {}, rules: {}, filters: { maxHours: '10' } },
+    { weights: {}, rules: {}, filters: { minHours: 30, maxHours: 10 } },
+    { weights: {}, rules: {}, filters: { coopOnly: 1 } },
+    { weights: {}, rules: {}, filters: { minDesire: 'Altíssima' } },
   ])
     assert.throws(() => parseScoringConfig(bad), RangeError, JSON.stringify(bad));
+  const f = parseScoringConfig({
+    weights: {},
+    rules: {},
+    filters: { excludedGenres: [' FPS ', 'FPS'], maxHours: 20, minDesire: 'Alta' },
+  }).filters;
+  assert.deepEqual(f, {
+    ...defaultFilters,
+    excludedGenres: ['FPS'],
+    maxHours: 20,
+    minDesire: 'Alta',
+  });
   // Toda chave de peso e de regra aparece na tabela.
   const weights = new Set(scoringFactors.map((f) => f.weight));
   const rules = new Set(scoringFactors.map((f) => f.rule));
@@ -213,6 +305,18 @@ test('repositório JSON: versão sobe, persiste e tolera arquivo antigo', async 
     assert.deepEqual((await again.get()).config, custom);
     assert.equal((await again.get()).version, 1);
     assert.equal((await again.save(defaultConfig)).version, 2);
+    // Arquivo antigo (sem filters) e filtro salvo inválido voltam ao padrão neutro.
+    await writeFile(
+      file,
+      JSON.stringify({
+        config: { weights: {}, rules: {}, filters: { maxHours: 'x', excludedTags: ['Terror'] } },
+        version: 3,
+      }),
+    );
+    const old = await new LocalScoringConfigRepository(file).get();
+    assert.deepEqual(old.config.filters, { ...defaultFilters, excludedTags: ['Terror'] });
+    await writeFile(file, JSON.stringify({ config: { weights: {}, rules: {} }, version: 4 }));
+    assert.deepEqual((await new LocalScoringConfigRepository(file).get()).config, defaultConfig);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -252,8 +356,24 @@ test('API: GET/PUT/reset de /settings/scoring e fila usando a config', async () 
     const q = await json<Recommendations>(call('/recommendations'));
     assert.equal(q.configVersion, 1);
     assert(q.items.every((i) => !isCompetitive(i.game)));
+    assert.equal(first.filterOptions.total, 394);
+    const long = await call('/settings/scoring', 'PUT', {
+      weights: first.config.weights,
+      rules: first.config.rules,
+      filters: { maxHours: 15, excludeUnknownHours: true },
+    });
+    assert.equal(long.status, 200);
+    assert.equal((await json<ScoringSettings>(long)).config.filters.maxHours, 15);
+    const short = await json<Recommendations>(call('/recommendations'));
+    assert(short.items.every((i) => i.game.plannedHours !== null && i.game.plannedHours <= 15));
+    assert.equal(short.total + short.excluded.length, 394);
+    assert.equal(
+      (await call('/settings/scoring', 'PUT', { ...first.config, filters: { minHours: -2 } }))
+        .status,
+      400,
+    );
     const reset = await json<ScoringSettings>(call('/settings/scoring/reset', 'POST'));
-    assert.equal(reset.version, 2);
+    assert.equal(reset.version, 3);
     assert.deepEqual(reset.config, defaultConfig);
     assert.equal((await json<Recommendations>(call('/recommendations'))).total, 394);
   } finally {

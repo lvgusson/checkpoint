@@ -3,6 +3,9 @@ import { RouterLink } from '@angular/router';
 import { Api } from './api';
 import { ScoringSettingsStore } from './scoring-settings';
 import type {
+  Desire,
+  FilterOption,
+  QueueFilters,
   ScoreWeights,
   ScoringConfig,
   ScoringFactor,
@@ -34,6 +37,7 @@ const SECTIONS: { id: ScoringSection; title: string; hint: string }[] = [
     hint: 'Limites usados pelas regras acima. Valem enquanto alguma regra que os usa estiver ativa.',
   },
 ];
+type ListFilter = 'excludedGenres' | 'excludedTags' | 'stores' | 'paces';
 /** Ajustes que somam (os demais subtraem); os de tags são multiplicados pela sobreposição. */
 const BONUS = new Set<string>(['inProgress', 'contrastingPace', 'shortAfterLong']);
 const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
@@ -214,6 +218,165 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
               }
             </tbody>
           </table>
+        </section>
+      }
+
+      @if (settings()?.filterOptions; as o) {
+        <section class="panel settings-section" aria-labelledby="sec-content-filters">
+          <h2 id="sec-content-filters">Filtros de conteúdo</h2>
+          <p class="muted">
+            Recorte a fila para montar listas temáticas. Os números mostram quantos dos
+            {{ o.total }} candidatos cada escolha tira da fila.
+            @if (activeFilters(d)) {
+              <button type="button" class="link" (click)="clearFilters()" [disabled]="busy()">
+                Limpar filtros
+              </button>
+            }
+          </p>
+
+          <fieldset class="filter-group">
+            <legend>Excluir gêneros</legend>
+            <div class="chips">
+              @for (g of o.genres; track g.value) {
+                <button
+                  type="button"
+                  class="pick exclude"
+                  [attr.aria-pressed]="has(d.filters.excludedGenres, g.value)"
+                  [disabled]="busy()"
+                  (click)="toggleIn('excludedGenres', g.value)"
+                >
+                  {{ g.value }} <small>{{ g.count }}</small>
+                </button>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="filter-group">
+            <legend>Duração (horas previstas)</legend>
+            <div class="hours">
+              <label class="number" [class.invalid]="!hoursValid(d)">
+                mín.
+                <input
+                  type="number"
+                  min="0"
+                  max="10000"
+                  step="1"
+                  placeholder="—"
+                  [value]="d.filters.minHours ?? ''"
+                  [disabled]="busy()"
+                  aria-label="Horas mínimas"
+                  (input)="setHours('minHours', $event)"
+                /><span>h</span>
+              </label>
+              <label class="number" [class.invalid]="!hoursValid(d)">
+                máx.
+                <input
+                  type="number"
+                  min="0"
+                  max="10000"
+                  step="1"
+                  placeholder="—"
+                  [value]="d.filters.maxHours ?? ''"
+                  [disabled]="busy()"
+                  aria-label="Horas máximas"
+                  (input)="setHours('maxHours', $event)"
+                /><span>h</span>
+              </label>
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="d.filters.excludeUnknownHours"
+                  [disabled]="busy()"
+                  (change)="setFlag('excludeUnknownHours')"
+                />
+                Tirar jogos sem tempo estimado
+              </label>
+              <span class="removed">−{{ hoursRemoved(d, o.hours) }} jogos</span>
+            </div>
+            @if (!hoursValid(d)) {
+              <small class="hint">Use horas de 0 a 10.000, com o mínimo até o máximo.</small>
+            }
+            <p class="muted small">
+              Horas previstas = estimativa (história + extras, ou só história) × seu ritmo; é o
+              mesmo número que a fila mostra e soma. Sem limite = campo vazio.
+            </p>
+          </fieldset>
+
+          <fieldset class="filter-group">
+            <legend>Só estas lojas <small>(nenhuma marcada = todas)</small></legend>
+            <div class="chips">
+              @for (s of o.stores; track s.value) {
+                <button
+                  type="button"
+                  class="pick"
+                  [attr.aria-pressed]="has(d.filters.stores, s.value)"
+                  [disabled]="busy()"
+                  (click)="toggleIn('stores', s.value)"
+                >
+                  {{ s.value }} <small>{{ s.count }}</small>
+                </button>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="filter-group">
+            <legend>Só estes ritmos <small>(nenhum marcado = todos)</small></legend>
+            <div class="chips">
+              @for (p of o.paces; track p.value) {
+                <button
+                  type="button"
+                  class="pick"
+                  [attr.aria-pressed]="has(d.filters.paces, p.value)"
+                  [disabled]="busy()"
+                  (click)="toggleIn('paces', p.value)"
+                >
+                  {{ p.value }} <small>{{ p.count }}</small>
+                </button>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="filter-group inline">
+            <legend>Vontade e companhia</legend>
+            <label class="select">
+              Vontade mínima
+              <select [disabled]="busy()" (change)="setMinDesire($event)">
+                <option value="" [selected]="d.filters.minDesire === null">Qualquer</option>
+                @for (x of o.desires; track x.value) {
+                  <option [value]="x.value" [selected]="d.filters.minDesire === x.value">
+                    {{ x.value }} ou mais
+                  </option>
+                }
+              </select>
+              <span class="removed">−{{ desireRemoved(d, o.desires) }} jogos</span>
+            </label>
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="d.filters.coopOnly"
+                [disabled]="busy()"
+                (change)="setFlag('coopOnly')"
+              />
+              Só jogos com coop (local ou online) <small>{{ o.coop }} jogos</small>
+            </label>
+          </fieldset>
+
+          <details class="filter-group" [open]="d.filters.excludedTags.length > 0">
+            <summary>Excluir subgêneros/tags ({{ d.filters.excludedTags.length }})</summary>
+            <div class="chips">
+              @for (t of o.tags; track t.value) {
+                <button
+                  type="button"
+                  class="pick exclude"
+                  [attr.aria-pressed]="has(d.filters.excludedTags, t.value)"
+                  [disabled]="busy()"
+                  (click)="toggleIn('excludedTags', t.value)"
+                >
+                  {{ t.value }} <small>{{ t.count }}</small>
+                </button>
+              }
+            </div>
+          </details>
         </section>
       }
 
@@ -440,6 +603,112 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
     .switch input:disabled + span {
       opacity: 0.5;
     }
+    .filter-group {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 0;
+      padding: 14px 0 12px;
+      min-width: 0;
+    }
+    .filter-group legend,
+    .filter-group summary {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+    .filter-group summary {
+      cursor: pointer;
+    }
+    .filter-group legend small,
+    .check small {
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .pick {
+      font: inherit;
+      font-size: 12px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: inherit;
+      cursor: pointer;
+    }
+    .pick small {
+      color: var(--muted);
+      margin-left: 2px;
+    }
+    .pick[aria-pressed='true'] {
+      background: #def1e4;
+      border-color: #9fd0b2;
+      color: #266443;
+    }
+    .pick.exclude[aria-pressed='true'] {
+      background: #fbefea;
+      border-color: #e8bfae;
+      color: #8d4b33;
+      text-decoration: line-through;
+    }
+    .pick:focus-visible {
+      outline: 3px solid #62ba94;
+      outline-offset: 2px;
+    }
+    .pick:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .hours,
+    .inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 18px;
+    }
+    .inline legend {
+      width: 100%;
+    }
+    .check,
+    .select {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 8px;
+      margin: 0 !important;
+      font-size: 12px;
+      font-weight: 400 !important;
+    }
+    .check input {
+      width: auto;
+      margin: 0;
+    }
+    .select select {
+      width: auto;
+      margin: 0;
+      padding: 7px 9px;
+    }
+    .removed {
+      font-size: 11px;
+      color: #8d4b33;
+    }
+    .muted.small {
+      font-size: 11px;
+      margin: 8px 0 0;
+    }
+    .link {
+      font: inherit;
+      background: none;
+      border: 0;
+      padding: 0;
+      margin-left: 6px;
+      color: var(--green);
+      text-decoration: underline;
+      cursor: pointer;
+    }
     .settings-actions {
       position: sticky;
       bottom: 0;
@@ -521,7 +790,10 @@ export class Settings {
     const d = this.draft();
     return (
       !!d &&
-      (this.settings()?.factors ?? []).some((f) => f.weight && !this.valid(f, d.weights[f.weight]))
+      ((this.settings()?.factors ?? []).some(
+        (f) => f.weight && !this.valid(f, d.weights[f.weight]),
+      ) ||
+        !this.hoursValid(d))
     );
   });
 
@@ -576,6 +848,56 @@ export class Settings {
     this.draft.update((d) => d && { ...d, rules: { ...d.rules, [rule]: !d.rules[rule] } });
     this.success.set('');
   }
+  has(list: string[], value: string) {
+    const v = value.toLocaleLowerCase('pt-BR');
+    return list.some((x) => x.toLocaleLowerCase('pt-BR') === v);
+  }
+  toggleIn(key: ListFilter, value: string) {
+    this.updateFilters((f) => ({
+      [key]: this.has(f[key], value)
+        ? f[key].filter((x) => x.toLocaleLowerCase('pt-BR') !== value.toLocaleLowerCase('pt-BR'))
+        : [...f[key], value],
+    }));
+  }
+  setHours(key: 'minHours' | 'maxHours', e: Event) {
+    const v = (e.target as HTMLInputElement).valueAsNumber;
+    this.updateFilters(() => ({ [key]: Number.isFinite(v) ? v : null }));
+  }
+  setFlag(key: 'excludeUnknownHours' | 'coopOnly') {
+    this.updateFilters((f) => ({ [key]: !f[key] }));
+  }
+  setMinDesire(e: Event) {
+    const v = (e.target as HTMLSelectElement).value;
+    this.updateFilters(() => ({ minDesire: (v || null) as Desire | null }));
+  }
+  clearFilters() {
+    const defaults = this.settings()?.defaults.filters;
+    if (defaults) this.updateFilters(() => structuredClone(defaults));
+  }
+  activeFilters({ filters }: ScoringConfig) {
+    const defaults = this.settings()?.defaults.filters;
+    return !!defaults && JSON.stringify(filters) !== JSON.stringify(defaults);
+  }
+  hoursValid({ filters: { minHours: min, maxHours: max } }: ScoringConfig) {
+    const ok = (n: number | null) => n === null || (n >= 0 && n <= 10000);
+    return ok(min) && ok(max) && (min === null || max === null || min <= max);
+  }
+  /** Quantos candidatos os limites de horas tiram (sem tempo passa, exceto se pedido). */
+  hoursRemoved({ filters: f }: ScoringConfig, hours: (number | null)[]) {
+    return hours.filter((h) =>
+      h === null
+        ? f.excludeUnknownHours
+        : (f.minHours !== null && h < f.minHours) || (f.maxHours !== null && h > f.maxHours),
+    ).length;
+  }
+  desireRemoved({ filters: f }: ScoringConfig, desires: FilterOption[]) {
+    const min = desires.findIndex((x) => x.value === f.minDesire);
+    return min < 0 ? 0 : desires.slice(min + 1).reduce((s, x) => s + x.count, 0);
+  }
+  private updateFilters(patch: (f: QueueFilters) => Partial<QueueFilters>) {
+    this.draft.update((d) => d && { ...d, filters: { ...d.filters, ...patch(d.filters) } });
+    this.success.set('');
+  }
   discard() {
     const s = this.settings();
     if (s) this.draft.set(structuredClone(s.config));
@@ -586,7 +908,7 @@ export class Settings {
     await this.persist(() => this.store.save(d), 'Configuração salva. A fila foi recalculada.');
   }
   async restoreDefaults() {
-    if (!confirm('Voltar todos os pesos e regras para o padrão?')) return;
+    if (!confirm('Voltar todos os pesos, regras e filtros para o padrão?')) return;
     await this.persist(() => this.store.reset(), 'Padrão restaurado. A fila foi recalculada.');
   }
 

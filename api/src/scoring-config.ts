@@ -1,11 +1,13 @@
 // Configuração do algoritmo por usuário: metadados da tela (fatores, faixas) e validação.
 import type {
+  Desire,
+  QueueFilters,
   ScoreWeights,
   ScoringConfig,
   ScoringFactor,
   ScoringRuleId,
 } from '../../shared/models.ts';
-import { defaultConfig, defaultRules, defaultWeights } from './scoring.ts';
+import { defaultConfig, defaultFilters, defaultRules, defaultWeights } from './scoring.ts';
 
 type Row = Omit<ScoringFactor, 'id' | 'step'> & { step?: number };
 const coef = { unit: '×', min: 0, max: 10, step: 0.01 };
@@ -179,7 +181,7 @@ const isObject = (v: unknown): v is Record<string, unknown> =>
  */
 export function parseScoringConfig(input: unknown): ScoringConfig {
   if (!isObject(input) || !isObject(input.weights) || !isObject(input.rules))
-    throw new RangeError('Envie { weights, rules }');
+    throw new RangeError('Envie { weights, rules, filters? }');
   const weights = { ...defaultWeights };
   for (const [key, value] of Object.entries(input.weights)) {
     const f = ranges.get(key as keyof ScoreWeights);
@@ -194,14 +196,82 @@ export function parseScoringConfig(input: unknown): ScoringConfig {
     if (typeof value !== 'boolean') throw new RangeError('Regra precisa ser booleana: ' + key);
     rules[key as ScoringRuleId] = value;
   }
-  return { weights, rules };
+  return { weights, rules, filters: parseFilters(input.filters) };
+}
+
+const desireValues: Desire[] = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
+const MAX_HOURS = 10000;
+type FilterParser = (v: unknown, key: string) => unknown;
+const stringList: FilterParser = (v, key) => {
+  if (
+    !Array.isArray(v) ||
+    v.length > 200 ||
+    v.some((s) => typeof s !== 'string' || !s.trim() || s.length > 100)
+  )
+    throw new RangeError(`Filtro ${key}: envie uma lista de textos`);
+  return [...new Set(v.map((s: string) => s.trim()))];
+};
+const hoursLimit: FilterParser = (v, key) => {
+  if (v === null) return null;
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > MAX_HOURS)
+    throw new RangeError(`Filtro ${key}: use null ou horas entre 0 e ${MAX_HOURS}`);
+  return v;
+};
+const flag: FilterParser = (v, key) => {
+  if (typeof v !== 'boolean') throw new RangeError(`Filtro ${key} precisa ser booleano`);
+  return v;
+};
+const filterParsers: Record<keyof QueueFilters, FilterParser> = {
+  excludedGenres: stringList,
+  excludedTags: stringList,
+  stores: stringList,
+  paces: stringList,
+  minHours: hoursLimit,
+  maxHours: hoursLimit,
+  excludeUnknownHours: flag,
+  coopOnly: flag,
+  minDesire: (v) => {
+    if (v !== null && !desireValues.includes(v as Desire))
+      throw new RangeError('Filtro minDesire: use null ou ' + desireValues.join(', '));
+    return v;
+  },
+};
+
+/** Filtros enviados (ausentes = padrão neutro); chave desconhecida ou valor inválido → RangeError. */
+function parseFilters(input: unknown): QueueFilters {
+  const filters = structuredClone(defaultFilters);
+  if (input === undefined) return filters;
+  if (!isObject(input)) throw new RangeError('filters precisa ser um objeto');
+  for (const [key, value] of Object.entries(input)) {
+    const parse = filterParsers[key as keyof QueueFilters];
+    if (!Object.hasOwn(filterParsers, key)) throw new RangeError('Filtro desconhecido: ' + key);
+    Object.assign(filters, { [key]: parse(value, key) });
+  }
+  if (filters.minHours !== null && filters.maxHours !== null && filters.minHours > filters.maxHours)
+    throw new RangeError('Filtro de horas: o mínimo passa do máximo');
+  return filters;
 }
 
 /** Leitura tolerante do que está salvo: valores inválidos/ausentes voltam ao padrão. */
-export function storedScoringConfig(weights: unknown, rules: unknown): ScoringConfig {
+export function storedScoringConfig(
+  weights: unknown,
+  rules: unknown,
+  filters?: unknown,
+): ScoringConfig {
   const w = isObject(weights) ? weights : {};
   const r = isObject(rules) ? rules : {};
+  const f = isObject(filters) ? filters : {};
   const config = structuredClone(defaultConfig);
+  for (const key of Object.keys(filterParsers) as (keyof QueueFilters)[]) {
+    if (!Object.hasOwn(f, key)) continue;
+    try {
+      Object.assign(config.filters, { [key]: filterParsers[key](f[key], key) });
+    } catch {
+      // valor salvo inválido: fica o padrão
+    }
+  }
+  const { minHours, maxHours } = config.filters;
+  if (minHours !== null && maxHours !== null && minHours > maxHours) config.filters.maxHours = null;
   for (const [key, f] of ranges) {
     const v = w[key];
     if (typeof v === 'number' && Number.isFinite(v) && v >= f.min && v <= f.max)

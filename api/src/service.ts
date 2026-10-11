@@ -13,7 +13,13 @@ import {
   LocalManualAdjustmentRepository,
   type ManualAdjustmentRepository,
 } from './manual-repository.ts';
-import { scoreGames, recommendGames, solveManualPoints, defaultConfig } from './scoring.ts';
+import {
+  scoreGames,
+  recommendGames,
+  solveManualPoints,
+  defaultConfig,
+  filterOptions,
+} from './scoring.ts';
 import { parseScoringConfig, scoringFactors } from './scoring-config.ts';
 import {
   LocalScoringConfigRepository,
@@ -74,8 +80,15 @@ export class GameService {
     const [games, settings] = await Promise.all([this.repository.list(), this.settings.get()]);
     return scoreGames(games, settings.config).games;
   }
-  private toSettings(s: StoredScoringConfig): ScoringSettings {
-    return { ...s, defaults: defaultConfig, factors: scoringFactors };
+  /** Settings + metadados da tela; as opções dos filtros são contadas sobre os jogos atuais. */
+  private async toSettings(s: StoredScoringConfig): Promise<ScoringSettings> {
+    const games = await this.repository.list();
+    return {
+      ...s,
+      defaults: defaultConfig,
+      factors: scoringFactors,
+      filterOptions: filterOptions(games, s.config),
+    };
   }
   async scoringSettings(): Promise<ScoringSettings> {
     return this.toSettings(await this.settings.get());

@@ -308,16 +308,17 @@ export class PgManualAdjustmentRepository implements ManualAdjustmentRepository 
 }
 
 /** Linha de user_score_weights como json (sem linha = config padrão, versão 0). */
-const SETTINGS_JSON = `SELECT json_build_object('weights', w.weights, 'rules', w.rules,
+const SETTINGS_JSON = `SELECT json_build_object('weights', w.weights, 'rules', w.rules, 'filters', w.filters,
   'version', w.version, 'updatedAt', ${isoTs('w.updated_at')}) FROM user_score_weights w`;
 interface RawSettings {
   weights: unknown;
   rules: unknown;
+  filters: unknown;
   version: number;
   updatedAt: string;
 }
 const toSettings = (raw: RawSettings | null | undefined): StoredScoringConfig => ({
-  config: storedScoringConfig(raw?.weights, raw?.rules),
+  config: storedScoringConfig(raw?.weights, raw?.rules, raw?.filters),
   version: raw?.version ?? 0,
   updatedAt: raw?.updatedAt ?? null,
 });
@@ -343,12 +344,16 @@ export class PgScoringConfigRepository implements ScoringConfigRepository {
     const sql = this.sql;
     const u = await this.user();
     const [row] = await sql<{ settings: RawSettings }[]>`
-      INSERT INTO user_score_weights AS w (user_id, weights, rules)
-      VALUES (${u}, ${sql.json(json(config.weights))}::jsonb, ${sql.json(json(config.rules))}::jsonb)
+      INSERT INTO user_score_weights AS w (user_id, weights, rules, filters)
+      VALUES (${u}, ${sql.json(json(config.weights))}::jsonb, ${sql.json(json(config.rules))}::jsonb,
+              ${sql.json(json(config.filters))}::jsonb)
       ON CONFLICT (user_id) DO UPDATE
-         SET weights = EXCLUDED.weights, rules = EXCLUDED.rules, version = w.version + 1
-      RETURNING json_build_object('weights', w.weights, 'rules', w.rules, 'version', w.version,
-                'updatedAt', ${sql.unsafe(isoTs('w.updated_at'))}) AS settings`.catch(asAppError);
+         SET weights = EXCLUDED.weights, rules = EXCLUDED.rules, filters = EXCLUDED.filters,
+             version = w.version + 1
+      RETURNING json_build_object('weights', w.weights, 'rules', w.rules, 'filters', w.filters,
+                'version', w.version, 'updatedAt', ${sql.unsafe(isoTs('w.updated_at'))}) AS settings`.catch(
+      asAppError,
+    );
     return toSettings(row.settings);
   }
 }

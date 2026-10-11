@@ -770,6 +770,9 @@
           "rules": {
             "$ref": "#/components/schemas/ScoringRules"
           },
+          "filters": {
+            "$ref": "#/components/schemas/QueueFilters"
+          },
           "configVersion": {
             "type": "integer",
             "description": "Versão da configuração usada no cálculo (compare com o cache local)."
@@ -1043,7 +1046,58 @@
           },
           "rules": {
             "$ref": "#/components/schemas/ScoringRules"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/QueueFilters"
           }
+        }
+      },
+      "QueueFilters": {
+        "type": "object",
+        "description": "Filtros de conteúdo da fila. Opcional no PUT (ausente = padrão neutro); chaves ausentes = padrão. Textos comparados sem acento/maiúsculas. Horas = plannedHours.",
+        "additionalProperties": false,
+        "properties": {
+          "excludedGenres": { "type": "array", "items": { "type": "string" }, "maxItems": 200 },
+          "excludedTags": { "type": "array", "items": { "type": "string" }, "maxItems": 200 },
+          "stores": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 200,
+            "description": "Só estas lojas (vazio = todas)."
+          },
+          "paces": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 200,
+            "description": "Só estes ritmos (vazio = todos)."
+          },
+          "minHours": { "type": "number", "minimum": 0, "maximum": 10000, "nullable": true },
+          "maxHours": { "type": "number", "minimum": 0, "maximum": 10000, "nullable": true },
+          "excludeUnknownHours": { "type": "boolean" },
+          "coopOnly": { "type": "boolean" },
+          "minDesire": {
+            "type": "string",
+            "enum": ["Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"],
+            "nullable": true
+          }
+        }
+      },
+      "FilterOption": {
+        "type": "object",
+        "properties": { "value": { "type": "string" }, "count": { "type": "integer" } }
+      },
+      "FilterOptions": {
+        "type": "object",
+        "description": "Valores dos filtros com contagem sobre os candidatos da fila sem filtros de conteúdo.",
+        "properties": {
+          "total": { "type": "integer" },
+          "genres": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
+          "tags": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
+          "stores": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
+          "paces": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
+          "desires": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
+          "coop": { "type": "integer" },
+          "hours": { "type": "array", "items": { "type": "number", "nullable": true } }
         }
       },
       "ScoringFactor": {
@@ -1101,6 +1155,9 @@
           },
           "defaults": {
             "$ref": "#/components/schemas/ScoringConfig"
+          },
+          "filterOptions": {
+            "$ref": "#/components/schemas/FilterOptions"
           },
           "factors": {
             "type": "array",
