@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api, color } from './api';
+import { ScoringSettingsStore } from './scoring-settings';
 import type { QueueEntry, Recommendations } from '../../shared/models';
 
 /** Linha da fila medida no início do arraste (coordenadas do documento). */
@@ -297,6 +298,7 @@ const LONG_PRESS_MS = 320;
 })
 export class Queue {
   api = inject(Api);
+  private settings = inject(ScoringSettingsStore);
   color = color;
   data = signal<Recommendations | null>(null);
   visible = signal(30);
@@ -365,6 +367,7 @@ export class Queue {
     this.error.set('');
     try {
       const next = await this.api.queue();
+      this.settings.syncVersion(next.configVersion);
       if (this.data()) this.flipTo(next);
       else this.data.set(next);
     } catch {
@@ -778,7 +781,11 @@ export class Queue {
       this.say(this.notice()!.text);
     } catch {
       this.flipTo(prev);
-      this.error.set('Não foi possível salvar a nova ordem. A fila voltou ao estado anterior.');
+      this.error.set(
+        prev.rules.manual
+          ? 'Não foi possível salvar a nova ordem. A fila voltou ao estado anterior.'
+          : 'O ajuste manual está desativado em Configurações. A fila voltou ao estado anterior.',
+      );
       this.say('Erro ao salvar. A ordem anterior foi restaurada.');
     } finally {
       this.busyId.set(null);
