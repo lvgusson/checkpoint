@@ -13,7 +13,13 @@
             "tsConfig": "tsconfig.app.json",
             "index": "web/src/index.html",
             "styles": ["web/src/styles.css"],
-            "outputPath": "dist/web"
+            "outputPath": "dist/web",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "web/public"
+              }
+            ]
           }
         },
         "serve": {

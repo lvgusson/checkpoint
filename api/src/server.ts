@@ -173,6 +173,8 @@ export function makeServer(
           '.css': 'text/css',
           '.svg': 'image/svg+xml',
           '.ico': 'image/x-icon',
+          '.png': 'image/png',
+          '.webmanifest': 'application/manifest+json',
         };
         res.setHeader('Content-Type', mime[extname(target)] ?? 'application/octet-stream');
         res.end(content);
