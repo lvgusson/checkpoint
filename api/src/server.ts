@@ -11,12 +11,14 @@ import { currentVersion } from './version.ts';
 import { runInBackground } from './background.ts';
 import type { WishlistService } from './wishlist.ts';
 import { wishlistRoute } from './wishlist-routes.ts';
+import { releaseRoute, releaseStoreFromEnv, type ReleaseStore } from './releases.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 // auth: null desliga a autenticação (dev/testes sem SUPABASE_URL). Ver api/src/auth.ts.
 export function makeServer(
   service: GameService,
   auth: Authenticator | null = authenticatorFromEnv(),
   wishlist: WishlistService | null = null,
+  releases: ReleaseStore | null = releaseStoreFromEnv(),
 ) {
   return createServer((req, res) =>
     runWithContext({}, async () => {
@@ -54,6 +56,14 @@ export function makeServer(
         }
         if (path === '/api/v1/config') return send(publicAuthConfig());
         if (path === '/api/v1/version') return send(await currentVersion());
+        // Public release reads and dedicated-token registration precede user authentication.
+        if (path.startsWith('/api/v1/releases')) {
+          const hit = await releaseRoute(releases, req, url, readJson);
+          if (hit) {
+            for (const [k, v] of Object.entries(hit.headers ?? {})) res.setHeader(k, v);
+            return send(hit.data, hit.status);
+          }
+        }
         // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
         if (auth && path.startsWith('/api/')) {
           const user = await auth.authenticate(req.headers.authorization);

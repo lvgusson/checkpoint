@@ -26,6 +26,9 @@ export type AuthResult = { ok: true; message?: string } | { ok: false; message: 
  * (autoRefreshToken) — aqui só espelhamos o estado via onAuthStateChange
  * (SIGNED_IN, TOKEN_REFRESHED, SIGNED_OUT, PASSWORD_RECOVERY...).
  */
+/** Email alias domain for provisioned username accounts. */
+const USERNAME_DOMAIN = 'gps.dev.br';
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private router = inject(Router);
@@ -94,8 +97,11 @@ export class AuthService {
     return this.refreshing;
   }
 
-  async signIn(email: string, password: string): Promise<AuthResult> {
+  /** Accept email or map a username to its lowercase email alias. */
+  async signIn(login: string, password: string): Promise<AuthResult> {
     if (!this.client) return this.unavailable();
+    const id = login.trim();
+    const email = id.includes('@') ? id : id.toLowerCase() + '@' + USERNAME_DOMAIN;
     const { error } = await this.client.auth.signInWithPassword({ email, password });
     return error ? { ok: false, message: translate(error) } : { ok: true };
   }

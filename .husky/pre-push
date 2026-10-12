@@ -1,0 +1,1 @@
+node AI/hooks/pre-push.mjs "$@"

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./AI/read-main-entry.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

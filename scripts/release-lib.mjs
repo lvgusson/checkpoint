@@ -1,23 +1,16 @@
-// Lógica pura dos scripts de release (record-release.mjs / rollback.mjs).
-// Sem rede nem processos: tudo aqui é testável (api/test/release.test.ts).
-
+// Pure release and rollback helpers; no network or subprocess execution.
 export const ENVIRONMENTS = ['production', 'preview', 'development'];
 
 export function normalizeEnv(value) {
   return ENVIRONMENTS.includes(value) ? value : 'development';
 }
 
-/**
- * Linha de app_release a partir das variáveis de sistema da Vercel
- * (VERCEL_GIT_COMMIT_SHA, VERCEL_GIT_COMMIT_REF, VERCEL_GIT_COMMIT_MESSAGE,
- * VERCEL_ENV, VERCEL_URL, VERCEL_DEPLOYMENT_ID). null se não houver SHA.
- */
-export function releaseFromEnv(env, version) {
+/** Read Vercel Git/build metadata; return null when SHA is absent. */
+export function releaseFromEnv(env) {
   const sha = env.VERCEL_GIT_COMMIT_SHA?.trim();
   if (!sha) return null;
   return {
-    version: version || '0.0.0',
-    git_sha: sha,
+    git_sha: sha.toLowerCase(),
     git_ref: env.VERCEL_GIT_COMMIT_REF || null,
     commit_message: env.VERCEL_GIT_COMMIT_MESSAGE?.slice(0, 2048) || null,
     vercel_deployment_id: env.VERCEL_DEPLOYMENT_ID || null,
@@ -29,7 +22,8 @@ export function releaseFromEnv(env, version) {
 const USAGE = `Uso:
   node scripts/rollback.mjs list [--env production|preview|development|all] [--limit N]
   node scripts/rollback.mjs rollback <git_sha|version|deployment_id|url> (--vercel | --git) [--yes] [--env production]
-  node scripts/rollback.mjs tag`;
+  node scripts/rollback.mjs tag [--env production]
+  node scripts/release-note.mjs "descrição" [--kind fix|feature|refactor|chore|release] [--name "..."] [--bump minor|major | --version X.Y.Z]`;
 
 export function usage() {
   return USAGE;
@@ -70,16 +64,12 @@ const stripProtocol = (u) =>
     .replace(/^https?:\/\//, '')
     .replace(/\/+$/, '');
 
-/**
- * Resolve o alvo do rollback entre as linhas de app_release (mais recentes primeiro).
- * Aceita deployment id (dpl_...), URL do deploy, SHA (prefixo >= 7) ou versão (v1.2.3 / 1.2.3).
- * Filtra pelo environment (exceto 'all'). Lança erro se o prefixo de SHA for ambíguo.
- */
+/** Resolve a registered target by deployment, URL, unambiguous SHA prefix, or version within an environment. */
 export function resolveTarget(rows, query, environment = 'production') {
   const q = String(query ?? '').trim();
   if (!q) return null;
   const pool = environment === 'all' ? rows : rows.filter((r) => r.environment === environment);
-  const sorted = [...pool].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const sorted = [...pool].sort((a, b) => Number(b.id) - Number(a.id));
 
   if (q.startsWith('dpl_')) return sorted.find((r) => r.vercel_deployment_id === q) ?? null;
   if (/\.vercel\.app/.test(q)) {
@@ -96,30 +86,22 @@ export function resolveTarget(rows, query, environment = 'production') {
   return sorted.find((r) => r.version === version) ?? null;
 }
 
-/** Release corrente do environment: o mais recente com status 'deployed'. */
+/** Highest registered ID is latest; registration does not prove traffic promotion. */
 export function currentRelease(rows, environment = 'production') {
   return (
     [...rows]
-      .filter(
-        (r) => (environment === 'all' || r.environment === environment) && r.status === 'deployed',
-      )
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] ?? null
+      .filter((r) => environment === 'all' || r.environment === environment)
+      .sort((a, b) => Number(b.id) - Number(a.id))[0] ?? null
   );
 }
 
-/**
- * Comandos do rollback instantâneo na Vercel (sem build: re-aponta os domínios).
- * @returns {[string, string[]][]}
- */
+/** Generate Vercel rollback commands. @returns {[string, string[]][]} */
 export function vercelRollbackCommands(target) {
   if (!target?.vercel_url) throw new Error('Release alvo sem vercel_url: use --git.');
   return [['vercel', ['rollback', `https://${stripProtocol(target.vercel_url)}`, '--yes']]];
 }
 
-/**
- * Comandos do rollback por git: reverte alvo..HEAD (commits novos) e faz push (novo deploy).
- * @returns {[string, string[]][]}
- */
+/** Generate Git revert and push commands. @returns {[string, string[]][]} */
 export function gitRollbackCommands(targetSha, branch = 'main') {
   if (!/^[0-9a-f]{7,40}$/i.test(String(targetSha ?? '')))
     throw new Error(`SHA inválido: ${targetSha}`);
@@ -129,7 +111,7 @@ export function gitRollbackCommands(targetSha, branch = 'main') {
   ];
 }
 
-/** Aviso sobre migrations (nunca revertidas automaticamente). */
+/** Application rollback does not reverse migrations. */
 export function migrationWarning(current, target) {
   const base = 'Atenção: migrations de banco NÃO são revertidas automaticamente.';
   const a = current?.db_migration_version ?? null;
@@ -144,7 +126,7 @@ export function formatCommand([cmd, args]) {
   return [cmd, ...args].join(' ');
 }
 
-/** Tabela em texto para `release:list`. */
+/** Format registrations for release:list. */
 export function formatTable(rows) {
   const cols = [
     ['id', (r) => r.id],
@@ -153,10 +135,10 @@ export function formatTable(rows) {
     ['version', (r) => r.version],
     ['sha', (r) => r.git_sha?.slice(0, 7)],
     ['ref', (r) => r.git_ref],
-    ['status', (r) => r.status + (r.rolled_back_to ? `->${r.rolled_back_to}` : '')],
+    ['kind', (r) => r.kind + (r.rollback_to ? `->#${r.rollback_to}` : '')],
     ['db_mig', (r) => r.db_migration_version],
     ['deployment', (r) => r.vercel_deployment_id],
-    ['message', (r) => (r.commit_message ?? '').split('\n')[0].slice(0, 50)],
+    ['description', (r) => (r.name ? `[${r.name}] ` : '') + (r.description ?? '').slice(0, 60)],
   ];
   const cells = rows.map((r) => cols.map(([, f]) => String(f(r) ?? '')));
   const widths = cols.map(([h], i) => Math.max(h.length, ...cells.map((c) => c[i].length)));

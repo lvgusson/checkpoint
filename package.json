@@ -1,24 +1,30 @@
 {
   "name": "checkpoint-games",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=24.15.0"
+    "node": "\u003e=24.15.0"
   },
   "scripts": {
+    "architecture:check": "node AI/validation/validate.mjs",
+    "architecture:staged": "node AI/validation/validate.mjs --staged",
+    "architecture:test": "node --test AI/validation/*.test.mjs AI/skills/branch-review/scripts/*.test.mjs",
+    "branch-review": "node AI/skills/branch-review/scripts/branch-review.mjs",
+    "master:create": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env scripts/master-user.mjs",
     "start": "node --env-file-if-exists=.env api/src/server.ts",
     "dev": "node scripts/dev.mjs",
     "build": "ng build",
-    "vercel-build": "ng build && node scripts/record-release.mjs",
+    "vercel-build": "ng build \u0026\u0026 node scripts/record-release.mjs",
     "release:list": "node --env-file-if-exists=.env scripts/rollback.mjs list",
+    "release:note": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env scripts/release-note.mjs",
     "release:rollback": "node --env-file-if-exists=.env scripts/rollback.mjs rollback",
-    "release:tag": "node scripts/rollback.mjs tag",
+    "release:tag": "node --env-file-if-exists=.env scripts/rollback.mjs tag",
     "wishlist:import": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env api/src/wishlist-cli.ts",
     "wishlist:export": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env api/src/wishlist-cli.ts --export",
     "wishlist:seed": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env api/src/wishlist-cli.ts --from",
     "test": "node --test api/test/*.test.ts",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build",
+    "check": "npm run typecheck \u0026\u0026 npm run lint \u0026\u0026 npm run format:check \u0026\u0026 npm test \u0026\u0026 npm run build",
     "typecheck": "tsc -p api/tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -57,6 +63,7 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.1",
+    "yaml": "2.9.1"
   }
 }

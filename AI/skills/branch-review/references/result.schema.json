@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "digest", "role", "units", "uncertainties"],
+  "properties": {
+    "status": { "enum": ["PASS", "FAIL", "INCONCLUSIVE"] },
+    "digest": { "type": "string" },
+    "role": { "type": "string" },
+    "uncertainties": { "type": "array", "items": { "type": "string" } },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "head", "base", "status", "assessments", "findings"],
+        "properties": {
+          "id": { "type": "string" },
+          "head": { "type": "string" },
+          "base": { "type": ["string", "null"] },
+          "status": { "enum": ["PASS", "FAIL", "INCONCLUSIVE"] },
+          "assessments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "analysis", "references"],
+              "properties": {
+                "path": { "type": "string" },
+                "analysis": { "type": "string" },
+                "references": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "severity", "explanation", "correction"],
+              "properties": {
+                "path": { "type": "string" },
+                "severity": { "enum": ["blocking", "uncertain"] },
+                "explanation": { "type": "string" },
+                "correction": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

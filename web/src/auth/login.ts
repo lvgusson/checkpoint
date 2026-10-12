@@ -1,5 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, type AuthResult } from './auth.service';
 import { safeRedirect } from './auth.guard';
@@ -16,6 +22,14 @@ const titles: Record<Mode, [string, string, string]> = {
   ],
   reset: ['QUASE LÁ', 'Nova senha', 'Escolha uma senha nova para sua conta.'],
 };
+
+/** Validate an email or username for sign-in through AuthService.signIn. */
+const USERNAME = /^[a-z0-9._-]{3,32}$/i;
+function emailOrUsername(c: AbstractControl<string>): ValidationErrors | null {
+  const v = c.value.trim();
+  if (!v || USERNAME.test(v)) return null;
+  return Validators.email(c);
+}
 
 @Component({
   selector: 'app-login',
@@ -65,18 +79,25 @@ const titles: Record<Mode, [string, string, string]> = {
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           @if (mode() !== 'reset') {
             <label class="field" for="auth-email">
-              <span>E-mail</span>
+              <span>{{ mode() === 'login' ? 'E-mail ou usuário' : 'E-mail' }}</span>
               <input
                 id="auth-email"
-                type="email"
+                [attr.type]="mode() === 'login' ? 'text' : 'email'"
+                inputmode="email"
+                autocapitalize="none"
+                spellcheck="false"
                 formControlName="email"
-                autocomplete="email"
+                [attr.autocomplete]="mode() === 'login' ? 'username' : 'email'"
                 placeholder="voce@exemplo.com"
                 [attr.aria-invalid]="invalid('email')"
               />
             </label>
             @if (invalid('email')) {
-              <small class="field-error">Informe um e-mail válido.</small>
+              <small class="field-error">{{
+                mode() === 'login'
+                  ? 'Informe um e-mail ou usuário válido.'
+                  : 'Informe um e-mail válido.'
+              }}</small>
             }
           }
           @if (mode() !== 'forgot') {
@@ -308,14 +329,16 @@ export class Login {
   private submitted = signal(false);
 
   readonly form = inject(NonNullableFormBuilder).group({
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [Validators.required, emailOrUsername]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     confirm: [''],
   });
 
   invalid(name: 'email' | 'password'): boolean {
     const c = this.form.controls[name];
-    return c.invalid && (c.touched || this.submitted());
+    // Usernames are accepted only for sign-in; registration and recovery require email.
+    const userOnly = name === 'email' && this.mode() !== 'login' && !c.value.includes('@');
+    return (c.invalid || userOnly) && (c.touched || this.submitted());
   }
 
   mismatch(): boolean {
@@ -342,7 +365,7 @@ export class Login {
       forgot: ['email'],
       reset: ['password'],
     }[mode] as ('email' | 'password')[];
-    if (needs.some((n) => this.form.controls[n].invalid)) return;
+    if (needs.some((n) => this.invalid(n))) return;
     if ((mode === 'signup' || mode === 'reset') && this.mismatch()) return;
 
     this.loading.set(true);

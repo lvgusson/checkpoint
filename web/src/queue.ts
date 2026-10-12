@@ -14,7 +14,9 @@ import { Api, color } from './api';
 import { ScoringSettingsStore } from './scoring-settings';
 import { ListPicker, routeListId } from './lists';
 import { ImmediateButton } from './immediate';
-import type { Desire, Recommendations } from '../../shared/models';
+import { FinishDialog } from './finish-dialog';
+import { DataCache, GAME_DEPENDENTS } from './data-cache';
+import type { Desire, Recommendations, ScoredGame } from '../../shared/models';
 
 /** Minúsculas sem acento (busca tolerante: "acao" encontra "Ação"). */
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -63,19 +65,33 @@ const LONG_PRESS_MS = 320;
 @Component({
   standalone: true,
   imports: [RouterLink, ListPicker, ImmediateButton],
-  template: `<div class="page-heading">
+  template: `<div class="page-heading queue-heading">
       <div>
         <span class="eyebrow">MENOS DECISÃO, MAIS DIVERSÃO</span>
         <h1>Ordem de jogos<span class="heading-dot">.</span></h1>
         <p>Uma fila que aprende com você e alterna estilos, ritmos e duração.</p>
       </div>
-      <button class="button" (click)="load(true)" [disabled]="loading()">↻ Recalcular</button>
     </div>
-    <app-list-picker base="/ordem" [current]="listId()" />
+    <app-list-picker base="/ordem" [current]="listId()">
+      <button
+        type="button"
+        class="button icon-button"
+        (click)="load(true)"
+        [disabled]="loading()"
+        aria-label="Recalcular a fila"
+        title="Recalcular a fila"
+      >
+        <span aria-hidden="true">↻</span>
+      </button>
+    </app-list-picker>
     @if (error()) {
       <div class="error" role="alert">{{ error() }}</div>
     }
     @if (data(); as d) {
+      <p class="stats-line">
+        <b>{{ d.total }}</b> jogos · <b>{{ d.estimatedHours }}</b> h · ritmo
+        <b>{{ d.timeFactor.toFixed(2) }}×</b>
+      </p>
       <div class="stats">
         <div>
           <small>NA SUA FILA</small><strong>{{ d.total }} <span>jogos</span></strong>
@@ -183,9 +199,7 @@ const LONG_PRESS_MS = 320;
           ><span class="muted">Limpe a busca para arrastar</span>
         } @else {
           <span>Seu roteiro de próximas partidas</span
-          ><span class="muted drag-hint"
-            >Arraste <b aria-hidden="true">⠿</b> ou segure o jogo para reordenar</span
-          >
+          ><span class="muted drag-hint">Segure um jogo e arraste para reordenar</span>
         }
       </div>
       <p id="reorder-help" class="sr-only">
@@ -227,17 +241,21 @@ const LONG_PRESS_MS = 320;
                 (keydown)="onHandleKey($event, item.game.id)"
                 (blur)="onHandleBlur(item.game.id)"
               >
-                <span aria-hidden="true">⠿</span>
+                <span class="sr-only">Reordenar</span>
               </button>
-            } @else {
-              <span class="drag-handle off" aria-hidden="true"></span>
             }
             <a
               class="queue-link"
               draggable="false"
               [routerLink]="['/jogos', item.game.id]"
               [queryParams]="{ from: 'ordem' }"
-              ><span class="rank">{{ (i + 1).toString().padStart(2, '0') }}</span>
+              ><span class="rank"
+                >{{ (i + 1).toString().padStart(2, '0') }}
+                @if (item.pinnedPosition) {
+                  <span class="pin-mark" title="Posição fixada por você" aria-hidden="true">•</span
+                  ><span class="sr-only">, fixado</span>
+                }
+              </span>
               <div class="queue-cover">
                 @if (item.game.coverUrl) {
                   <img
@@ -305,12 +323,48 @@ const LONG_PRESS_MS = 320;
                   </button></span
                 >
               }
+              @if (item.pinnedPosition && busyId() !== item.game.id) {
+                <button
+                  type="button"
+                  class="icon-button unpin-btn"
+                  [disabled]="busyId() !== null"
+                  [attr.aria-label]="'Soltar a posição fixa de ' + item.game.name"
+                  title="Soltar a posição fixa"
+                  (click)="resetManual(item.game.id, $event)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M16 3l5 5-3 1-3.5 3.5.5 4.5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 4.5.5L15 6z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              }
               <app-immediate
                 [game]="item.game"
                 (changed)="setDesire(item.game.id, $event)"
                 (saved)="desireSaved()"
                 (failed)="error.set($event); desireSaved()"
               />
+              <button
+                type="button"
+                class="icon-button finish-btn"
+                [attr.aria-label]="'Finalizar ' + item.game.name"
+                title="Finalizar: nota, horas e avaliação"
+                (click)="finish(item.game, $event)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5 21V4m0 0h13l-2.5 4L18 12H5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M8 4h3v4H8zm3 4h3v4h-3z" fill="currentColor" />
+                </svg>
+              </button>
             </div>
           </div>
         }
@@ -343,6 +397,8 @@ const LONG_PRESS_MS = 320;
 })
 export class Queue {
   api = inject(Api);
+  private finishDialog = inject(FinishDialog);
+  private cache = inject(DataCache);
   private settings = inject(ScoringSettingsStore);
   /** Lista cuja fila está na tela (da URL). */
   readonly listId = routeListId('/ordem');
@@ -489,6 +545,15 @@ export class Queue {
     this.flipTo({ ...prev, items });
     this.showFlash(id);
   }
+  /** Complete through the shared dialog and reconcile the queue after saving. */
+  async finish(game: ScoredGame, e: Event) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!(await this.finishDialog.open(game))) return;
+    this.cache.invalidate(...GAME_DEPENDENTS);
+    this.notice.set(`${game.name} finalizado. A fila foi recalculada.`);
+    await this.load(true);
+  }
   /** Vontade gravada: relê a fila e desliza para a ordem calculada pelo servidor. */
   desireSaved() {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
@@ -501,7 +566,7 @@ export class Queue {
     if (this.drag || this.pending || this.busyId() || this.loading() || this.searching()) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (target.closest('.chip-remove, .immediate-btn')) return;
+    if (target.closest('.chip-remove, .immediate-btn, .icon-button')) return;
     const row = target.closest<HTMLElement>('.queue-row');
     const id = row?.dataset['id'];
     if (!row || !id) return;

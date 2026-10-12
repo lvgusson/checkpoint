@@ -1,0 +1,464 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "pattern": "api/**",
+      "areas": ["backend", "database"],
+      "documents": [
+        "AI/Architecture/back-end-architecture.md",
+        "AI/Architecture/database-architecture.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization", "domain.wishlist"]
+    },
+    {
+      "pattern": "api/src/service.ts",
+      "areas": ["backend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/back-end/game-service.md",
+        "AI/Architecture/back-end/background-reordering.md",
+        "AI/Architecture/domains/game-library/domain.md",
+        "AI/Architecture/domains/prioritization/domain.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization"]
+    },
+    {
+      "pattern": "api/src/scoring*.ts",
+      "areas": ["backend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/domains/prioritization/scoring-and-pins.md",
+        "AI/Architecture/domains/prioritization/domain.md",
+        "AI/Architecture/cache-architecture.md"
+      ],
+      "domains": ["domain.prioritization", "domain.game-library"]
+    },
+    {
+      "pattern": "api/src/server.ts",
+      "areas": ["backend", "security", "frontend"],
+      "documents": [
+        "AI/Architecture/back-end/http-api.md",
+        "AI/Architecture/security/authentication-and-ownership.md",
+        "AI/Architecture/front-end-architecture.md"
+      ],
+      "domains": [
+        "domain.identity",
+        "domain.game-library",
+        "domain.prioritization",
+        "domain.wishlist"
+      ]
+    },
+    {
+      "pattern": "api/src/wishlist*.ts",
+      "areas": ["backend", "database", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/back-end/wishlist-steam.md",
+        "AI/Architecture/domains/wishlist/domain.md",
+        "AI/Architecture/cache/steam-caches.md",
+        "AI/Architecture/database/persistence.md"
+      ],
+      "domains": ["domain.wishlist", "domain.game-library"]
+    },
+    {
+      "pattern": "api/src/steam*.ts",
+      "areas": ["backend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/back-end/wishlist-steam.md",
+        "AI/Architecture/cache/steam-caches.md",
+        "AI/Architecture/domains/wishlist/domain.md"
+      ],
+      "domains": ["domain.wishlist"]
+    },
+    {
+      "pattern": "api/src/*repository.ts",
+      "areas": ["backend", "database", "security"],
+      "documents": [
+        "AI/Architecture/back-end/persistence-adapters.md",
+        "AI/Architecture/database/persistence.md",
+        "AI/Architecture/security/database-access.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization", "domain.wishlist"]
+    },
+    {
+      "pattern": "api/src/auth.ts",
+      "areas": ["backend", "security", "frontend"],
+      "documents": [
+        "AI/Architecture/security/authentication-and-ownership.md",
+        "AI/Architecture/domains/identity/domain.md",
+        "AI/Architecture/front-end/shell-and-authentication.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "api/src/app-user.ts",
+      "areas": ["security", "database", "cache"],
+      "documents": [
+        "AI/Architecture/security/authentication-and-ownership.md",
+        "AI/Architecture/cache-architecture.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "api/src/context.ts",
+      "areas": ["backend", "security"],
+      "documents": [
+        "AI/Architecture/security/authentication-and-ownership.md",
+        "AI/Architecture/back-end/http-api.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "api/src/db.ts",
+      "areas": ["database", "infrastructure"],
+      "documents": [
+        "AI/Architecture/database/persistence.md",
+        "AI/Architecture/infrastructure/deployment-and-release.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "api/src/setup.ts",
+      "areas": ["backend", "database", "security", "infrastructure"],
+      "documents": [
+        "AI/Architecture/back-end-architecture.md",
+        "AI/Architecture/database/persistence.md",
+        "AI/Architecture/security/authentication-and-ownership.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "api/src/background.ts",
+      "areas": ["backend", "infrastructure"],
+      "documents": [
+        "AI/Architecture/back-end/background-reordering.md",
+        "AI/Architecture/infrastructure/deployment-and-release.md"
+      ],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "api/src/retry.ts",
+      "areas": ["backend", "infrastructure"],
+      "documents": ["AI/Architecture/back-end/background-reordering.md"],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "web/**",
+      "areas": ["frontend"],
+      "documents": ["AI/Architecture/front-end-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": "web/src/auth/**",
+      "areas": ["frontend", "security", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/shell-and-authentication.md",
+        "AI/Architecture/security/authentication-and-ownership.md",
+        "AI/Architecture/domains/identity/domain.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "web/src/main.ts",
+      "areas": ["frontend", "security"],
+      "documents": ["AI/Architecture/front-end/shell-and-authentication.md"],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "web/src/appearance*.ts",
+      "areas": ["frontend", "cache"],
+      "documents": ["AI/Architecture/front-end/shell-and-authentication.md"],
+      "domains": []
+    },
+    {
+      "pattern": "web/src/logo.ts",
+      "areas": ["frontend"],
+      "documents": ["AI/Architecture/front-end/shell-and-authentication.md"],
+      "domains": []
+    },
+    {
+      "pattern": "web/src/library.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/library-and-game-detail.md",
+        "AI/Architecture/domains/game-library/domain.md"
+      ],
+      "domains": ["domain.game-library"]
+    },
+    {
+      "pattern": "web/src/detail.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/library-and-game-detail.md",
+        "AI/Architecture/domains/game-library/domain.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/immediate.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/library-and-game-detail.md",
+        "AI/Architecture/front-end/queue-interactions.md",
+        "AI/Architecture/domains/prioritization/domain.md"
+      ],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/queue.ts",
+      "areas": ["frontend", "backend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/queue-interactions.md",
+        "AI/Architecture/back-end/background-reordering.md",
+        "AI/Architecture/domains/prioritization/domain.md"
+      ],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/*settings.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/lists-and-scoring-settings.md",
+        "AI/Architecture/domains/prioritization/domain.md"
+      ],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/lists.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/lists-and-scoring-settings.md",
+        "AI/Architecture/domains/prioritization/domain.md"
+      ],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/api.ts",
+      "areas": ["frontend", "backend", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/library-and-game-detail.md",
+        "AI/Architecture/front-end/queue-interactions.md",
+        "AI/Architecture/back-end/http-api.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/data-cache.ts",
+      "areas": ["cache", "frontend", "security"],
+      "documents": [
+        "AI/Architecture/cache/browser-data-cache.md",
+        "AI/Architecture/front-end-architecture.md"
+      ],
+      "domains": [
+        "domain.identity",
+        "domain.game-library",
+        "domain.prioritization",
+        "domain.wishlist"
+      ]
+    },
+    {
+      "pattern": "web/src/wishlist*.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/wishlist.md",
+        "AI/Architecture/domains/wishlist/domain.md"
+      ],
+      "domains": ["domain.wishlist"]
+    },
+    {
+      "pattern": "shared/**",
+      "areas": ["frontend", "backend", "database", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end-architecture.md",
+        "AI/Architecture/back-end-architecture.md",
+        "AI/Architecture/database-architecture.md",
+        "AI/Architecture/domains/domains-index.md",
+        "AI/Architecture/cache-architecture.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization", "domain.wishlist"]
+    },
+    {
+      "pattern": "db/**",
+      "areas": ["database", "security", "domain"],
+      "documents": [
+        "AI/Architecture/database/migrations.md",
+        "AI/Architecture/database/persistence.md",
+        "AI/Architecture/security/database-access.md"
+      ],
+      "domains": [
+        "domain.game-library",
+        "domain.prioritization",
+        "domain.wishlist",
+        "domain.identity"
+      ]
+    },
+    {
+      "pattern": "supabase/**",
+      "areas": ["database", "security", "infrastructure"],
+      "documents": [
+        "AI/Architecture/database/migrations.md",
+        "AI/Architecture/security/database-access.md",
+        "AI/Architecture/infrastructure-architecture.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "scripts/**",
+      "areas": ["infrastructure"],
+      "documents": ["AI/Architecture/infrastructure/deployment-and-release.md"],
+      "domains": []
+    },
+    {
+      "pattern": "api/index.mjs",
+      "areas": ["backend", "infrastructure"],
+      "documents": [
+        "AI/Architecture/back-end-architecture.md",
+        "AI/Architecture/infrastructure/deployment-and-release.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "api/src/version.ts",
+      "areas": ["infrastructure"],
+      "documents": ["AI/Architecture/infrastructure/deployment-and-release.md"],
+      "domains": []
+    },
+    {
+      "pattern": "package*.json",
+      "areas": ["infrastructure", "frontend", "backend", "harness"],
+      "documents": [
+        "AI/Architecture/infrastructure-architecture.md",
+        "AI/Architecture/front-end-architecture.md",
+        "AI/Architecture/back-end-architecture.md",
+        "AI/Architecture/harness-architecture.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "angular.json",
+      "areas": ["frontend", "infrastructure"],
+      "documents": [
+        "AI/Architecture/front-end-architecture.md",
+        "AI/Architecture/infrastructure-architecture.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "vercel.json",
+      "areas": ["infrastructure", "backend", "security"],
+      "documents": [
+        "AI/Architecture/infrastructure/deployment-and-release.md",
+        "AI/Architecture/back-end-architecture.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "tsconfig*.json",
+      "areas": ["frontend", "backend", "infrastructure"],
+      "documents": [
+        "AI/Architecture/front-end-architecture.md",
+        "AI/Architecture/back-end-architecture.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "eslint.config.js",
+      "areas": ["harness", "infrastructure"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": ".env.example",
+      "areas": ["infrastructure", "security"],
+      "documents": [
+        "AI/Architecture/infrastructure/deployment-and-release.md",
+        "AI/Architecture/security/authentication-and-ownership.md"
+      ],
+      "domains": ["domain.identity"]
+    },
+    {
+      "pattern": "AI/**",
+      "areas": ["harness", "infrastructure"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": ".husky/**",
+      "areas": ["harness"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": ".github/**",
+      "areas": ["harness", "infrastructure"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": ".codex/**",
+      "areas": ["harness"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": ".claude/settings.json",
+      "areas": ["harness"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": "AGENTS.md",
+      "areas": ["harness"],
+      "documents": ["AI/Architecture/harness-architecture.md"],
+      "domains": []
+    },
+    {
+      "pattern": "api/src/releases.ts",
+      "areas": ["backend", "database", "security", "infrastructure"],
+      "documents": [
+        "AI/Architecture/back-end/http-api.md",
+        "AI/Architecture/database/persistence.md",
+        "AI/Architecture/security/database-access.md",
+        "AI/Architecture/infrastructure/deployment-and-release.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "api/test/release*.test.ts",
+      "areas": ["backend", "infrastructure"],
+      "documents": [
+        "AI/Architecture/back-end/http-api.md",
+        "AI/Architecture/infrastructure/deployment-and-release.md"
+      ],
+      "domains": []
+    },
+    {
+      "pattern": "web/src/finish-dialog.ts",
+      "areas": ["frontend", "domain", "cache"],
+      "documents": [
+        "AI/Architecture/front-end/library-and-game-detail.md",
+        "AI/Architecture/front-end/queue-interactions.md",
+        "AI/Architecture/domains/game-library/domain.md"
+      ],
+      "domains": ["domain.game-library", "domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/styles.css",
+      "areas": ["frontend"],
+      "documents": ["AI/Architecture/front-end/queue-interactions.md"],
+      "domains": ["domain.prioritization"]
+    },
+    {
+      "pattern": "web/src/bonfire.ts",
+      "areas": ["frontend"],
+      "documents": ["AI/Architecture/front-end/shell-and-authentication.md"],
+      "domains": []
+    },
+    {
+      "pattern": "scripts/master-user.mjs",
+      "areas": ["infrastructure", "security", "database"],
+      "documents": [
+        "AI/Architecture/infrastructure/deployment-and-release.md",
+        "AI/Architecture/domains/identity/domain.md"
+      ],
+      "domains": ["domain.identity"]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Api, color } from './api';
+import { FinishDialog } from './finish-dialog';
 import type { Catalog, ScoredGame } from '../../shared/models';
 @Component({
   standalone: true,
@@ -31,6 +32,11 @@ import type { Catalog, ScoredGame } from '../../shared/models';
             }
           </div>
           <p class="muted">{{ g.pace }} · {{ g.structure }} · {{ g.coop }}</p>
+          @if (g.status !== 'Finalizado' && g.status !== 'Desejado') {
+            <button type="button" class="button primary finish-open" (click)="finish(g)">
+              ✓ Finalizar jogo
+            </button>
+          }
         </div>
       </div>
       <form (ngSubmit)="save()">
@@ -225,6 +231,7 @@ import type { Catalog, ScoredGame } from '../../shared/models';
 export class Detail {
   api = inject(Api);
   route = inject(ActivatedRoute);
+  private finishDialog = inject(FinishDialog);
   color = color;
   game = signal<ScoredGame | null>(null);
   catalog = signal<Catalog | null>(null);
@@ -263,6 +270,13 @@ export class Detail {
       this.form = structuredClone(g);
       this.tags = g.secondaryTags.join(', ');
     }
+  }
+  /** Open the shared completion dialog and reload the saved game. */
+  async finish(g: ScoredGame) {
+    if (!(await this.finishDialog.open(g))) return;
+    this.saved.set(true);
+    this.game.set(null);
+    await this.load();
   }
   async save() {
     this.saving.set(true);

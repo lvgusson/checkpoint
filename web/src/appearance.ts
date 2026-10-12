@@ -11,7 +11,7 @@ import { AuthService } from './auth/auth.service';
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 export type Accent = 'green' | 'blue' | 'violet' | 'orange' | 'rose';
-export type LogoChoice = 'monogram' | 'flag' | 'ring' | 'pixel' | 'custom';
+export type LogoChoice = 'bonfire' | 'monogram' | 'flag' | 'ring' | 'pixel' | 'custom';
 
 export interface Appearance {
   theme: ThemeChoice;
@@ -29,6 +29,7 @@ export const ACCENTS: { id: Accent; label: string; light: string; dark: string }
   { id: 'rose', label: 'Rosa', light: '#a92d57', dark: '#f08fb0' },
 ];
 export const LOGOS: { id: Exclude<LogoChoice, 'custom'>; label: string }[] = [
+  { id: 'bonfire', label: 'Fogueira (ícone do app)' },
   { id: 'monogram', label: 'Monograma' },
   { id: 'flag', label: 'Bandeira' },
   { id: 'ring', label: 'Save point' },
@@ -46,7 +47,7 @@ const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 export const DEFAULTS: Appearance = {
   theme: 'system',
   accent: 'green',
-  logo: 'monogram',
+  logo: 'bonfire',
   customLogo: null,
 };
 
@@ -76,7 +77,7 @@ export function sanitize(v: Partial<Appearance> | null | undefined): Appearance 
   const logo =
     v?.logo === 'custom' && custom
       ? 'custom'
-      : (LOGOS.find((l) => l.id === v?.logo)?.id ?? 'monogram');
+      : (LOGOS.find((l) => l.id === v?.logo)?.id ?? 'bonfire');
   return {
     theme: theme ?? DEFAULTS.theme,
     accent: accent ?? DEFAULTS.accent,

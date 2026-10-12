@@ -1,15 +1,13 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import type { Desire } from '../../shared/models';
 import { Api, previousDesire, rememberDesire } from './api';
+import { Bonfire } from './bonfire';
 
-/**
- * Botão "Jogar já": muda a vontade para "Imediata" (o jogo vai para o topo da fila) ou
- * volta à vontade anterior. Otimista: `changed` sai antes da resposta; em erro sai de novo
- * com a vontade original e `failed` traz a mensagem.
- */
+/** Toggle immediate desire using the app icon; emit optimistic changes and restore the original desire after failure. */
 @Component({
   selector: 'app-immediate',
   standalone: true,
+  imports: [Bonfire],
   template: `<button
     type="button"
     class="immediate-btn"
@@ -24,8 +22,7 @@ import { Api, previousDesire, rememberDesire } from './api';
     [disabled]="busy()"
     (click)="toggle($event)"
   >
-    <span aria-hidden="true">{{ on() ? '★' : '↑' }}</span
-    ><span class="immediate-label">{{ on() ? 'Imediata' : 'Jogar já' }}</span>
+    <app-bonfire [mono]="!on()" />
   </button>`,
 })
 export class ImmediateButton {

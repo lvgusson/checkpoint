@@ -18,7 +18,7 @@
     "/version": {
       "get": {
         "summary": "Versão do deploy corrente",
-        "description": "Pública (sem token). Lê app_release pelo deploy da Vercel; em dev usa package.json + git.",
+        "description": "Public deployment evidence from the associated build or matching commit registration, with package/Git fallback.",
         "security": [],
         "responses": {
           "200": {
@@ -999,6 +999,205 @@
           }
         }
       }
+    },
+    "/releases": {
+      "get": {
+        "summary": "List immutable release registrations",
+        "description": "Pública (sem token). Paginação por id: passe nextBefore em before.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "environment",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["production", "preview", "development"],
+              "default": "production"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Return only IDs less than this value."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["items", "nextBefore"],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Release"
+                      }
+                    },
+                    "nextBefore": {
+                      "type": ["integer", "null"]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid environment"
+          },
+          "503": {
+            "description": "Release storage unavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a commit before push",
+        "description": "Requires RELEASE_API_TOKEN through Bearer or x-release-token. Accept full 40-character hexadecimal gitSha and normalize uppercase. Allocate 0.0.1 initially, then patch per environment. Ordinary commit/environment registration is idempotent: existing records return 200 and created=false. Registrations cannot be edited or deleted.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Commit already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Release"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "const": false
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Release"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "const": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid release token"
+          },
+          "409": {
+            "description": "Version must exceed the latest registration"
+          },
+          "503": {
+            "description": "Release token or storage is not configured"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Method not allowed",
+        "security": [],
+        "responses": {
+          "405": {
+            "description": "Only GET and POST are permitted"
+          }
+        }
+      },
+      "put": {
+        "summary": "Method not allowed",
+        "security": [],
+        "responses": {
+          "405": {
+            "description": "Only GET and POST are permitted"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Method not allowed",
+        "security": [],
+        "responses": {
+          "405": {
+            "description": "Only GET and POST are permitted"
+          }
+        }
+      }
+    },
+    "/releases/latest": {
+      "get": {
+        "summary": "Latest registered release in the environment",
+        "security": [],
+        "parameters": [
+          {
+            "name": "environment",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["production", "preview", "development"],
+              "default": "production"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Release"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No registered release"
+          }
+        },
+        "description": "Highest registered ID; registration and build evidence do not establish which deployment serves traffic."
+      }
     }
   },
   "components": {
@@ -1013,7 +1212,7 @@
     "schemas": {
       "VersionInfo": {
         "type": "object",
-        "required": ["version", "gitSha", "environment", "deployedAt"],
+        "required": ["version", "gitSha", "environment", "deployedAt", "name", "description"],
         "properties": {
           "version": {
             "type": "string",
@@ -1029,6 +1228,12 @@
           "deployedAt": {
             "type": ["string", "null"],
             "format": "date-time"
+          },
+          "name": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": ["string", "null"]
           }
         }
       },
@@ -2139,6 +2344,140 @@
                 }
               }
             }
+          }
+        }
+      },
+      "ReleaseDeploy": {
+        "type": ["object", "null"],
+        "properties": {
+          "vercelDeploymentId": {
+            "type": ["string", "null"]
+          },
+          "vercelUrl": {
+            "type": ["string", "null"]
+          },
+          "dbMigrationVersion": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Release": {
+        "type": "object",
+        "description": "Versão publicada (append-only).",
+        "required": [
+          "id",
+          "version",
+          "name",
+          "kind",
+          "description",
+          "gitSha",
+          "gitRef",
+          "environment",
+          "rollbackTo",
+          "createdBy",
+          "createdAt",
+          "deploy"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]d*).(0|[1-9]d*).(0|[1-9]d*)$",
+            "example": "0.0.5"
+          },
+          "name": {
+            "type": ["string", "null"],
+            "maxLength": 80
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["feature", "fix", "refactor", "chore", "release", "rollback"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "gitSha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$",
+            "minLength": 40,
+            "maxLength": 40,
+            "description": "Full commit SHA-1, normalized to lowercase on registration."
+          },
+          "gitRef": {
+            "type": ["string", "null"]
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["production", "preview", "development"]
+          },
+          "rollbackTo": {
+            "type": ["integer", "null"],
+            "description": "Versão alvo, quando kind = rollback."
+          },
+          "createdBy": {
+            "type": ["string", "null"],
+            "description": "api, vercel-build, release:note, release:rollback ou migration."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deploy": {
+            "$ref": "#/components/schemas/ReleaseDeploy"
+          }
+        }
+      },
+      "ReleaseCreate": {
+        "type": "object",
+        "required": ["description", "gitSha"],
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["feature", "fix", "refactor", "chore", "release"],
+            "default": "chore"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "bump": {
+            "type": "string",
+            "enum": ["patch", "minor", "major"],
+            "default": "patch",
+            "description": "Ignorado se version vier."
+          },
+          "version": {
+            "type": "string",
+            "description": "SemVer explícito, maior que a última versão do environment (ex.: 1.0.0 no lançamento). Não combine com bump."
+          },
+          "gitSha": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{40}$",
+            "minLength": 40,
+            "maxLength": 40,
+            "description": "Full commit SHA-1, normalized to lowercase on registration."
+          },
+          "gitRef": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["production", "preview", "development"],
+            "default": "production"
           }
         }
       }

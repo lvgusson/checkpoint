@@ -9,3 +9,6 @@ data/
 api/src/seed.ts
 # Skills de terceiros (vendorizadas; skills-lock.json guarda o hash)
 .agents/
+
+# Preserve exact append-only historical Markdown, including original line endings.
+AI/Deprecate/
