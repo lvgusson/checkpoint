@@ -420,13 +420,13 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       margin-bottom: 16px;
     }
     .formula {
-      background: #f4f8f5;
-      border: 1px solid #dfeae2;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
       border-radius: 9px;
       padding: 8px 18px;
       font-family: 'Cambria Math', 'STIX Two Math', Georgia, serif;
       font-size: 15px;
-      color: #1f3a2f;
+      color: var(--text);
       overflow-wrap: anywhere;
     }
     .formula .eq {
@@ -441,7 +441,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
     .formula b {
       font-family: 'DM Sans', system-ui, sans-serif;
       font-size: 13px;
-      color: var(--green);
+      color: var(--accent);
     }
     .formula small {
       font-family: 'DM Sans', system-ui, sans-serif;
@@ -475,19 +475,19 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       padding: 2px 8px;
       margin: 2px 2px;
       border-radius: 999px;
-      background: #fbefea;
-      color: #8d4b33;
+      background: var(--warn-bg);
+      color: var(--warn);
     }
     .chip.bonus {
-      background: #def1e4;
-      color: #266443;
+      background: var(--accent-soft);
+      color: var(--accent-ink);
     }
     .legend {
       margin: 16px 0 0;
       padding-left: 18px;
       font-size: 12px;
       line-height: 1.7;
-      color: #53695e;
+      color: var(--text-2);
     }
     .legend var {
       font-family: 'Cambria Math', Georgia, serif;
@@ -520,7 +520,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       width: 26%;
     }
     .factors .desc {
-      color: #66796d;
+      color: var(--muted);
       line-height: 1.5;
     }
     .factors .weight {
@@ -550,12 +550,12 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       text-align: right;
     }
     .number.invalid input {
-      border-color: #d98b7c;
-      background: #fff6f4;
+      border-color: var(--danger-line);
+      background: var(--danger-bg);
     }
     .hint {
       display: block;
-      color: #a1473c;
+      color: var(--danger);
       font-size: 10px;
       margin-top: 4px;
     }
@@ -577,7 +577,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       position: absolute;
       inset: 0;
       border-radius: 999px;
-      background: #cfd9d3;
+      background: var(--faint);
       transition: background 0.15s;
       pointer-events: none;
     }
@@ -589,18 +589,18 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 1px 2px #0003;
+      background: var(--surface);
+      box-shadow: 0 1px 2px var(--shadow-mid);
       transition: translate 0.15s;
     }
     .switch input:checked + span {
-      background: var(--green);
+      background: var(--accent);
     }
     .switch input:checked + span::after {
       translate: 16px 0;
     }
     .switch input:focus-visible + span {
-      outline: 3px solid #62ba94;
+      outline: 3px solid var(--accent-bright);
       outline-offset: 2px;
     }
     .switch input:disabled + span {
@@ -639,7 +639,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       padding: 5px 11px;
       border-radius: 999px;
       border: 1px solid var(--border);
-      background: #fff;
+      background: var(--surface);
       color: inherit;
       cursor: pointer;
     }
@@ -648,18 +648,18 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       margin-left: 2px;
     }
     .pick[aria-pressed='true'] {
-      background: #def1e4;
-      border-color: #9fd0b2;
-      color: #266443;
+      background: var(--accent-soft);
+      border-color: var(--accent-line);
+      color: var(--accent-ink);
     }
     .pick.exclude[aria-pressed='true'] {
-      background: #fbefea;
-      border-color: #e8bfae;
-      color: #8d4b33;
+      background: var(--warn-bg);
+      border-color: var(--warn-line);
+      color: var(--warn);
       text-decoration: line-through;
     }
     .pick:focus-visible {
-      outline: 3px solid #62ba94;
+      outline: 3px solid var(--accent-bright);
       outline-offset: 2px;
     }
     .pick:disabled {
@@ -696,7 +696,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
     }
     .removed {
       font-size: 11px;
-      color: #8d4b33;
+      color: var(--warn);
     }
     .muted.small {
       font-size: 11px;
@@ -708,7 +708,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       border: 0;
       padding: 0;
       margin-left: 6px;
-      color: var(--green);
+      color: var(--accent);
       text-decoration: underline;
       cursor: pointer;
     }
@@ -716,7 +716,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       position: sticky;
       bottom: 0;
       z-index: 3;
-      background: #f8faf9;
+      background: var(--bg);
       border-top: 1px solid var(--border);
       padding: 14px 0;
       flex-wrap: wrap;
@@ -727,7 +727,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       flex-wrap: wrap;
     }
     .reorder-notice a {
-      color: var(--green);
+      color: var(--accent);
       text-decoration: underline;
       margin-left: 6px;
     }
@@ -735,6 +735,44 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       .switch span,
       .switch span::after {
         transition: none;
+      }
+    }
+    /* Toque: área de 44px no switch (o label inteiro alterna) e nos chips/campos. */
+    .switch::before {
+      content: '';
+      position: absolute;
+      inset: -11px -6px;
+    }
+    @media (max-width: 800px) {
+      .settings-actions {
+        bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      }
+      .pick {
+        min-height: 44px;
+        padding: 8px 14px;
+        font-size: 14px;
+      }
+      .panel .number input,
+      .select select {
+        min-height: 44px;
+      }
+      .check {
+        min-height: 44px;
+        font-size: 14px;
+      }
+      .check input {
+        width: 22px;
+        height: 22px;
+      }
+      .filter-group legend,
+      .filter-group summary {
+        font-size: 14px;
+      }
+      .factors {
+        font-size: 14px;
+      }
+      .legend {
+        font-size: 13px;
       }
     }
     @media (max-width: 700px) {
@@ -758,7 +796,7 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
       .factors .desc {
         grid-column: 1 / -1;
         grid-row: 2;
-        font-size: 11px;
+        font-size: 13px;
       }
       .panel .number input {
         width: 76px;

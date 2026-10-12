@@ -5,8 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, map } from 'rxjs';
 import type { GameList } from '../../shared/models';
 import { AuthService } from './auth/auth.service';
-import { removeScoringCache, scoringCacheKey } from './scoring-cache';
-
+import { DataCache, keys } from './data-cache';
 const URL = '/api/v1/lists';
 
 /** Listas do usuário (todas com todos os jogos; regras e ordem manual são por lista). */
@@ -14,13 +13,17 @@ const URL = '/api/v1/lists';
 export class ListsStore {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
+  private cache = inject(DataCache);
   readonly lists = signal<GameList[]>([]);
   /** Última lista aberta (para quando a URL não traz uma). */
   lastId: string | null = null;
   private loaded: Promise<GameList[]> | null = null;
   private owner: string | undefined;
 
-  /** Carrega uma vez por usuário logado (a API cria a lista "Principal" se não houver nenhuma). */
+  /**
+   * Uma vez por usuário logado (a API cria a lista "Principal" se não houver nenhuma).
+   * Com cache, resolve na hora e revalida em segundo plano.
+   */
   ensure(): Promise<GameList[]> {
     const user = this.auth.user()?.id;
     if (user !== this.owner) {
@@ -28,33 +31,56 @@ export class ListsStore {
       this.loaded = null;
       this.lastId = null;
     }
-    this.loaded ??= this.reload().catch((e) => {
-      this.loaded = null;
-      throw e;
+    this.loaded ??= new Promise<GameList[]>((resolve, reject) => {
+      let done = false;
+      this.cache
+        .swr(
+          keys.lists,
+          () => this.request(),
+          (lists) => {
+            this.lists.set(lists);
+            if (!done && lists.length) {
+              done = true;
+              resolve(lists);
+            }
+          },
+        )
+        .then((lists) => !done && resolve(lists))
+        .catch((e) => {
+          this.loaded = null;
+          if (!done) reject(e);
+        });
     });
     return this.loaded;
   }
   async reload(): Promise<GameList[]> {
-    const lists = await firstValueFrom(this.http.get<GameList[]>(URL));
-    this.lists.set(lists);
+    const lists = await this.request();
+    this.store(lists);
     return lists;
   }
   async create(name: string): Promise<GameList> {
     const list = await firstValueFrom(this.http.post<GameList>(URL, { name }));
-    this.lists.update((ls) => [...ls, list]);
+    this.store([...this.lists(), list]);
     return list;
   }
   async rename(id: string, name: string): Promise<GameList> {
     const list = await firstValueFrom(
       this.http.patch<GameList>(URL + '/' + encodeURIComponent(id), { name }),
     );
-    this.lists.update((ls) => ls.map((l) => (l.id === id ? list : l)));
+    this.store(this.lists().map((l) => (l.id === id ? list : l)));
     return list;
   }
   async remove(id: string): Promise<void> {
     await firstValueFrom(this.http.delete(URL + '/' + encodeURIComponent(id)));
-    this.lists.update((ls) => ls.filter((l) => l.id !== id));
-    removeScoringCache(scoringCacheKey(this.auth.user()?.id, id));
+    this.store(this.lists().filter((l) => l.id !== id));
+    this.cache.drop(keys.settings(id), keys.queue(id));
+  }
+  private request() {
+    return firstValueFrom(this.http.get<GameList[]>(URL));
+  }
+  private store(lists: GameList[]) {
+    this.lists.set(lists);
+    this.cache.set(keys.lists, lists);
   }
 }
 
@@ -166,7 +192,7 @@ const message = (e: unknown, fallback: string) =>
       padding: 8px 10px;
       font-size: 14px;
       color: inherit;
-      background: #fff;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
     }
@@ -177,7 +203,7 @@ const message = (e: unknown, fallback: string) =>
     }
     .list-error {
       flex-basis: 100%;
-      color: #944c40;
+      color: var(--danger);
       font-size: 13px;
     }
   `,

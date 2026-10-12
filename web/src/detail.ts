@@ -161,7 +161,7 @@ import type { Catalog, ScoredGame } from '../../shared/models';
               <span role="status">{{
                 saved()
                   ? 'Salvo. A ordem já foi recalculada.'
-                  : 'Alterações ficam salvas neste computador.'
+                  : 'Salvar recalcula a ordem de todas as listas.'
               }}</span
               ><button class="button primary" type="submit" [disabled]="saving()">
                 {{ saving() ? 'Salvando…' : 'Salvar avaliação' }}
@@ -243,16 +243,25 @@ export class Detail {
   }
   async load() {
     try {
-      const [g, c] = await Promise.all([
-        this.api.game(this.route.snapshot.paramMap.get('id')!),
-        this.api.catalog(),
+      await Promise.all([
+        this.api.game(this.route.snapshot.paramMap.get('id')!, (g) => this.show(g)),
+        this.api.catalog((c) => this.catalog.set(c)),
       ]);
-      this.game.set(g);
-      this.catalog.set(c);
+    } catch {
+      if (!this.game()) this.error.set('Não foi possível carregar o jogo.');
+    }
+  }
+  /** Cache e depois versão nova: só troca o formulário se o usuário ainda não editou. */
+  private show(g: ScoredGame) {
+    const old = this.game();
+    const untouched =
+      !old ||
+      (JSON.stringify(this.form) === JSON.stringify(old) &&
+        this.tags === old.secondaryTags.join(', '));
+    this.game.set(g);
+    if (untouched) {
       this.form = structuredClone(g);
       this.tags = g.secondaryTags.join(', ');
-    } catch {
-      this.error.set('Não foi possível carregar o jogo.');
     }
   }
   async save() {

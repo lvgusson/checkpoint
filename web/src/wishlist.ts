@@ -237,10 +237,12 @@ const message = (e: unknown, fallback: string) =>
     }
     .manual input {
       flex: 1 1 160px;
-      font-size: 12px;
+      min-height: 44px;
+      font-size: 14px;
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 9px 10px;
+      background: var(--surface);
     }
     .description {
       font-size: 12px;
@@ -311,10 +313,13 @@ export class Wishlist {
     return items;
   }
 
-  async load() {
+  async load(force = false) {
     this.loading.set(true);
     try {
-      this.items.set(await this.api.list());
+      await this.api.list((items) => {
+        this.items.set(items);
+        this.loading.set(false);
+      }, force);
     } catch (e) {
       this.error.set(message(e, 'Não foi possível carregar a lista de desejos.'));
     } finally {
@@ -385,7 +390,7 @@ export class Wishlist {
       const r = await this.api.importSteam(this.profile);
       await this.load();
       const failed = r.failed.length ? `, ${r.failed.length} fora da loja` : '';
-      return `Lista da Steam: ${r.total} itens — ${r.created} novos, ${r.existing} já estavam no app${failed}.`;
+      return `Lista da Steam: ${r.total} itens, ${r.created} novos, ${r.existing} já estavam no app${failed}.`;
     });
   }
 

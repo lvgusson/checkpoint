@@ -147,16 +147,16 @@ const titles: Record<Mode, [string, string, string]> = {
       display: grid;
       place-items: center;
       padding: 32px 16px;
-      background: radial-gradient(circle at 20% 0%, #e3f1e7, transparent 55%), #f8faf9;
+      background: radial-gradient(circle at 20% 0%, var(--accent-soft), transparent 55%), var(--bg);
     }
     .auth-card {
       width: 100%;
       max-width: 410px;
-      background: #fff;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 34px 32px;
-      box-shadow: 0 18px 40px #174a3512;
+      box-shadow: 0 18px 40px var(--shadow-soft);
     }
     .auth-brand {
       display: flex;
@@ -187,7 +187,7 @@ const titles: Record<Mode, [string, string, string]> = {
     .auth-tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      background: #f1f5f2;
+      background: var(--surface-2);
       border-radius: 9px;
       padding: 4px;
       margin-bottom: 20px;
@@ -199,12 +199,12 @@ const titles: Record<Mode, [string, string, string]> = {
       border-radius: 7px;
       font-size: 12px;
       font-weight: 600;
-      color: #68796f;
+      color: var(--muted);
     }
     .auth-tabs button.active {
-      background: #fff;
-      color: var(--green);
-      box-shadow: 0 1px 3px #174a351a;
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: 0 1px 3px var(--shadow-soft);
     }
     form {
       display: flex;
@@ -218,20 +218,20 @@ const titles: Record<Mode, [string, string, string]> = {
       margin-top: 8px;
       font-size: 12px;
       font-weight: 600;
-      color: #53695e;
+      color: var(--text-2);
     }
     .field input {
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 11px 12px;
       font-size: 14px;
-      background: #fff;
+      background: var(--surface);
     }
     .field input[aria-invalid='true'] {
-      border-color: #d99a8f;
+      border-color: var(--danger-line);
     }
     .field-error {
-      color: #944c40;
+      color: var(--danger);
       font-size: 11px;
     }
     .link {
@@ -240,7 +240,7 @@ const titles: Record<Mode, [string, string, string]> = {
       border: 0;
       padding: 4px 0;
       font-size: 12px;
-      color: var(--green);
+      color: var(--accent);
       font-weight: 600;
     }
     .link.center {
@@ -252,9 +252,9 @@ const titles: Record<Mode, [string, string, string]> = {
       margin: 10px 0 0;
     }
     .notice {
-      background: #edf6ef;
-      color: #266443;
-      border: 1px solid #cfe5d6;
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      border: 1px solid var(--accent-line);
       border-radius: 8px;
       padding: 14px 16px;
       font-size: 13px;

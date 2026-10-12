@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  computed,
   effect,
   inject,
   signal,
@@ -12,7 +13,11 @@ import { RouterLink } from '@angular/router';
 import { Api, color } from './api';
 import { ScoringSettingsStore } from './scoring-settings';
 import { ListPicker, routeListId } from './lists';
-import type { QueueEntry, Recommendations } from '../../shared/models';
+import { ImmediateButton } from './immediate';
+import type { Desire, Recommendations } from '../../shared/models';
+
+/** Minúsculas sem acento (busca tolerante: "acao" encontra "Ação"). */
+const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /** Linha da fila medida no início do arraste (coordenadas do documento). */
 interface Snap {
@@ -57,14 +62,14 @@ const LONG_PRESS_MS = 320;
 
 @Component({
   standalone: true,
-  imports: [RouterLink, ListPicker],
+  imports: [RouterLink, ListPicker, ImmediateButton],
   template: `<div class="page-heading">
       <div>
         <span class="eyebrow">MENOS DECISÃO, MAIS DIVERSÃO</span>
         <h1>Ordem de jogos<span class="heading-dot">.</span></h1>
         <p>Uma fila que aprende com você e alterna estilos, ritmos e duração.</p>
       </div>
-      <button class="button" (click)="load()" [disabled]="loading()">↻ Recalcular</button>
+      <button class="button" (click)="load(true)" [disabled]="loading()">↻ Recalcular</button>
     </div>
     <app-list-picker base="/ordem" [current]="listId()" />
     @if (error()) {
@@ -155,9 +160,33 @@ const LONG_PRESS_MS = 320;
           aviso ⚠. Solte a posição no × do chip. Vontade <b>Imediata</b> leva o jogo ao topo.
         </p>
       </details>
+      <section class="filters queue-search" role="search">
+        <label class="search"
+          ><span aria-hidden="true">⌕</span
+          ><input
+            type="search"
+            aria-label="Buscar na fila por nome, gênero ou tag"
+            placeholder="Buscar na fila por nome, gênero ou tag…"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+            autocomplete="off"
+        /></label>
+        @if (query()) {
+          <button type="button" class="button" (click)="query.set('')">Limpar</button>
+        }
+      </section>
       <div class="list-toolbar">
-        <span>Seu roteiro de próximas partidas</span
-        ><span class="muted">Arraste <b aria-hidden="true">⠿</b> para reordenar</span>
+        @if (searching()) {
+          <span role="status"
+            >{{ shown().length }} de {{ d.total }} jogos
+            <span class="muted">· posições reais da fila</span></span
+          ><span class="muted">Limpe a busca para arrastar</span>
+        } @else {
+          <span>Seu roteiro de próximas partidas</span
+          ><span class="muted drag-hint"
+            >Arraste <b aria-hidden="true">⠿</b> ou segure o jogo para reordenar</span
+          >
+        }
       </div>
       <p id="reorder-help" class="sr-only">
         Para reordenar pelo teclado: foque o puxador, pressione espaço para pegar o jogo, use as
@@ -174,29 +203,35 @@ const LONG_PRESS_MS = 320;
       }
       <div
         class="queue-list"
-        [class.has-manual]="hasManual(d.items)"
         [class.is-busy]="busyId() !== null"
+        [class.is-searching]="searching()"
         (pointerdown)="onPointerDown($event)"
       >
-        @for (item of d.items.slice(0, visible()); track item.game.id; let i = $index) {
+        @for (row of shown(); track row.item.game.id) {
+          @let item = row.item;
+          @let i = row.index;
           <div
             class="queue-row"
             [attr.data-id]="item.game.id"
             [class.saving]="busyId() === item.game.id"
             [class.just-moved]="flash() === item.game.id"
           >
-            <button
-              type="button"
-              class="drag-handle"
-              [attr.aria-label]="'Reordenar ' + item.game.name + ', posição ' + (i + 1)"
-              aria-describedby="reorder-help"
-              [attr.aria-pressed]="keyboardId() === item.game.id"
-              [disabled]="busyId() !== null"
-              (keydown)="onHandleKey($event, item.game.id)"
-              (blur)="onHandleBlur(item.game.id)"
-            >
-              <span aria-hidden="true">⠿</span>
-            </button>
+            @if (!searching()) {
+              <button
+                type="button"
+                class="drag-handle"
+                [attr.aria-label]="'Reordenar ' + item.game.name + ', posição ' + (i + 1)"
+                aria-describedby="reorder-help"
+                [attr.aria-pressed]="keyboardId() === item.game.id"
+                [disabled]="busyId() !== null"
+                (keydown)="onHandleKey($event, item.game.id)"
+                (blur)="onHandleBlur(item.game.id)"
+              >
+                <span aria-hidden="true">⠿</span>
+              </button>
+            } @else {
+              <span class="drag-handle off" aria-hidden="true"></span>
+            }
             <a
               class="queue-link"
               draggable="false"
@@ -243,7 +278,7 @@ const LONG_PRESS_MS = 320;
               </div>
               <span class="row-arrow">↗</span></a
             >
-            <div class="queue-manual">
+            <div class="queue-actions">
               @if (busyId() === item.game.id) {
                 <span class="saving-pill">Recalculando…</span>
               } @else if (item.pinnedPosition) {
@@ -270,11 +305,20 @@ const LONG_PRESS_MS = 320;
                   </button></span
                 >
               }
+              <app-immediate
+                [game]="item.game"
+                (changed)="setDesire(item.game.id, $event)"
+                (saved)="desireSaved()"
+                (failed)="error.set($event); desireSaved()"
+              />
             </div>
           </div>
         }
       </div>
-      @if (visible() < d.items.length) {
+      @if (searching() && !shown().length) {
+        <div class="empty">Nenhum jogo da fila com “{{ query() }}”.</div>
+      }
+      @if (!searching() && visible() < d.items.length) {
         <button class="button load-more" (click)="visible.set(visible() + 30)">
           Mostrar mais 30 jogos
         </button>
@@ -311,6 +355,23 @@ export class Queue {
     return [...counts].map(([reason, count]) => ({ reason, count }));
   }
   visible = signal(30);
+  /** Busca na fila: filtra o que aparece, sem mudar posições (arraste fica desligado). */
+  query = signal('');
+  searching = computed(() => !!fold(this.query()).trim());
+  shown = computed(() => {
+    const items = this.data()?.items ?? [];
+    const q = fold(this.query()).trim();
+    if (!q) return items.slice(0, this.visible()).map((item, index) => ({ item, index }));
+    const words = q.split(/\s+/);
+    return items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item: { game: g } }) => {
+        const hay = fold(
+          [g.name, g.primaryGenre, ...g.secondaryTags, g.mechanic, g.pace].join(' '),
+        );
+        return words.every((w) => hay.includes(w));
+      });
+  });
   error = signal('');
   loading = signal(false);
   /** Jogo aguardando a resposta do servidor ao soltar a posição fixa. */
@@ -367,40 +428,80 @@ export class Queue {
     });
   }
 
-  hasManual(items: QueueEntry[]) {
-    return this.busyId() !== null || items.slice(0, this.visible()).some((i) => i.pinnedPosition);
-  }
-
-  async load() {
+  /**
+   * Fila da lista: o cache aparece na hora e a versão nova (se o cache estiver velho, ou
+   * sempre com `force`) chega depois, animada. Não mexe na tela durante um arraste.
+   */
+  async load(force = false) {
     const listId = this.listId();
     if (!listId) return;
-    this.loading.set(true);
+    this.loading.set(this.data()?.listId !== listId);
     this.error.set('');
     try {
-      const next = await this.api.queue(listId);
-      if (listId !== this.listId()) return;
-      this.settings.syncVersion(listId, next.configVersion);
-      // Mesma lista: anima a diferença; outra lista: troca direto.
-      if (this.data()?.listId === listId) this.flipTo(next);
-      else {
-        this.notice.set(null);
-        this.visible.set(30);
-        this.data.set(next);
-      }
+      await this.api.queue(
+        listId,
+        (next, fromCache) => {
+          if (listId !== this.listId() || this.drag || this.pending || this.pendingMoves) return;
+          if (!fromCache) this.settings.syncVersion(listId, next.configVersion);
+          // Mesma lista: anima a diferença; outra lista: troca direto.
+          if (this.data()?.listId === listId) this.flipTo(next);
+          else {
+            this.notice.set(null);
+            this.visible.set(30);
+            this.data.set(next);
+          }
+          this.loading.set(false);
+        },
+        force,
+      );
     } catch {
-      this.error.set('Não foi possível calcular a ordem. Confira a API.');
+      this.error.set(
+        this.data()
+          ? 'Sem conexão com a API: mostrando a última ordem salva neste aparelho.'
+          : 'Não foi possível calcular a ordem. Confira a API.',
+      );
     } finally {
       this.loading.set(false);
     }
   }
 
+  /**
+   * Vontade mudou pelo botão "Jogar já" (otimista). "Imediata" sobe para logo depois dos
+   * outros imediatos (fixados não se movem); a ordem exata chega na releitura.
+   */
+  setDesire(id: string, desire: Desire) {
+    const prev = this.data();
+    if (!prev) return;
+    const items = prev.items.map((i) =>
+      i.game.id === id ? { ...i, game: { ...i.game, desire } } : i,
+    );
+    const from = items.findIndex((i) => i.game.id === id);
+    if (desire === 'Imediata' && from >= 0 && !items[from].pinnedPosition) {
+      const [moved] = items.splice(from, 1);
+      let to = 0;
+      while (
+        to < items.length &&
+        (items[to].game.desire === 'Imediata' || items[to].pinnedPosition)
+      )
+        to++;
+      items.splice(to, 0, moved);
+    }
+    this.flipTo({ ...prev, items });
+    this.showFlash(id);
+  }
+  /** Vontade gravada: relê a fila e desliza para a ordem calculada pelo servidor. */
+  desireSaved() {
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+    void this.refreshQuietly(true);
+  }
+
   // ---------------------------------------------------------------- ponteiro
 
   onPointerDown(e: PointerEvent) {
-    if (this.drag || this.pending || this.busyId() || this.loading()) return;
+    if (this.drag || this.pending || this.busyId() || this.loading() || this.searching()) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (target.closest('.chip-remove')) return;
+    if (target.closest('.chip-remove, .immediate-btn')) return;
     const row = target.closest<HTMLElement>('.queue-row');
     const id = row?.dataset['id'];
     if (!row || !id) return;
@@ -702,6 +803,7 @@ export class Queue {
       const [moved] = items.splice(from, 1);
       items.splice(over, 0, moved);
       this.data.set({ ...prev, items });
+      this.api.rememberQueue(this.data()!);
       this.showFlash(id);
       this.cdr.detectChanges();
       this.focusHandle(id, d.mode);
@@ -801,7 +903,7 @@ export class Queue {
   private settle() {
     if (this.moveFailed) {
       this.moveFailed = false;
-      void this.load();
+      void this.load(true);
       return;
     }
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
@@ -809,21 +911,32 @@ export class Queue {
     this.refreshTimer = setTimeout(() => void this.refreshQuietly(), 1200);
   }
 
-  /** Troca os dados sem animar: o jogo movido já está no lugar certo. */
-  private async refreshQuietly() {
+  /**
+   * Relê a fila do servidor. Sem `animate`, troca os dados sem animar (o jogo movido já
+   * está no lugar certo); com `animate`, desliza para a ordem calculada (vontade mudou).
+   */
+  private async refreshQuietly(animate = false) {
     if (this.drag || this.pending || this.pendingMoves || this.busyId()) {
-      this.refreshTimer = setTimeout(() => void this.refreshQuietly(), 800);
+      this.refreshTimer = setTimeout(() => void this.refreshQuietly(animate), 800);
       return;
     }
+    const listId = this.listId();
+    if (!listId) return;
     try {
-      const listId = this.listId();
-      if (!listId) return;
-      const next = await this.api.queue(listId);
-      if (this.drag || this.pendingMoves) return; // outro movimento começou: ele resincroniza
-      if (listId !== this.listId()) return; // trocou de lista nesse meio-tempo
-      this.settings.syncVersion(listId, next.configVersion);
-      this.data.set(next);
-      this.cdr.detectChanges();
+      await this.api.queue(
+        listId,
+        (next, fromCache) => {
+          if (fromCache || this.drag || this.pendingMoves) return; // outro movimento resincroniza
+          if (listId !== this.listId()) return; // trocou de lista nesse meio-tempo
+          this.settings.syncVersion(listId, next.configVersion);
+          if (animate) this.flipTo(next);
+          else {
+            this.data.set(next);
+            this.cdr.detectChanges();
+          }
+        },
+        true,
+      );
     } catch {
       // Sem rede: a próxima recarga resolve.
     }
