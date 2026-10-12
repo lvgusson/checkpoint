@@ -15,6 +15,8 @@
     "release:rollback": "node --env-file-if-exists=.env scripts/rollback.mjs rollback",
     "release:tag": "node scripts/rollback.mjs tag",
     "wishlist:import": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env api/src/wishlist-cli.ts",
+    "wishlist:export": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env api/src/wishlist-cli.ts --export",
+    "wishlist:seed": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env api/src/wishlist-cli.ts --from",
     "test": "node --test api/test/*.test.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build",
     "typecheck": "tsc -p api/tsconfig.json",

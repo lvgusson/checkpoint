@@ -6,7 +6,7 @@
 import { join } from 'node:path';
 import { GameService } from './service.ts';
 import { WishlistService } from './wishlist.ts';
-import { steamClientFromEnv, steamProfileFromEnv } from './steam.ts';
+import { steamClientFromEnv, steamProfileFromEnv, type SteamClient } from './steam.ts';
 
 type Env = Record<string, string | undefined>;
 
@@ -16,18 +16,20 @@ export interface ServiceOptions {
   dataDir: string;
   /** app_user usado quando a autenticação está desligada (somente dev). */
   devAppUserId?: string;
+  /** Cliente da Steam (padrão: das variáveis de ambiente). O seed usa um snapshot local. */
+  steam?: SteamClient;
 }
 
 export async function createService({
   env = process.env,
   dataDir,
   devAppUserId,
+  steam = steamClientFromEnv(env),
 }: ServiceOptions): Promise<{
   service: GameService;
   wishlist: WishlistService;
   storage: 'postgres' | 'json';
 }> {
-  const steam = steamClientFromEnv(env);
   const wishlistOptions = { defaultProfile: steamProfileFromEnv(env) };
   if (env.DATABASE_URL) {
     const [{ db }, { createAppUserResolver }, pg, { PgWishlistStore }] = await Promise.all([

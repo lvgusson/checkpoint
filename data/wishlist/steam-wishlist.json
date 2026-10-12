@@ -1,0 +1,3379 @@
+{
+  "steamId": "76561198133960698",
+  "exportedAt": "2026-10-12T01:36:10.917Z",
+  "appIds": [
+    220440,
+    221040,
+    632470,
+    881020,
+    1004640,
+    1172620,
+    3017860,
+    3046600,
+    3259780,
+    3357650,
+    3489700,
+    3642910,
+    3681010,
+    3764200,
+    3710600,
+    285190,
+    1903340,
+    1020790,
+    272510,
+    1501750,
+    1627720,
+    1343240,
+    1282100,
+    1448440,
+    740130,
+    753640,
+    1716740,
+    1774580,
+    1817190,
+    1888160,
+    1623730,
+    1790600,
+    2054970,
+    1203620,
+    1378990,
+    1493640,
+    1527950,
+    775500,
+    1325200,
+    2358720,
+    2344520,
+    2515020,
+    2778580,
+    526870,
+    2679460,
+    1887840,
+    2510710,
+    1962700,
+    235460,
+    1244090,
+    2668510,
+    412020,
+    2124490,
+    502500,
+    394510,
+    3321460,
+    2622380,
+    1096530,
+    553850,
+    2638890,
+    761600,
+    330020,
+    1340990,
+    1902690,
+    1607680,
+    768520,
+    493520,
+    2680010,
+    2071280
+  ],
+  "apps": [
+    {
+      "appId": 220440,
+      "name": "DmC: Devil May Cry",
+      "shortDescription": "In this retelling of Dante's origin story which is set against a contemporary backdrop, DmC Devil May Cry™ retains the stylish action.",
+      "tags": [
+        "Ação",
+        "Hack and Slash",
+        "Trilha Sonora Boa",
+        "Luta Espetacular",
+        "Demônios",
+        "Aventura",
+        "Terceira Pessoa",
+        "Um Jogador",
+        "Jogo de Ação Focado em Personagem",
+        "Remontagem",
+        "Controle",
+        "Violência Detalhada",
+        "Estilizado",
+        "Porradaria",
+        "Atmosférico",
+        "Ritmo Rápido",
+        "Fantasia",
+        "Boa Trama",
+        "Comédia",
+        "Plataforma"
+      ],
+      "developers": [
+        "Ninja Theory"
+      ],
+      "publishers": [
+        "Capcom"
+      ],
+      "releaseDate": "2013-01-25",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/220440/header.jpg?t=1768870001",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/220440/capsule_616x353.jpg?t=1768870001",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/220440/library_hero.jpg?t=1768870001",
+      "storeUrl": "https://store.steampowered.com/app/220440",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 12900,
+        "finalCents": 3225,
+        "discountPercent": 75,
+        "discountEndsAt": "2026-10-21T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$32,25",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 221040,
+      "name": "Resident Evil 6",
+      "shortDescription": "Misturando ação e survival horror, Resident Evil 6 promete ser a experiência de terror dramático de 2013.",
+      "tags": [
+        "Ação",
+        "Zumbis",
+        "Cooperativo",
+        "Tiro em Terceira Pessoa",
+        "Terror",
+        "Cooperativo On-line",
+        "Campanha Cooperativa",
+        "Multijogador",
+        "Aventura",
+        "Tela Dividida",
+        "Cooperativo Local",
+        "Terceira Pessoa",
+        "Tiro",
+        "Eventos Rápidos",
+        "Um Jogador",
+        "Terror de Sobrevivência",
+        "Sobrevivência ",
+        "Protagonista Mulher",
+        "Atmosférico",
+        "Violência Detalhada"
+      ],
+      "developers": [
+        "Capcom"
+      ],
+      "publishers": [
+        "Capcom"
+      ],
+      "releaseDate": "2013-03-21",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/221040/header.jpg?t=1768960676",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/221040/capsule_616x353.jpg?t=1768960676",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/221040/library_hero.jpg?t=1768960676",
+      "storeUrl": "https://store.steampowered.com/app/221040",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 8900,
+        "finalCents": 8900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$89,00",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 632470,
+      "name": "Disco Elysium - The Final Cut",
+      "shortDescription": "Disco Elysium - The Final Cut é um RPG inovador. Você é um detetive com um sistema de habilidades único à sua disposição e todo um quarteirão inteiro para explorar. Interrogue personagens inesquecíveis, desvende assassinatos ou receba propinas. Torne-se um herói ou uma calamidade de ser humano.",
+      "tags": [
+        "RPG",
+        "Boa Trama",
+        "Você Decide",
+        "Detetive",
+        "Isométrico",
+        "Atmosférico",
+        "Um Jogador",
+        "Apontar e Clicar",
+        "CRPG",
+        "Noir",
+        "Surrealista",
+        "Romance Visual",
+        "Exploração",
+        "Engraçado",
+        "Aventura",
+        "Indie",
+        "Mundo Aberto",
+        "Personalização de Personagem",
+        "Conteúdo Sexual",
+        "Trilha Sonora Boa"
+      ],
+      "developers": [
+        "ZA/UM"
+      ],
+      "publishers": [
+        "ZA/UM"
+      ],
+      "releaseDate": "2019-10-15",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/632470/816ea59d6d8ac525f79a07c3a7afa94eddb3437c/header.jpg?t=1780913406",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/632470/fb679568d9df57f9f31b7704f106d63c6e188fc3/capsule_616x353.jpg?t=1780913406",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/632470/9f2529fe9210b7f676bc78b323ef05a48e8eda61/library_hero.jpg?t=1780913406",
+      "storeUrl": "https://store.steampowered.com/app/632470",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 11999,
+        "finalCents": 11999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$119,99",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 881020,
+      "name": "Granblue Fantasy: Relink",
+      "shortDescription": "Uma grande aventura nos céus aguarda você! Forme um grupo de quatro personagens a partir de uma lista de aeroviajantes e corte, atire ou amaldiçoe seu caminho até a vitória contra inimigos traiçoeiros neste RPG de ação. Faça missões sozinho ou em grupo de até quatro jogadores no modo cooperativo!",
+      "tags": [
+        "RPG de Ação",
+        "JRPG",
+        "Anime",
+        "Cooperativo On-line",
+        "Hack and Slash",
+        "Boa Trama",
+        "Ação",
+        "Multijogador",
+        "Fantasia",
+        "Jogador X Ambiente (PvE)",
+        "RPG de Grupos",
+        "Terceira Pessoa",
+        "Um Jogador",
+        "RPG",
+        "Protagonista Mulher",
+        "Luta Espetacular",
+        "3D",
+        "Personalização de Personagem",
+        "Fofo",
+        "MMORPG"
+      ],
+      "developers": [
+        "Cygames, Inc."
+      ],
+      "publishers": [
+        "Cygames, Inc."
+      ],
+      "releaseDate": "2024-02-01",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/881020/header.jpg?t=1791423701",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/881020/561059b191bc92de2409a0b6ebde56620ce66043/capsule_616x353.jpg?t=1791423701",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/881020/library_hero.jpg?t=1791423701",
+      "storeUrl": "https://store.steampowered.com/app/881020",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 12990,
+        "finalCents": 12990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$129,90",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 1004640,
+      "name": "FINAL FANTASY TACTICS - The Ivalice Chronicles",
+      "shortDescription": "Com diálogo completamente dublado, belos gráficos aprimorados e diversas melhorias de jogabilidade, esse RPG tático que definiu o gênero faz seu tão aguardado retorno.",
+      "tags": [
+        "Estratégia em Turnos",
+        "Tática por Turnos",
+        "RPG Tático",
+        "Fantasia",
+        "Medieval",
+        "Boa Trama",
+        "JRPG",
+        "RPG de Estratégia",
+        "RPG",
+        "Comovente",
+        "Combate em Turnos",
+        "Gráficos Pixelados",
+        "Visão Superior",
+        "Baseado em Classes",
+        "Mágica",
+        "Um Jogador",
+        "Atmosférico",
+        "Estratégia",
+        "Simulação",
+        "Isométrico"
+      ],
+      "developers": [
+        "Square Enix"
+      ],
+      "publishers": [
+        "Square Enix"
+      ],
+      "releaseDate": "2025-09-30",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1004640/2d8e4389e157b62f07bdc7c9468bf04010d574c0/header.jpg?t=1789614656",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1004640/7ea3f747f459cea19caa51a38720c115f3a22161/capsule_616x353.jpg?t=1789614656",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1004640/fdbb6a9fd5331ad62b1255b41d5fb0af8c4c583e/library_hero.jpg?t=1789614656",
+      "storeUrl": "https://store.steampowered.com/app/1004640",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 21990,
+        "finalCents": 21990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$219,90",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 1172620,
+      "name": "Sea of Thieves: 2026 Edition",
+      "shortDescription": "Sea of Thieves é um jogo de aventura pirata de sucesso, que oferece a experiência de pilhar tesouros perdidos, fazer parte de batalhas intensas, derrotar monstros marinhos e muito mais. Mergulhe nesta edição revisada do jogo, que inclui acesso a conteúdo digital bônus.",
+      "tags": [
+        "Multijogador",
+        "Mundo Aberto",
+        "Aventura",
+        "Piratas",
+        "Cooperativo",
+        "Cooperativo On-line",
+        "Jogador x Jogador (PvP)",
+        "Navegação",
+        "Ação",
+        "Primeira Pessoa",
+        "Exploração",
+        "Naval",
+        "Jogador X Ambiente (PvE)",
+        "Engraçado",
+        "Multijogador Massivo",
+        "Tiro em Primeira Pessoa (FPS)",
+        "Atmosférico",
+        "Um Jogador",
+        "Espada",
+        "Trilha Sonora Boa"
+      ],
+      "developers": [
+        "Rare Ltd"
+      ],
+      "publishers": [
+        "Xbox Game Studios"
+      ],
+      "releaseDate": "2020-06-03",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1172620/579c6d544424019a032f4add98e8f923925c1cef/header.jpg?t=1789650456",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1172620/1617656502fd33cb55deaff55fe1ffada0c51e18/capsule_616x353.jpg?t=1789650456",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1172620/library_hero.jpg?t=1789650456",
+      "storeUrl": "https://store.steampowered.com/app/1172620",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 10999,
+        "finalCents": 10999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$109,99",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 3017860,
+      "name": "DOOM: The Dark Ages",
+      "shortDescription": "DOOM: The Dark Ages é a prequela dos aclamados títulos DOOM (2016) e DOOM Eternal que conta a história épica e cinematográfica da origem da fúria de DOOM Slayer. Os jogadores entrarão na pele calejada de DOOM Slayer em uma guerra medieval sinistra, sombria e inédita contra as forças do Inferno.",
+      "tags": [
+        "Ação",
+        "Tiro em Primeira Pessoa (FPS)",
+        "Demônios",
+        "Fantasia Sombria",
+        "Um Jogador",
+        "Violência Detalhada",
+        "Ficção Científica",
+        "Primeira Pessoa",
+        "Cinematográfico",
+        "Tiro",
+        "Boa Trama",
+        "Atmosférico",
+        "Enredo Rico",
+        "Dragões",
+        "Mechas",
+        "Aventura",
+        "Ritmo Rápido",
+        "Tiro de Tiozão",
+        "Trilha Sonora Boa",
+        "Violento"
+      ],
+      "developers": [
+        "id Software"
+      ],
+      "publishers": [
+        "Bethesda Softworks"
+      ],
+      "releaseDate": "2025-05-15",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3017860/header.jpg?t=1789406231",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3017860/83434b237ecb9fd536c1cb9f3fd5dfb93515c67f/capsule_616x353.jpg?t=1789406231",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3017860/cb7f48519b32b084790349feefe924cdeaa6d027/library_hero.jpg?t=1789406231",
+      "storeUrl": "https://store.steampowered.com/app/3017860",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 24990,
+        "finalCents": 24990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$249,90",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 3046600,
+      "name": "Onimusha 2: Samurai's Destiny",
+      "shortDescription": "Reclame seu destino.\r\nOnimusha 2: Samurai's Destiny volta com gráficos em alta resolução e controles modernos para realizar contra-ataques críticos issen, e intensas lutas com espadas. Viva uma história dramática de vingança no Japão feudal.",
+      "tags": [
+        "Ação",
+        "Fantasia Sombria",
+        "Terror de Sobrevivência",
+        "RPG de Ação",
+        "Espada",
+        "Cinematográfico",
+        "Histórico",
+        "Boa Trama",
+        "Romance",
+        "Um Jogador",
+        "Ninja",
+        "Demônios",
+        "Ação / Aventura",
+        "Terceira Pessoa",
+        "Exploração",
+        "Luta Espetacular",
+        "Hack and Slash",
+        "Sobrevivência ",
+        "Comovente",
+        "Pontos, Pontos, Pontos!"
+      ],
+      "developers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "publishers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "releaseDate": "2025-05-23",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3046600/header.jpg?t=1763712388",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3046600/c1c72a64e2b591869e473635d6e2841e45d65778/capsule_616x353.jpg?t=1763712388",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3046600/540b374b8d02ecbe7054447b1244ed6d9cc4fe69/library_hero.jpg?t=1763712388",
+      "storeUrl": "https://store.steampowered.com/app/3046600",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 12900,
+        "finalCents": 12900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$129,00",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 3259780,
+      "name": "FINAL FANTASY RESONANCE",
+      "shortDescription": "Retorne ao mundo em pixels de FINAL FANTASY nessa evolução de suas raízes clássicas. Aventure-se com aliados unidos pelo destino e evoque Visions pra ajudar na batalha e revelar a verdade por trás de uma força que ameaça levar o mundo à ruína.",
+      "tags": [
+        "RPG",
+        "Gráficos Pixelados",
+        "Combate em Turnos",
+        "JRPG",
+        "2,5D",
+        "Boa Trama",
+        "RPG de Grupos",
+        "Um Jogador",
+        "Fantasia",
+        "Exploração",
+        "Mágica",
+        "Aventura",
+        "Combate",
+        "Controle",
+        "Medieval",
+        "Em Turnos",
+        "Visão Superior",
+        "RPG Tático",
+        "Comovente"
+      ],
+      "developers": [
+        "Square Enix",
+        "LANCARSE Ltd."
+      ],
+      "publishers": [
+        "Square Enix"
+      ],
+      "releaseDate": "2026-10-22",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3259780/710da43babb2043f9f6ad0e50023e31167d94708/header.jpg?t=1788534743",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3259780/6591a4998a16491b6a7f1d3ad2b948f3da15b52e/capsule_616x353.jpg?t=1788534743",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3259780/0cb714b00aaac49c450ad1d64c0c3a3cf14e4cfc/library_hero.jpg?t=1788534743",
+      "storeUrl": "https://store.steampowered.com/app/3259780",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 21990,
+        "finalCents": 21990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$219,90",
+        "fetchedAt": "2026-10-12T01:36:10.916Z"
+      }
+    },
+    {
+      "appId": 3357650,
+      "name": "PRAGMATA",
+      "shortDescription": "Pragmata é um jogo de ação e aventura com elementos de ficção científica da Capcom.\r\n\r\nAcompanhe Hugh, membro de uma arruinada equipe de investigação, e Diana, um androide, enquanto exploram uma instalação lunar controlada por uma IA rebelde e tentam voltar à Terra.",
+      "tags": [
+        "Fofo",
+        "Ficção Científica",
+        "Ação",
+        "Tiro em Terceira Pessoa",
+        "Engraçado",
+        "Aventura",
+        "Robôs",
+        "Futurista",
+        "Um Jogador",
+        "Ação / Aventura",
+        "Terceira Pessoa",
+        "Hacker",
+        "Boa Trama",
+        "Espacial",
+        "3D",
+        "Inteligência Artificial",
+        "Jogador X Ambiente (PvE)",
+        "Realístico",
+        "Protagonista Mulher",
+        "Soulslike"
+      ],
+      "developers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "publishers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "releaseDate": "2026-04-17",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3357650/e32e168b25ed68a0cf6264c220c07e96c2abfb56/header.jpg?t=1791454600",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3357650/341da3fa5338fad44ae87b2d14edfe6be80ff4c3/capsule_616x353.jpg?t=1791454600",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3357650/91c6fc49c0d73d54e798a7a11ad5f6625734a703/library_hero.jpg?t=1791454600",
+      "storeUrl": "https://store.steampowered.com/app/3357650",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 25900,
+        "finalCents": 25900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$259,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 3489700,
+      "name": "Stellar Blade™",
+      "shortDescription": "Salve a humanidade da extinção no jogo de ação e aventura pós-apocalíptico Stellar Blade™. Vivencie combates intensos e um enredo cheio de reviravoltas conforme você desvenda os mistérios do colapso da Terra.",
+      "tags": [
+        "Protagonista Mulher",
+        "Ação",
+        "Conteúdo Sexual",
+        "Hack and Slash",
+        "Soulslike",
+        "Um Jogador",
+        "Terceira Pessoa",
+        "RPG de Ação",
+        "Pós-Apocalíptico",
+        "Aventura",
+        "Ação / Aventura",
+        "Combate",
+        "Futurista",
+        "3D",
+        "Boa Trama",
+        "Vários Finais",
+        "Distópico",
+        "Eventos Rápidos",
+        "Estilizado",
+        "Jogador X Ambiente (PvE)"
+      ],
+      "developers": [
+        "SHIFT UP Corporation"
+      ],
+      "publishers": [
+        "PlayStation Publishing LLC (excluding China)"
+      ],
+      "releaseDate": "2025-06-11",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3489700/header.jpg?t=1776466244",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3489700/22469f910e2be326ea2a70d10601e3521c7b105d/capsule_616x353.jpg?t=1776466244",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3489700/7f886b630308135ac990fefd005787729fec685f/library_hero.jpg?t=1776466244",
+      "storeUrl": "https://store.steampowered.com/app/3489700",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 24990,
+        "finalCents": 24990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$249,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 3642910,
+      "name": "Wyldheart",
+      "shortDescription": "Embarque em campanhas breves neste RPG de ação cooperativo ambientado em um mundo rústico de fantasia. Comece do zero e desenvolva seu personagem livremente enquanto investiga rumores, explora ruínas insólitas e sobrevive aos perigos que ameaçam o reino caído de Caerwyn.",
+      "tags": [
+        "RPG de Ação",
+        "Sobrevivência ",
+        "Explorador de Calabouços",
+        "Fabricação",
+        "Exploração",
+        "Jogador X Ambiente (PvE)",
+        "Personalização de Personagem",
+        "Cooperativo",
+        "Campanha Cooperativa",
+        "Você Decide",
+        "Enredo Rico",
+        "Fantasia",
+        "Não Linear",
+        "Fantasia Sombria",
+        "Mágica",
+        "RPG",
+        "Medieval",
+        "Estilizado",
+        "Anime",
+        "Ação"
+      ],
+      "developers": [
+        "Wayfinder Studios"
+      ],
+      "publishers": [
+        "Wayfinder Studios",
+        "Curve Games"
+      ],
+      "releaseDate": null,
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3642910/3d73f7c8dc7f36cffdd8f91597dde730b352d67f/header_alt_assets_0.jpg?t=1791481724",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3642910/56d67a3acd72b5a5c8d5cec44f6ff7ea416f677d/capsule_616x353_alt_assets_0.jpg?t=1791481724",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3642910/553c8043e6822858046f375e601ed0f4e7f37192/library_hero.jpg?t=1791481724",
+      "storeUrl": "https://store.steampowered.com/app/3642910",
+      "price": null
+    },
+    {
+      "appId": 3681010,
+      "name": "Nioh 3",
+      "shortDescription": "No terceiro jogo da série sombria de RPG de ação com samurais Nioh, você precisará usar os estilos de combate Samurai e Ninja para enfrentar yokais formidáveis conforme explora um campo aberto arrepiante.",
+      "tags": [
+        "Ação",
+        "RPG de Ação",
+        "Soulslike",
+        "Mundo Aberto",
+        "RPG",
+        "Hack and Slash",
+        "Impiedoso",
+        "Terceira Pessoa",
+        "Fantasia Sombria",
+        "Fantasia",
+        "Ninja",
+        "Atmosférico",
+        "Histórico",
+        "Personalização de Personagem",
+        "Boa Trama",
+        "JRPG",
+        "Um Jogador",
+        "Multijogador",
+        "Protagonista Mulher",
+        "Cooperativo"
+      ],
+      "developers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "publishers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "releaseDate": "2026-02-06",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3681010/a21264e9fd476dcb2901c2432b598107d024c5a8/header.jpg?t=1772090941",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3681010/0084f83d831210e7f0095c20806c7c172783f6e6/capsule_616x353.jpg?t=1772090941",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3681010/8207558c4385cc2803570202f7b0514ca2adab28/library_hero.jpg?t=1772090941",
+      "storeUrl": "https://store.steampowered.com/app/3681010",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 34900,
+        "finalCents": 34900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$349,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 3764200,
+      "name": "Resident Evil Requiem",
+      "shortDescription": "Réquiem para os mortos. Pesadelo para os vivos.\r\nPrepare-se para escapar da morte em uma experiência aterrorizante que vai gelar sua espinha.",
+      "tags": [
+        "Terror de Sobrevivência",
+        "Zumbis",
+        "Terror",
+        "Tiro em Terceira Pessoa",
+        "Ação",
+        "Tiro em Primeira Pessoa (FPS)",
+        "Primeira Pessoa",
+        "Um Jogador",
+        "Ação / Aventura",
+        "Cinematográfico",
+        "Realístico",
+        "Boa Trama",
+        "3D",
+        "Sombrio",
+        "Protagonista Mulher",
+        "Pós-Apocalíptico",
+        "Violento",
+        "Gerenciamento de Inventário",
+        "Moderno",
+        "Violência Detalhada"
+      ],
+      "developers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "publishers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "releaseDate": "2026-02-27",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3764200/ce5437442768e38eb575f205ab9397d0264017b0/header.jpg?t=1779840172",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3764200/0731e32e73a1311c20a71199f4e4fd78ee9e9411/capsule_616x353.jpg?t=1779840172",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3764200/90d7401b621e98bd61b2f66616ffafcb58d75fd7/library_hero.jpg?t=1779840172",
+      "storeUrl": "https://store.steampowered.com/app/3764200",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 29900,
+        "finalCents": 29900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$299,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 3710600,
+      "name": "Warhammer 40,000: Dark Heresy",
+      "shortDescription": "Torne-se um acólito da Inquisição neste cRPG sombrio e narrativo. Investigue, revele conspirações, lute taticamente e combata a heresia. Faça escolhas difíceis como braço da vontade do Deus-Imperador.",
+      "tags": [
+        "RPG",
+        "Personalização de Personagem",
+        "Você Decide",
+        "Combate em Turnos",
+        "Boa Trama",
+        "CRPG",
+        "Fantasia Sombria",
+        "Aventura",
+        "Romance",
+        "Cooperativo On-line",
+        "Multijogador",
+        "Estratégia",
+        "Um Jogador",
+        "Baseado em Classes",
+        "Estratégia em Turnos",
+        "RPG de Estratégia",
+        "Atmosférico",
+        "RPG de Grupos",
+        "Isométrico",
+        "Detetive"
+      ],
+      "developers": [
+        "Owlcat Games"
+      ],
+      "publishers": [
+        "Owlcat Games"
+      ],
+      "releaseDate": null,
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3710600/c9cff4a2e091c0590909762a6d4296eeee5859a1/header.jpg?t=1791230781",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3710600/e0ae9dff4bb9d74de44536e123dd28dbdb33530c/capsule_616x353.jpg?t=1791230781",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3710600/a24ced96151ad38019615eacb6a9f0cd5d0a4be9/library_hero.jpg?t=1791230781",
+      "storeUrl": "https://store.steampowered.com/app/3710600",
+      "price": null
+    },
+    {
+      "appId": 285190,
+      "name": "Warhammer 40,000: Dawn of War III",
+      "shortDescription": "Entre no combate brutal entre três facções em guerra\r\n\r\nEm Dawn of War III você não terá escolha a não ser enfrentar seus oponentes quando uma arma catastrófica é encontrada no misterioso mundo de Acheron.",
+      "tags": [
+        "Estratégia",
+        "Estratégia em Tempo Real (RTS)",
+        "Ficção Científica",
+        "Multijogador",
+        "Ação",
+        "MOBA",
+        "Construção de Bases",
+        "Um Jogador",
+        "Violência Detalhada",
+        "Guerra",
+        "Tático",
+        "Atmosférico",
+        "Cooperativo",
+        "Trilha Sonora Boa",
+        "Boa Trama",
+        "Violento",
+        "Clássico",
+        "Casual",
+        "Simulação",
+        "Simulador de Encontros"
+      ],
+      "developers": [
+        "Relic Entertainment",
+        "Feral Interactive (Mac)",
+        "Feral Interactive (Linux)"
+      ],
+      "publishers": [
+        "Relic Entertainment",
+        "Feral Interactive (Mac)",
+        "Feral Interactive (Linux)"
+      ],
+      "releaseDate": "2017-04-27",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/285190/header.jpg?t=1750948681",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/285190/capsule_616x353.jpg?t=1750948681",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/285190/library_hero.jpg?t=1750948681",
+      "storeUrl": "https://store.steampowered.com/app/285190",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19900,
+        "finalCents": 19900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$199,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1903340,
+      "name": "Clair Obscur: Expedition 33",
+      "shortDescription": "Conduza os membros da Expedição 33 em uma missão para destruir a Artífice para que ela nunca mais possa pintar a morte. Explore um mundo inspirado na Belle Époque da França e enfrente inimigos únicos neste RPG em turnos com mecânicas em tempo real.",
+      "tags": [
+        "Combate em Turnos",
+        "Boa Trama",
+        "Fantasia",
+        "Trilha Sonora Boa",
+        "RPG",
+        "Um Jogador",
+        "JRPG",
+        "Exploração",
+        "Enredo Rico",
+        "Aventura",
+        "RPG de Grupos",
+        "Fantasia Sombria",
+        "3D",
+        "RPG de Ação",
+        "Soulslike",
+        "Personalização de Personagem",
+        "Pós-Apocalíptico",
+        "Ação",
+        "Indie",
+        "Realístico"
+      ],
+      "developers": [
+        "Sandfall Interactive"
+      ],
+      "publishers": [
+        "Kepler Interactive"
+      ],
+      "releaseDate": "2025-04-24",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1903340/be3305b02d4db0dffa3458537118423bf2792d7e/header.jpg?t=1782830877",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1903340/eccd7fa054e32bed3213fb92f6089bebd9978215/capsule_616x353.jpg?t=1782830877",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1903340/library_hero.jpg?t=1782830877",
+      "storeUrl": "https://store.steampowered.com/app/1903340",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 23900,
+        "finalCents": 19120,
+        "discountPercent": 20,
+        "discountEndsAt": "2026-10-22T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$191,20",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1020790,
+      "name": "NARUTO X BORUTO Ultimate Ninja STORM CONNECTIONS",
+      "shortDescription": "Ninjas lendários se reúnem no próximo jogo da série STORM! NARUTO X BORUTO Ultimate Ninja STORM CONNECTIONS é um jogo de ação/luta com batalhas ninja frenéticas e dois modos história diferentes.",
+      "tags": [
+        "Ação",
+        "Anime",
+        "Aventura",
+        "Luta 3D",
+        "Multijogador",
+        "Ninja",
+        "Luta",
+        "Um Jogador",
+        "Ação / Aventura",
+        "Jogador x Jogador (PvP)",
+        "Mundo Aberto",
+        "Personalização de Personagem",
+        "Cooperativo",
+        "Controle",
+        "Boa Trama",
+        "Cooperativo Local",
+        "Conteúdo Sexual",
+        "Multijogador Local",
+        "Nudez",
+        "Atmosférico"
+      ],
+      "developers": [
+        "CyberConnect2 Co., Ltd."
+      ],
+      "publishers": [
+        "Bandai Namco Entertainment"
+      ],
+      "releaseDate": "2023-11-16",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1020790/header.jpg?t=1727301927",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1020790/capsule_616x353.jpg?t=1727301927",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1020790/library_hero.jpg?t=1727301927",
+      "storeUrl": "https://store.steampowered.com/app/1020790",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 22990,
+        "finalCents": 22990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$229,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 272510,
+      "name": "NARUTO SHIPPUDEN: Ultimate Ninja STORM Revolution",
+      "shortDescription": "STORM, A SÉRIE REVOLUCIONÁRIA ESTÁ DEVOLTA!\r\nViva uma nova experiência no rico e inspirador mundo de NARUTO. Toneladas de novas técnicas, mecanismos de aprimoramento, 100 personagens e Ninjas de Suporte para jogar e um personagem novíssimo exclusivo, o (Naruto-Mecha) criado por Masashi Kishimoto.",
+      "tags": [
+        "Anime",
+        "Luta",
+        "Ninja",
+        "Ação",
+        "Multijogador",
+        "Aventura",
+        "Cooperativo On-line",
+        "Um Jogador",
+        "Trilha Sonora Boa",
+        "Cooperativo",
+        "Controle",
+        "Terceira Pessoa",
+        "RPG de Ação",
+        "Fantasia",
+        "Ação / Aventura",
+        "Jogador x Jogador (PvP)",
+        "Multijogador Local",
+        "Cooperativo Local",
+        "Comédia",
+        "Gratuito para Jogar"
+      ],
+      "developers": [
+        "CyberConnect2 Co., Ltd."
+      ],
+      "publishers": [
+        "BANDAI NAMCO Entertainment"
+      ],
+      "releaseDate": "2014-09-15",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/272510/header.jpg?t=1701322146",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/272510/capsule_616x353.jpg?t=1701322146",
+      "heroUrl": null,
+      "storeUrl": "https://store.steampowered.com/app/272510",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 5599,
+        "finalCents": 5599,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$55,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1501750,
+      "name": "Lords of the Fallen",
+      "shortDescription": "Um vasto mundo aguarda no RPG medieval de ação e fantasia sombria, Lords of the Fallen. Você é um lendário Cruzado das Trevas que embarca em uma missão épica para derrotar Adyr, o deus-demônio. A versão 2.5 definitiva contém: Progresso Cooperativo Compartilhado e Passe Grátis de Amizade.",
+      "tags": [
+        "Soulslike",
+        "Cooperativo On-line",
+        "Fantasia Sombria",
+        "Combate",
+        "Exploração",
+        "RPG",
+        "Ação",
+        "Um Jogador",
+        "Boa Trama",
+        "Dragões",
+        "RPG de Ação",
+        "Medieval",
+        "Ação / Aventura",
+        "Aventura",
+        "Multijogador",
+        "Enredo Rico",
+        "Personalização de Personagem",
+        "Mágica",
+        "Mundo Aberto",
+        "Fantasia"
+      ],
+      "developers": [
+        "CI Games"
+      ],
+      "publishers": [
+        "CI Games"
+      ],
+      "releaseDate": "2023-10-13",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1501750/c793d85dc133f22112c7283b79dd89e2c0aa58a4/header.jpg?t=1786951564",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1501750/24c3e0cdf4b16a197b3e1c725091be18abdcef7e/capsule_616x353.jpg?t=1786951564",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1501750/library_hero.jpg?t=1786951564",
+      "storeUrl": "https://store.steampowered.com/app/1501750",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 11999,
+        "finalCents": 11999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$119,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1627720,
+      "name": "Lies of P",
+      "shortDescription": "Lies of P é um soulslike emocionante que pega a história de Pinóquio, vira-a de ponta-cabeça e coloca-a num cenário sombrio e elegante da era belle époque.",
+      "tags": [
+        "Soulslike",
+        "Fantasia Sombria",
+        "Ação",
+        "Um Jogador",
+        "Boa Trama",
+        "RPG de Ação",
+        "Steampunk",
+        "Terceira Pessoa",
+        "Exploração",
+        "Sombrio",
+        "Aventura",
+        "Atmosférico",
+        "Impiedoso",
+        "3D",
+        "RPG",
+        "Você Decide",
+        "Vários Finais",
+        "Gótico",
+        "Violento",
+        "Alta Rejogabilidade"
+      ],
+      "developers": [
+        "NEOWIZ"
+      ],
+      "publishers": [
+        "NEOWIZ"
+      ],
+      "releaseDate": "2023-09-18",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1627720/header.jpg?t=1764565054",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1627720/capsule_616x353.jpg?t=1764565054",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1627720/library_hero.jpg?t=1764565054",
+      "storeUrl": "https://store.steampowered.com/app/1627720",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 24990,
+        "finalCents": 24990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$249,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1343240,
+      "name": "Thymesia",
+      "shortDescription": "Thymesia é um RPG de ação pauleira com combate frenético e um sistema intricado de armas pestilentas.\r\nNum reino onde a morte se espalha, jogue com o misterioso personagem conhecido apenas como \"Corvus\". Cace os inimigos, manipule enfermidades e descubra a verdade por trás de suas próprias memórias.",
+      "tags": [
+        "Soulslike",
+        "Impiedoso",
+        "Um Jogador",
+        "Fantasia Sombria",
+        "Hack and Slash",
+        "RPG de Ação",
+        "Terceira Pessoa",
+        "Ação",
+        "Atmosférico",
+        "RPG",
+        "Sombrio",
+        "Fantasia",
+        "Violência Detalhada",
+        "Gótico",
+        "Medieval",
+        "Terror",
+        "Combate",
+        "3D",
+        "Pós-Apocalíptico",
+        "Luta"
+      ],
+      "developers": [
+        "OverBorder Studio"
+      ],
+      "publishers": [
+        "Team17"
+      ],
+      "releaseDate": "2022-08-18",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1343240/header.jpg?t=1778528381",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1343240/capsule_616x353.jpg?t=1778528381",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1343240/library_hero.jpg?t=1778528381",
+      "storeUrl": "https://store.steampowered.com/app/1343240",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 7490,
+        "finalCents": 7490,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$74,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1282100,
+      "name": "REMNANT II®",
+      "shortDescription": "Remnant II® é a continuação do grande sucesso de vendas Remnant: From the Ashes. Agora, os sobreviventes da humanidade têm que enfrentar novas e mortais criaturas, além de chefes impossíveis em mundos aterrorizantes.",
+      "tags": [
+        "Soulslike",
+        "Cooperativo",
+        "Ação",
+        "Tiro em Terceira Pessoa",
+        "Aventura",
+        "RPG",
+        "Tiro",
+        "Sombrio",
+        "Cooperativo On-line",
+        "Multijogador",
+        "Ação / Aventura",
+        "Pós-Apocalíptico",
+        "Terceira Pessoa",
+        "Terror",
+        "Combate",
+        "Jogador X Ambiente (PvE)",
+        "Atmosférico",
+        "Um Jogador",
+        "Controle",
+        "Tiro com Saques"
+      ],
+      "developers": [
+        "Gunfire Games"
+      ],
+      "publishers": [
+        "Arc Games",
+        "THQ Nordic"
+      ],
+      "releaseDate": "2023-07-25",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1282100/header.jpg?t=1764659459",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1282100/capsule_616x353.jpg?t=1764659459",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1282100/library_hero.jpg?t=1764659459",
+      "storeUrl": "https://store.steampowered.com/app/1282100",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19999,
+        "finalCents": 19999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$199,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1448440,
+      "name": "Wo Long: Fallen Dynasty",
+      "shortDescription": "Um novo RPG de ação e fantasia sombria dos Três Reinos da Team NINJA, os criadores de Nioh.",
+      "tags": [
+        "Ação",
+        "Soulslike",
+        "RPG",
+        "Impiedoso",
+        "RPG de Ação",
+        "Fantasia Sombria",
+        "Hack and Slash",
+        "Histórico",
+        "Um Jogador",
+        "Fantasia",
+        "Violência Detalhada",
+        "Personalização de Personagem",
+        "Violento",
+        "Artes Marciais",
+        "JRPG",
+        "Cooperativo",
+        "Aventura",
+        "Terceira Pessoa",
+        "Atmosférico",
+        "Protagonista Mulher"
+      ],
+      "developers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "publishers": [
+        "KOEI TECMO GAMES CO., LTD.",
+        "CE-Asia(Asia)"
+      ],
+      "releaseDate": "2023-03-03",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1448440/header.jpg?t=1780891625",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1448440/dcb5987b4ea792958bc86ecc2887ac12318b904b/capsule_616x353.jpg?t=1780891625",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1448440/library_hero.jpg?t=1780891625",
+      "storeUrl": "https://store.steampowered.com/app/1448440",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19900,
+        "finalCents": 19900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$199,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 740130,
+      "name": "Tales of ARISE",
+      "shortDescription": "300 anos de tirania. Uma máscara misteriosa. Dor e memórias perdidas. Empunhe a Espada Flamejante e se una a uma jovem intocável para enfrentar os opressores. Viva uma história de libertação com personagens caprichados nos gráficos de nova geração!",
+      "tags": [
+        "Anime",
+        "JRPG",
+        "RPG",
+        "RPG de Ação",
+        "Mundo Aberto",
+        "Um Jogador",
+        "Fantasia",
+        "Boa Trama",
+        "Ação",
+        "Terceira Pessoa",
+        "Romance",
+        "Aventura",
+        "Mágica",
+        "Combate",
+        "Protagonista Mulher",
+        "Personalização de Personagem",
+        "Controle",
+        "Hack and Slash",
+        "Conteúdo Sexual",
+        "Multijogador"
+      ],
+      "developers": [
+        "Bandai Namco Studios Inc."
+      ],
+      "publishers": [
+        "Bandai Namco Entertainment"
+      ],
+      "releaseDate": "2023-11-08",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/740130/9031a1f4e34e8031118594726762d7979e43f320/header.jpg?t=1783413316",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/740130/427fe8211832dd31917d0d5e0b14d1c16c6e8892/capsule_616x353.jpg?t=1783413316",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/740130/5232af1e5ace55ba8ff4c3a893b7f1e85c9f9469/library_hero.jpg?t=1783413316",
+      "storeUrl": "https://store.steampowered.com/app/740130",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 22090,
+        "finalCents": 22090,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$220,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 753640,
+      "name": "Outer Wilds",
+      "shortDescription": "Ganhador do Jogo do Ano de 2019 pela Giant Bomb, Polygon, Eurogamer e The Guardian, Outer Wilds é um jogo de mistério de mundo aberto aclamado pela crítica que retrata um sistema solar fadado a um loop temporal perpétuo.",
+      "tags": [
+        "Exploração",
+        "Espacial",
+        "Mistério",
+        "Boa Trama",
+        "Aventura",
+        "Trilha Sonora Boa",
+        "Atmosférico",
+        "Quebra-Cabeça",
+        "Mundo Aberto",
+        "Um Jogador",
+        "Indie",
+        "Ficção Científica",
+        "Terror",
+        "Primeira Pessoa",
+        "Bonito",
+        "Terror Psicológico",
+        "Épico",
+        "3D",
+        "Simulação",
+        "Ação"
+      ],
+      "developers": [
+        "Mobius Digital"
+      ],
+      "publishers": [
+        "Annapurna Interactive"
+      ],
+      "releaseDate": "2020-06-18",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/753640/079ae4a7ff4b5875adc5c63c4c0b84e5a3e6966b/header.jpg?t=1785424341",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/753640/d8d60759820aab1272090bb2edd60fde2b42dcf7/capsule_616x353.jpg?t=1785424341",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/753640/library_hero.jpg?t=1785424341",
+      "storeUrl": "https://store.steampowered.com/app/753640",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 6799,
+        "finalCents": 3399,
+        "discountPercent": 50,
+        "discountEndsAt": "2026-10-22T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$33,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1716740,
+      "name": "Starfield",
+      "shortDescription": "Starfield é o primeiro universo novo em 25 anos da Bethesda Game Studios, os premiados criadores de The Elder Scrolls V: Skyrim e Fallout 4.",
+      "tags": [
+        "Espacial",
+        "Mundo Aberto",
+        "Um Jogador",
+        "RPG",
+        "Ficção Científica",
+        "Exploração",
+        "Personalização de Personagem",
+        "Primeira Pessoa",
+        "Boa Trama",
+        "Ação / Aventura",
+        "Terceira Pessoa",
+        "Aventura",
+        "RPG de Ação",
+        "Simulador Espacial",
+        "Compatível com Mods",
+        "Atmosférico",
+        "Ação",
+        "Cinematográfico",
+        "Realístico",
+        "Trilha Sonora Boa"
+      ],
+      "developers": [
+        "Bethesda Game Studios"
+      ],
+      "publishers": [
+        "Bethesda Softworks"
+      ],
+      "releaseDate": "2023-09-06",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1716740/header.jpg?t=1786648030",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1716740/capsule_616x353.jpg?t=1786648030",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1716740/library_hero.jpg?t=1786648030",
+      "storeUrl": "https://store.steampowered.com/app/1716740",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 24990,
+        "finalCents": 24990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$249,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1774580,
+      "name": "STAR WARS Jedi: Survivor™",
+      "shortDescription": "A história de Cal Kestis continua em STAR WARS Jedi: Survivor™, uma aventura em terceira pessoa na galáxia.",
+      "tags": [
+        "Ação",
+        "Um Jogador",
+        "Mundo Aberto",
+        "Soulslike",
+        "Aventura",
+        "Terceira Pessoa",
+        "Ficção Científica",
+        "Ação / Aventura",
+        "Boa Trama",
+        "Espacial",
+        "Espada",
+        "Exploração",
+        "Parkour",
+        "Combate",
+        "Personalização de Personagem",
+        "RPG",
+        "Atmosférico",
+        "Trilha Sonora Boa",
+        "Impiedoso",
+        "Multijogador"
+      ],
+      "developers": [
+        "Respawn"
+      ],
+      "publishers": [
+        "Electronic Arts"
+      ],
+      "releaseDate": "2023-04-28",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1774580/header.jpg?t=1788257050",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1774580/capsule_616x353.jpg?t=1788257050",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1774580/library_hero.jpg?t=1788257050",
+      "storeUrl": "https://store.steampowered.com/app/1774580",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 29900,
+        "finalCents": 29900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$299,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1817190,
+      "name": "Marvel’s Spider-Man: Miles Morales",
+      "shortDescription": "Após os eventos de Marvel's Spider-Man Remasterizado, o adolescente Miles Morales está se adaptando a um novo lar enquanto segue os passos do seu mentor, Peter Parker. Mas quando uma violenta disputa de forças ameaça destruir seu novo lar, Miles precisa reconhecer e assumir o título de Spider-Man.",
+      "tags": [
+        "Mundo Aberto",
+        "Ação",
+        "Super-Heróis",
+        "Um Jogador",
+        "Aventura",
+        "Terceira Pessoa",
+        "Combate",
+        "Parkour",
+        "Boa Trama",
+        "Ação / Aventura",
+        "Exploração",
+        "Furtivo",
+        "História em Quadrinhos",
+        "Porradaria",
+        "Trilha Sonora Boa",
+        "Bonito",
+        "Multijogador",
+        "RPG",
+        "Ficção Científica",
+        "LGBTQIA+"
+      ],
+      "developers": [
+        "Insomniac Games",
+        "Nixxes Software"
+      ],
+      "publishers": [
+        "PlayStation Publishing LLC"
+      ],
+      "releaseDate": "2022-11-18",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1817190/header.jpg?t=1787838710",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1817190/capsule_616x353.jpg?t=1787838710",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1817190/library_hero.jpg?t=1787838710",
+      "storeUrl": "https://store.steampowered.com/app/1817190",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19990,
+        "finalCents": 19990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$199,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1888160,
+      "name": "ARMORED CORE™ VI FIRES OF RUBICON™",
+      "shortDescription": "Um novo jogo de ação baseado no conceito da série ARMORED CORE e aprimorado pelo conhecimento adquirido com o recente desenvolvimento de jogos de ação da FromSoftware.",
+      "tags": [
+        "Mechas",
+        "Personalização de Personagem",
+        "Ação",
+        "Robôs",
+        "Terceira Pessoa",
+        "Combate",
+        "Ritmo Rápido",
+        "Soulslike",
+        "Ficção Científica",
+        "3D",
+        "Multijogador",
+        "Futurista",
+        "Um Jogador",
+        "Pós-Apocalíptico",
+        "Impiedoso",
+        "Combate com Veículos",
+        "Trilha Sonora",
+        "Militar",
+        "Ação / Aventura",
+        "Atmosférico"
+      ],
+      "developers": [
+        "FromSoftware, Inc."
+      ],
+      "publishers": [
+        "FromSoftware, Inc.",
+        "Bandai Namco Entertainment Inc."
+      ],
+      "releaseDate": "2023-08-24",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1888160/header.jpg?t=1748630736",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1888160/capsule_616x353.jpg?t=1748630736",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1888160/library_hero.jpg?t=1748630736",
+      "storeUrl": "https://store.steampowered.com/app/1888160",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 25790,
+        "finalCents": 25790,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$257,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1623730,
+      "name": "Palworld",
+      "shortDescription": "Este é um jogo completamente inovador de fabricação e sobrevivência em mundo aberto com suporte para vários jogadores. Nele você reúne criaturas fantásticas conhecidas como \"Pals\" em um vasto mundo e as usa em batalhas ou para trabalhos em construção, fazendas ou fábricas.",
+      "tags": [
+        "Mundo Aberto",
+        "Sobrevivência ",
+        "Coleção de Criaturas",
+        "Multijogador",
+        "Sobrevivência em Mundo Aberto",
+        "Cooperativo On-line",
+        "Fabricação",
+        "Indie",
+        "Cooperativo",
+        "Aventura",
+        "Construção de Bases",
+        "Faça o que Quiser",
+        "Automação",
+        "Construção",
+        "Tiro em Terceira Pessoa",
+        "RPG",
+        "Ação",
+        "Anime",
+        "Exploração",
+        "Um Jogador"
+      ],
+      "developers": [
+        "Pocketpair"
+      ],
+      "publishers": [
+        "Pocketpair"
+      ],
+      "releaseDate": "2026-07-10",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1623730/6912f19c43a95ff5fe514eedd35e68bf12335459/header.jpg?t=1790336367",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1623730/57df7aed61d65c9012a11d58e812aff275b7daed/capsule_616x353.jpg?t=1790336367",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1623730/2d3bef9d1a0ad28c0ea002ec4522e12e7218fbff/library_hero.jpg?t=1790336367",
+      "storeUrl": "https://store.steampowered.com/app/1623730",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 8899,
+        "finalCents": 6229,
+        "discountPercent": 30,
+        "discountEndsAt": "2026-10-22T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$62,29",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1790600,
+      "name": "DRAGON BALL: Sparking! ZERO",
+      "shortDescription": "DRAGON BALL: Sparking! ZERO pegou a jogabilidade lendária da série Budokai Tenkaichi e a elevou a novos níveis. Faça com que o poder destrutivo dos lutadores mais fortes de Dragon Ball seja seu!",
+      "tags": [
+        "Anime",
+        "Multijogador",
+        "Ação",
+        "Luta",
+        "Luta 3D",
+        "Multijogador Local",
+        "Jogador x Jogador (PvP)",
+        "Combate",
+        "Artes Marciais",
+        "Um Jogador",
+        "Competitivo",
+        "3D",
+        "Física",
+        "Terceira Pessoa",
+        "2,5D",
+        "Cooperativo",
+        "Jogador X Ambiente (PvE)",
+        "Mundo Aberto",
+        "Ação / Aventura",
+        "Luta Espetacular"
+      ],
+      "developers": [
+        "Spike Chunsoft Co., Ltd."
+      ],
+      "publishers": [
+        "Bandai Namco Entertainment"
+      ],
+      "releaseDate": "2024-10-10",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1790600/header.jpg?t=1785726916",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1790600/dd58a5788c333cf0ebb5743e32fb716448e28cb0/capsule_616x353.jpg?t=1785726916",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1790600/library_hero.jpg?t=1785726916",
+      "storeUrl": "https://store.steampowered.com/app/1790600",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 20650,
+        "finalCents": 20650,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$206,50",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2054970,
+      "name": "Dragon's Dogma 2",
+      "shortDescription": "Dragon’s Dogma 2 é um RPG de ação para um jogador movido por narrativa, que desafia os jogadores a escolherem sua própria experiência – desde a aparência de seus Nascen, suas vocações, seus aliados, seus comportamentos perante situações distintas e mais... em um mundo verdadeiramente imersivo.",
+      "tags": [
+        "Mundo Aberto",
+        "RPG",
+        "RPG de Ação",
+        "Fantasia",
+        "Um Jogador",
+        "Ação",
+        "Aventura",
+        "Personalização de Personagem",
+        "Dragões",
+        "Mágica",
+        "Ação / Aventura",
+        "Medieval",
+        "Espada",
+        "Terceira Pessoa",
+        "Física",
+        "Enredo Rico",
+        "Multijogador",
+        "Inteligência Artificial",
+        "3D",
+        "Jogador X Ambiente (PvE)"
+      ],
+      "developers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "publishers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "releaseDate": "2024-03-22",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2054970/header.jpg?t=1791504871",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2054970/capsule_616x353.jpg?t=1791504871",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2054970/library_hero.jpg?t=1791504871",
+      "storeUrl": "https://store.steampowered.com/app/2054970",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 16900,
+        "finalCents": 16900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$169,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1203620,
+      "name": "Enshrouded",
+      "shortDescription": "Você é Flameborn, a última esperança de um povo moribundo. Desperte e sobreviva ao horror da névoa corruptora. Entre em um vasto mundo, derrote chefes poderosos, construa salões magníficos e siga seu caminho neste RPG de ação e sobrevivência cooperativo para até 16 jogadores.",
+      "tags": [
+        "Mundo Aberto",
+        "Sobrevivência ",
+        "Construção de Bases",
+        "Multijogador",
+        "Cooperativo On-line",
+        "Fabricação",
+        "RPG",
+        "Aventura",
+        "Exploração",
+        "Construção",
+        "RPG de Ação",
+        "Fantasia",
+        "Um Jogador",
+        "Faça o que Quiser",
+        "Personalização de Personagem",
+        "Jogador X Ambiente (PvE)",
+        "Acesso Antecipado",
+        "Ação",
+        "3D",
+        "Indie"
+      ],
+      "developers": [
+        "Keen Games GmbH"
+      ],
+      "publishers": [
+        "Keen Games GmbH"
+      ],
+      "releaseDate": "2024-01-24",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1203620/731368301f231d622bd0b1e34afd2afcd86a1dcf/header.jpg?t=1790934459",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1203620/60e46c05fe4ca9a8b930919d8c4f73b25df09c1f/capsule_616x353.jpg?t=1790934459",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1203620/65bf9ce18aee402c94c5e370f0a4c7c87119f910/library_hero.jpg?t=1790934459",
+      "storeUrl": "https://store.steampowered.com/app/1203620",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 11999,
+        "finalCents": 11999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$119,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1378990,
+      "name": "Crash Bandicoot™ 4: It’s About Time",
+      "shortDescription": "Já era hora - Crash Bandicoot™ 4: It's About Time, sucesso entre críticos, agora está na Steam!",
+      "tags": [
+        "Ação",
+        "Plataforma 3D",
+        "Plataforma",
+        "Impiedoso",
+        "Aventura",
+        "Ação / Aventura",
+        "Cartunizado",
+        "Um Jogador",
+        "3D",
+        "Terceira Pessoa",
+        "Comédia",
+        "Multijogador",
+        "Colorido",
+        "Para Toda a Família",
+        "Trilha Sonora Boa",
+        "Cooperativo",
+        "Engraçado",
+        "Protagonista Mulher",
+        "Controle",
+        "Soulslike"
+      ],
+      "developers": [
+        "Toys for Bob",
+        "Beenox",
+        "Activision Shanghai",
+        "Hardsuit Labs",
+        "Iron Galaxy Studios"
+      ],
+      "publishers": [
+        "Activision"
+      ],
+      "releaseDate": "2022-10-18",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1378990/header.jpg?t=1755191015",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1378990/capsule_616x353.jpg?t=1755191015",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1378990/library_hero.jpg?t=1755191015",
+      "storeUrl": "https://store.steampowered.com/app/1378990",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 21990,
+        "finalCents": 21990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$219,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1493640,
+      "name": "Banishers: Ghosts of New Eden",
+      "shortDescription": "Junte-se a dois personagens notáveis em um RPG de ação narrativo, caçando fantasmas e tomando decisões com dramáticas consequências. Entre honrar seu juramento e o desejo de resgatar sua parceira, quanto você está disposto a sacrificar por amor?",
+      "tags": [
+        "Terceira Pessoa",
+        "Enredo Rico",
+        "Comovente",
+        "Atmosférico",
+        "RPG de Ação",
+        "Exploração",
+        "RPG",
+        "Você Decide",
+        "Ação / Aventura",
+        "Boa Trama",
+        "Terror",
+        "Fantasia Sombria",
+        "Ação",
+        "Fantasia",
+        "Aventura",
+        "Vampiros",
+        "Cinematográfico",
+        "Sobrenatural",
+        "Um Jogador",
+        "Combate"
+      ],
+      "developers": [
+        "DON'T NOD"
+      ],
+      "publishers": [
+        "Focus Entertainment"
+      ],
+      "releaseDate": "2024-02-12",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1493640/header.jpg?t=1763044792",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1493640/capsule_616x353.jpg?t=1763044792",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1493640/library_hero.jpg?t=1763044792",
+      "storeUrl": "https://store.steampowered.com/app/1493640",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 17842,
+        "finalCents": 17842,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$178,42",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1527950,
+      "name": "Wartales",
+      "shortDescription": "Wartales é um RPG de mundo aberto no qual você lidera um grupo de mercenários em busca de riqueza em um universo medieval gigantesco. Explore o mundo, recrute companheiros, cace recompensas e desvende os segredos de túmulos dos antepassados!",
+      "tags": [
+        "RPG",
+        "Mundo Aberto",
+        "Estratégia em Turnos",
+        "Medieval",
+        "RPG de Grupos",
+        "Combate em Turnos",
+        "Cooperativo",
+        "Aventura",
+        "RPG Tático",
+        "Estratégia",
+        "Multijogador",
+        "Um Jogador",
+        "Faça o que Quiser",
+        "Exploração",
+        "Sobrevivência ",
+        "Em Turnos",
+        "Cooperativo On-line",
+        "Boa Trama",
+        "Indie",
+        "Violento"
+      ],
+      "developers": [
+        "Shiro Games"
+      ],
+      "publishers": [
+        "Shiro Games"
+      ],
+      "releaseDate": "2023-04-12",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1527950/header.jpg?t=1788942263",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1527950/capsule_616x353.jpg?t=1788942263",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1527950/library_hero.jpg?t=1788942263",
+      "storeUrl": "https://store.steampowered.com/app/1527950",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 12999,
+        "finalCents": 12999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$129,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 775500,
+      "name": "SCARLET NEXUS",
+      "shortDescription": "Escolha entre Yuito e Kasane, psiônicos de elite com um talento para Psicocinese e suas próprias motivações para lutar. Conclua ambas as histórias para revelar todos os mistérios de um futuro Brain Punk envolto em tecnologia e habilidades psíquicas.",
+      "tags": [
+        "Anime",
+        "Ação",
+        "RPG",
+        "JRPG",
+        "RPG de Ação",
+        "Aventura",
+        "Ficção Científica",
+        "Ação / Aventura",
+        "Combate",
+        "Jogo de Ação Focado em Personagem",
+        "Mundo Aberto",
+        "Luta",
+        "Fantasia",
+        "Ficção Interativa",
+        "Futurista",
+        "Personalização de Personagem",
+        "Um Jogador",
+        "RPG de Estratégia",
+        "Hack and Slash",
+        "Soulslike"
+      ],
+      "developers": [
+        "BANDAI NAMCO Studios Inc."
+      ],
+      "publishers": [
+        "BANDAI NAMCO Entertainment"
+      ],
+      "releaseDate": "2021-06-24",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/775500/header.jpg?t=1703662938",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/775500/capsule_616x353.jpg?t=1703662938",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/775500/library_hero.jpg?t=1703662938",
+      "storeUrl": "https://store.steampowered.com/app/775500",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 42990,
+        "finalCents": 8598,
+        "discountPercent": 80,
+        "discountEndsAt": "2026-10-22T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$85,98",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1325200,
+      "name": "Nioh 2 – The Complete Edition",
+      "shortDescription": "Enfrenta hordas de yokai neste RPG de ação de dificuldade extrema. Personaliza a tua personagem e aventura-te por uma panóplia de locais por todo o Japão durante o Período Sengoku. Derrota os mais vorazes yokai com a nova habilidade Transformação em Yokai e enfrenta os Reinos das Trevas criados pelos teus inimigos. Liberta o teu lado negro em Nioh 2!",
+      "tags": [
+        "Ação",
+        "RPG",
+        "Personalização de Personagem",
+        "Soulslike",
+        "Impiedoso",
+        "Cooperativo",
+        "Multijogador",
+        "JRPG",
+        "Fantasia Sombria",
+        "Fantasia",
+        "Hack and Slash",
+        "Histórico",
+        "Boa Trama",
+        "Violento",
+        "Um Jogador",
+        "Sombrio",
+        "Atmosférico",
+        "Medieval",
+        "Saques",
+        "Protagonista Mulher"
+      ],
+      "developers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "publishers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "releaseDate": "2021-02-05",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1325200/header.jpg?t=1775540023",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1325200/capsule_616x353.jpg?t=1775540023",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1325200/library_hero.jpg?t=1775540023",
+      "storeUrl": "https://store.steampowered.com/app/1325200",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 24900,
+        "finalCents": 24900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$249,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2358720,
+      "name": "Black Myth: Wukong",
+      "shortDescription": "Black Myth: Wukong é um RPG de ação inspirado na mitologia chinesa. Você assume o papel do Predestinado e tem a responsabilidade de encarar os desafios e as maravilhas do mundo para desvendar a verdade obscura por trás de uma lenda gloriosa do passado.",
+      "tags": [
+        "Mitologia",
+        "RPG de Ação",
+        "Ação",
+        "Soulslike",
+        "RPG",
+        "Combate",
+        "Boa Trama",
+        "Um Jogador",
+        "Ação / Aventura",
+        "Fantasia Sombria",
+        "Atmosférico",
+        "Aventura",
+        "3D",
+        "Fantasia",
+        "Hack and Slash",
+        "Impiedoso",
+        "Terceira Pessoa",
+        "Música",
+        "Violento",
+        "Mundo Aberto"
+      ],
+      "developers": [
+        "Game Science"
+      ],
+      "publishers": [
+        "Game Science"
+      ],
+      "releaseDate": "2024-08-20",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2358720/header.jpg?t=1760601605",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2358720/f40ef565c380c617020e559b4b4b089edd93ec09/capsule_616x353.jpg?t=1760601605",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2358720/library_hero.jpg?t=1760601605",
+      "storeUrl": "https://store.steampowered.com/app/2358720",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 22999,
+        "finalCents": 22999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$229,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2344520,
+      "name": "Diablo® IV",
+      "shortDescription": "Junte-se à luta por Santuário no Diablo® IV, a aventura suprema de RPG de ação. Vivencie a campanha aclamada pela crítica e os novos conteúdos de temporada.",
+      "tags": [
+        "RPG de Ação",
+        "Hack and Slash",
+        "Saques",
+        "Isométrico",
+        "RPG",
+        "Cooperativo On-line",
+        "Explorador de Calabouços",
+        "Multijogador",
+        "Cooperativo",
+        "Um Jogador",
+        "Jogador X Ambiente (PvE)",
+        "MMORPG",
+        "Demônios",
+        "Personalização de Personagem",
+        "Sombrio",
+        "Fantasia",
+        "Fantasia Sombria",
+        "Exploração",
+        "Violência Detalhada",
+        "Boa Trama"
+      ],
+      "developers": [
+        "Blizzard Entertainment, Inc."
+      ],
+      "publishers": [
+        "Blizzard Entertainment, Inc."
+      ],
+      "releaseDate": "2023-10-17",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2344520/80f21a42e378b93e8fbb68ee43103be8ab84891b/header.jpg?t=1789491624",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2344520/2f4d94366b280084c0aed937a6b423d7803ebbbb/capsule_616x353.jpg?t=1789491624",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2344520/cd5817c4f6256d206c077cb611da21a5de4a5452/library_hero.jpg?t=1789491624",
+      "storeUrl": "https://store.steampowered.com/app/2344520",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 22990,
+        "finalCents": 22990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$229,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2515020,
+      "name": "FINAL FANTASY XVI",
+      "shortDescription": "Fantasia épica sombria onde o destino é decidido por Eikons e os Dominantes que os controlam. Esta é a história de Clive Rosfield, guerreiro que jura vingança contra o Eikon das trevas, Ifrit, entidade misteriosa que traz calamidade por onde passa.",
+      "tags": [
+        "RPG de Ação",
+        "Boa Trama",
+        "Luta Espetacular",
+        "JRPG",
+        "Fantasia",
+        "Ação",
+        "Fantasia Sombria",
+        "Um Jogador",
+        "RPG",
+        "Cinematográfico",
+        "Terceira Pessoa",
+        "3D",
+        "Comovente",
+        "Mágica",
+        "Atmosférico",
+        "RPG de Grupos",
+        "Trilha Sonora Boa",
+        "Hack and Slash",
+        "Violento",
+        "Mundo Aberto"
+      ],
+      "developers": [
+        "Square Enix"
+      ],
+      "publishers": [
+        "Square Enix"
+      ],
+      "releaseDate": "2024-09-17",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2515020/header.jpg?t=1773294537",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2515020/capsule_616x353.jpg?t=1773294537",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2515020/ffb58542c0b9d64c829fadc6a9c546d9879dbbd7/library_hero.jpg?t=1773294537",
+      "storeUrl": "https://store.steampowered.com/app/2515020",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 21990,
+        "finalCents": 21990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$219,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2778580,
+      "name": "ELDEN RING Shadow of the Erdtree",
+      "shortDescription": "A expansão de ELDEN RING Shadow of the Erdtree apresenta uma nova história passada na Terra das Sombras, repleta de mistérios, masmorras perigosas e novos inimigos, armas e equipamentos.",
+      "tags": [
+        "Ação",
+        "RPG",
+        "Soulslike",
+        "Impiedoso",
+        "Fantasia",
+        "Exploração",
+        "Enredo Rico",
+        "Sombrio",
+        "Aventura",
+        "Um Jogador",
+        "Terceira Pessoa",
+        "Multijogador",
+        "Boa Trama",
+        "Personalização de Personagem",
+        "RPG de Ação",
+        "Jogador X Ambiente (PvE)",
+        "Jogador x Jogador (PvP)",
+        "Cooperativo On-line",
+        "3D",
+        "Cooperativo"
+      ],
+      "developers": [
+        "FromSoftware, Inc."
+      ],
+      "publishers": [
+        "FromSoftware, Inc.",
+        "Bandai Namco Entertainment"
+      ],
+      "releaseDate": "2024-06-20",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2778580/header.jpg?t=1787586064",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2778580/capsule_616x353.jpg?t=1787586064",
+      "heroUrl": null,
+      "storeUrl": "https://store.steampowered.com/app/2778580",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 18290,
+        "finalCents": 18290,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$182,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 526870,
+      "name": "Satisfactory",
+      "shortDescription": "Satisfactory é um jogo de construção de fábricas em primeira pessoa num mundo aberto, com traços de exploração e combate. Jogue sozinho ou com amigos, explore um planeta alienígena, crie fábricas de vários andares e entre no paraíso das correias transportadoras!",
+      "tags": [
+        "Construção de Bases",
+        "Automação",
+        "Mundo Aberto",
+        "Fabricação",
+        "Multijogador",
+        "Cooperativo",
+        "Construção",
+        "Gerenciamento de Recursos",
+        "Faça o que Quiser",
+        "Exploração",
+        "Sobrevivência em Mundo Aberto",
+        "Aventura",
+        "Sobrevivência ",
+        "Primeira Pessoa",
+        "Simulação",
+        "Estratégia",
+        "Ficção Científica",
+        "Um Jogador",
+        "Indie",
+        "Acesso Antecipado"
+      ],
+      "developers": [
+        "Coffee Stain Studios"
+      ],
+      "publishers": [
+        "Coffee Stain Publishing"
+      ],
+      "releaseDate": "2024-09-10",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/header.jpg?t=1791192059",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/290c413f4075e43a5d2e106dcbbaa036b3271621/capsule_616x353.jpg?t=1791192059",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/526870/library_hero.jpg?t=1791192059",
+      "storeUrl": "https://store.steampowered.com/app/526870",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 10799,
+        "finalCents": 10799,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$107,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2679460,
+      "name": "Metaphor: ReFantazio",
+      "shortDescription": "Aberto depois do assassinato, o testamento do finado rei decretava que o próximo monarca seria eleito pelo povo. Faça alianças e conquiste um reino dividido neste premiado RPG de fantasia com dinâmico combate em turnos, personalização de grupos com Arquétipos poderosos, e horas de exploração. ",
+      "tags": [
+        "RPG",
+        "Combate em Turnos",
+        "JRPG",
+        "Anime",
+        "Boa Trama",
+        "Aventura",
+        "Um Jogador",
+        "Gerenciamento de Tempo",
+        "Estratégia em Turnos",
+        "Fantasia",
+        "Fantasia Sombria",
+        "RPG de Grupos",
+        "RPG de Ação",
+        "Terceira Pessoa",
+        "Colorido",
+        "RPG de Estratégia",
+        "Estratégia",
+        "Escolha a sua Aventura",
+        "Tática por Turnos",
+        "3D"
+      ],
+      "developers": [
+        "ATLUS"
+      ],
+      "publishers": [
+        "SEGA"
+      ],
+      "releaseDate": "2024-10-11",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2679460/header.jpg?t=1764776325",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2679460/capsule_616x353.jpg?t=1764776325",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2679460/library_hero.jpg?t=1764776325",
+      "storeUrl": "https://store.steampowered.com/app/2679460",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 29990,
+        "finalCents": 29990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$299,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1887840,
+      "name": "Another Crab's Treasure",
+      "shortDescription": "Em um intrigante reino subaquático prestes a entrar em colapso, um caranguejo-eremita embarca em uma caça ao tesouro para recomprar a concha dele que foi penhorada. O segundo jogo da AGGRO CRAB.",
+      "tags": [
+        "Soulslike",
+        "Plataforma 3D",
+        "Engraçado",
+        "RPG de Ação",
+        "Cartunizado",
+        "Ação / Aventura",
+        "Terceira Pessoa",
+        "Atmosférico",
+        "Não Linear",
+        "Humor Ácido",
+        "Mundo Aberto",
+        "RPG",
+        "Fofo",
+        "3D",
+        "Fantasia Sombria",
+        "Subaquático",
+        "Enredo Rico",
+        "Boa Trama",
+        "Ação",
+        "Porradaria"
+      ],
+      "developers": [
+        "Aggro Crab"
+      ],
+      "publishers": [
+        "Aggro Crab"
+      ],
+      "releaseDate": "2024-04-25",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1887840/header.jpg?t=1785949147",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1887840/capsule_616x353.jpg?t=1785949147",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1887840/library_hero.jpg?t=1785949147",
+      "storeUrl": "https://store.steampowered.com/app/1887840",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 8999,
+        "finalCents": 8999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$89,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2510710,
+      "name": "Kunitsu-Gami: Path of the Goddess",
+      "shortDescription": "Há uma nova história dos Kami lhe aguardando\r\nKunitsu-Gami: Path of the Goddess é um jogo original para um jogador de Ação e Estratégia Kagura inspirado no Japão.",
+      "tags": [
+        "Ação",
+        "Estratégia",
+        "Defesa de Torres",
+        "Mitologia",
+        "3D",
+        "Hack and Slash",
+        "Enredo Rico",
+        "Sobrenatural",
+        "Um Jogador",
+        "Trilha Sonora Boa",
+        "Estratégia em Tempo Real (RTS)"
+      ],
+      "developers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "publishers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "releaseDate": "2024-07-19",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2510710/ac83727512493337711c22ba6b96012064a161ce/header.jpg?t=1752199364",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2510710/97ed45021654a9afac136678c15d712f4a4124fd/capsule_616x353.jpg?t=1752199364",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2510710/3f877fa33e7001633dc7876514f8620aa50f23c4/library_hero.jpg?t=1752199364",
+      "storeUrl": "https://store.steampowered.com/app/2510710",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 17900,
+        "finalCents": 17900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$179,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1962700,
+      "name": "Subnautica 2",
+      "shortDescription": "Subnautica 2 é um jogo de aventura e sobrevivência subaquática em um novo mundo extraterrestre, desenvolvido pela Unknown Worlds. Jogue sozinho ou com até três amigos. Sobreviva criando bases e ferramentas. Explore o desconhecido para desvendar os mistérios nas profundezas.",
+      "tags": [
+        "Multijogador",
+        "Sobrevivência ",
+        "Terror",
+        "Subaquático",
+        "Exploração",
+        "Cooperativo",
+        "Mundo Aberto",
+        "Terror de Sobrevivência",
+        "Primeira Pessoa",
+        "Aventura",
+        "Atmosférico",
+        "Acesso Antecipado",
+        "Terror Psicológico",
+        "Ficção Científica",
+        "Um Jogador",
+        "3D",
+        "Faça o que Quiser",
+        "Ação",
+        "Construção de Bases",
+        "Casual"
+      ],
+      "developers": [
+        "Unknown Worlds Entertainment"
+      ],
+      "publishers": [
+        "Unknown Worlds Entertainment"
+      ],
+      "releaseDate": "2026-05-14",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1962700/header.jpg?t=1785967256",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1962700/ceed43f5d774d84a5578eccaaec6842cb9591667/capsule_616x353.jpg?t=1785967256",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1962700/5775c2fdf39291633dd59b87ece66ab0431aa9ec/library_hero.jpg?t=1785967256",
+      "storeUrl": "https://store.steampowered.com/app/1962700",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 11999,
+        "finalCents": 11999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$119,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 235460,
+      "name": "METAL GEAR RISING: REVENGEANCE",
+      "shortDescription": "",
+      "tags": [
+        "Trilha Sonora Boa",
+        "Hack and Slash",
+        "Ação",
+        "Luta Espetacular",
+        "Espada",
+        "Jogo de Ação Focado em Personagem",
+        "Um Jogador",
+        "Terceira Pessoa",
+        "Ritmo Rápido",
+        "Ninja",
+        "Violência Detalhada",
+        "Boa Trama",
+        "Cyberpunk",
+        "Impiedoso",
+        "Ficção Científica",
+        "Alta Rejogabilidade",
+        "Mechas",
+        "Porradaria",
+        "Aventura",
+        "Furtivo"
+      ],
+      "developers": [
+        "PlatinumGames"
+      ],
+      "publishers": [
+        "KONAMI"
+      ],
+      "releaseDate": "2014-01-09",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/235460/header.jpg?t=1740076034",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/235460/capsule_616x353.jpg?t=1740076034",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/235460/library_hero.jpg?t=1740076034",
+      "storeUrl": "https://store.steampowered.com/app/235460",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 4999,
+        "finalCents": 4999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$49,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1244090,
+      "name": "Sea of Stars: Sunset Edition",
+      "shortDescription": "Sea of Stars é um RPG por turnos inspirado nos clássicos. Conta a história de dois Filhos do Solstício que combinarão os poderes do sol e da lua para realizar a Magia do Eclipse, a única força capaz de deter as criações monstruosas do malvado alquimista conhecido como The Fleshmancer",
+      "tags": [
+        "Gráficos Pixelados",
+        "JRPG",
+        "Combate em Turnos",
+        "Cooperativo Local",
+        "RPG de Grupos",
+        "Boa Trama",
+        "RPG",
+        "Aventura",
+        "2D ",
+        "Indie",
+        "Fantasia",
+        "Cooperativo",
+        "Um Jogador",
+        "Enredo Rico",
+        "Retrô",
+        "Exploração",
+        "Multijogador",
+        "Engraçado",
+        "Nostalgia",
+        "Comovente"
+      ],
+      "developers": [
+        "Sabotage Studio"
+      ],
+      "publishers": [
+        "Sabotage Studio"
+      ],
+      "releaseDate": "2023-08-29",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1244090/2e96ccd2714fafb5a8df7ddd97ff01fef2096b29/header.jpg?t=1780931183",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1244090/bf4ef234fc768152c33f037d2f3d5b68fe96b42d/capsule_616x353.jpg?t=1780931183",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1244090/0ac7828eda69a8e2950c994aca095ebf2ad5e74b/library_hero.jpg?t=1780931183",
+      "storeUrl": "https://store.steampowered.com/app/1244090",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 9999,
+        "finalCents": 9999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$99,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2668510,
+      "name": "Red Dead Redemption",
+      "shortDescription": "Conheça a história do ex-fora da lei John Marston e sua jornada para encontrar os últimos membros restantes da notória gangue Van der Linde na estreia para PC do aclamado predecessor de Red Dead Redemption 2.",
+      "tags": [
+        "Mundo Aberto",
+        "Velho Oeste",
+        "Boa Trama",
+        "Um Jogador",
+        "Ação",
+        "Zumbis",
+        "Ação / Aventura",
+        "Tiro em Terceira Pessoa",
+        "Atmosférico",
+        "Aventura",
+        "Trilha Sonora Boa",
+        "Violência Detalhada",
+        "Tiro",
+        "Conteúdo Sexual",
+        "Terceira Pessoa",
+        "3D",
+        "Clássico",
+        "Nudez",
+        "Multijogador",
+        "Cavalos"
+      ],
+      "developers": [
+        "Rockstar Games",
+        "Double Eleven"
+      ],
+      "publishers": [
+        "Rockstar Games"
+      ],
+      "releaseDate": "2024-10-29",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2668510/header_brazilian.jpg?t=1781132266",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2668510/016fe71b0c4642adab2875af0fd979c9b4e488bd/capsule_616x353_brazilian.jpg?t=1781132266",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2668510/ccdd17105b92b2a70224a742fa88cf4ad3b4ebdc/library_hero.jpg?t=1781132266",
+      "storeUrl": "https://store.steampowered.com/app/2668510",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 33513,
+        "finalCents": 19792,
+        "discountPercent": 41,
+        "discountEndsAt": "2026-10-22T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$197,92",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 412020,
+      "name": "Metro Exodus",
+      "shortDescription": "Escape das ruínas do metrô de Moscou e embarque em uma jornada incrível pela Rússia pós-apocalíptica. Explore mapas não lineares enormes, sinta toda a experiência e imersão de um jogo de sobrevivência de mundo aberto. Descubra uma história emocionante que dura um ano inteiro na maior aventura no universo Metro de todos os tempos.",
+      "tags": [
+        "Pós-Apocalíptico",
+        "Tiro em Primeira Pessoa (FPS)",
+        "Um Jogador",
+        "Mundo Aberto",
+        "Boa Trama",
+        "Atmosférico",
+        "Ação",
+        "Terror",
+        "Primeira Pessoa",
+        "Sobrevivência ",
+        "Tiro",
+        "Aventura",
+        "Furtivo",
+        "Exploração",
+        "Terror de Sobrevivência",
+        "Trilha Sonora Boa",
+        "Violento",
+        "Violência Detalhada",
+        "Terror Psicológico",
+        "Ficção Científica"
+      ],
+      "developers": [
+        "4A Games"
+      ],
+      "publishers": [
+        "Deep Silver"
+      ],
+      "releaseDate": "2020-02-14",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/412020/header.jpg?t=1750772804",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/412020/capsule_616x353.jpg?t=1750772804",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/412020/library_hero.jpg?t=1750772804",
+      "storeUrl": "https://store.steampowered.com/app/412020",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 14900,
+        "finalCents": 14900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$149,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2124490,
+      "name": "SILENT HILL 2",
+      "shortDescription": "\"Chamo-me... Maria,\" diz a mulher sorrindo. O rosto, a voz... é igual a ela.",
+      "tags": [
+        "Terror Psicológico",
+        "Terror",
+        "Boa Trama",
+        "Terror de Sobrevivência",
+        "Atmosférico",
+        "Psicológico",
+        "Trilha Sonora Boa",
+        "Remake",
+        "Um Jogador",
+        "Terceira Pessoa",
+        "Vários Finais",
+        "Aventura",
+        "Exploração",
+        "Cinematográfico",
+        "Conteúdo Sexual",
+        "Ação",
+        "Violento",
+        "Clássico",
+        "3D",
+        "Ação / Aventura"
+      ],
+      "developers": [
+        "Bloober Team SA"
+      ],
+      "publishers": [
+        "KONAMI"
+      ],
+      "releaseDate": "2024-10-08",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2124490/header.jpg?t=1744248682",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2124490/capsule_616x353.jpg?t=1744248682",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2124490/library_hero.jpg?t=1744248682",
+      "storeUrl": "https://store.steampowered.com/app/2124490",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 34990,
+        "finalCents": 34990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$349,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 502500,
+      "name": "ACE COMBAT™ 7: SKIES UNKNOWN",
+      "shortDescription": "Torne-se um às dos ares e cruze céus foto realistas com movimentação completa em 360 graus; abata aeronaves inimigas e experimente a emoção de combates realistas! O combate aéreo nunca esteve melhor!",
+      "tags": [
+        "Voo",
+        "Militar",
+        "Guerra",
+        "Arcade",
+        "Tiro",
+        "Cinematográfico",
+        "3D",
+        "Multijogador",
+        "Jogador x Jogador (PvP)",
+        "Ação",
+        "Boa Trama",
+        "Simulação",
+        "Primeira Pessoa",
+        "Terceira Pessoa",
+        "Trilha Sonora Boa",
+        "Um Jogador",
+        "Protagonista Mudo",
+        "Ficção Científica",
+        "Realístico",
+        "RV"
+      ],
+      "developers": [
+        "Bandai Namco Studios Inc."
+      ],
+      "publishers": [
+        "Bandai Namco Entertainment"
+      ],
+      "releaseDate": "2019-01-31",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/502500/header.jpg?t=1777545285",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/502500/capsule_616x353.jpg?t=1777545285",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/502500/library_hero.jpg?t=1777545285",
+      "storeUrl": "https://store.steampowered.com/app/502500",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 22990,
+        "finalCents": 22990,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$229,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 394510,
+      "name": "HELLDIVERS™ Dive Harder Edition",
+      "shortDescription": "HELLDIVERS™ é um jogo de tiro extremo, cooperativo, com o uso dos dois controles analógicos. Como parte de uma unidade de elite chamada de HELLDIVERS, os jogadores devem trabalhar juntos para proteger a SUPERTERRA e derrotar os inimigos da Humanidade em uma intensa guerra intergaláctica.",
+      "tags": [
+        "Cooperativo On-line",
+        "Cooperativo",
+        "SHMUP com Visão Superior",
+        "Controle com Alavanca Dupla",
+        "Cooperativo Local",
+        "Ação",
+        "Multijogador",
+        "Ficção Científica",
+        "Local para 4 Jogadores",
+        "Visão Superior",
+        "Tiro",
+        "Comédia",
+        "Engraçado",
+        "Espacial",
+        "Impiedoso",
+        "Estratégia",
+        "Isométrico",
+        "Sobrevivência ",
+        "Mechas",
+        "Hack and Slash"
+      ],
+      "developers": [
+        "Arrowhead Game Studios"
+      ],
+      "publishers": [
+        "PlayStation Publishing LLC"
+      ],
+      "releaseDate": "2015-12-07",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/394510/header.jpg?t=1750950223",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/394510/capsule_616x353.jpg?t=1750950223",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/394510/library_hero.jpg?t=1750950223",
+      "storeUrl": "https://store.steampowered.com/app/394510",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 4099,
+        "finalCents": 4099,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$40,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 3321460,
+      "name": "Crimson Desert Enhanced",
+      "shortDescription": "Crimson Desert é um jogo de ação e aventura em mundo aberto no continente de Pywel.\r\nJunte-se a Kliff para reconstruir os Jubas Cinzentas e salvar a terra de uma ameaça iminente.\r\nDas regiões selvagens e cidades ao misterioso Abismo, forje seu caminho com batalhas e descobertas.",
+      "tags": [
+        "Mundo Aberto",
+        "Um Jogador",
+        "Ação",
+        "Exploração",
+        "Aventura",
+        "Combate",
+        "Fantasia",
+        "Medieval",
+        "RPG",
+        "Ação / Aventura",
+        "Terceira Pessoa",
+        "Dragões",
+        "Escolha a sua Aventura",
+        "Boa Trama",
+        "Cavalos",
+        "Jogador X Ambiente (PvE)",
+        "3D",
+        "Inteligência Artificial",
+        "Violência Detalhada",
+        "Soulslike"
+      ],
+      "developers": [
+        "Pearl Abyss"
+      ],
+      "publishers": [
+        "Pearl Abyss"
+      ],
+      "releaseDate": "2026-03-19",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3321460/236f3814be7a97d86831800691b6096d449222a8/header.jpg?t=1789020763",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3321460/c0f0866161be038cc6607824505b0cb51cd12cf0/capsule_616x353.jpg?t=1789020763",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3321460/fa05258232b2b970e2730d2ad5917842e914283c/library_hero.jpg?t=1789020763",
+      "storeUrl": "https://store.steampowered.com/app/3321460",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 34999,
+        "finalCents": 34999,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$349,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2622380,
+      "name": "ELDEN RING NIGHTREIGN",
+      "shortDescription": "ELDEN RING NIGHTREIGN é uma aventura independente dentro do universo de ELDEN RING, feita para oferecer aos jogadores uma nova experiência de jogo reimaginando o design básico do jogo.",
+      "tags": [
+        "Soulslike",
+        "Cooperativo On-line",
+        "Multijogador",
+        "Roguelike",
+        "Cooperativo",
+        "Um Jogador",
+        "Jogador X Ambiente (PvE)",
+        "Ação",
+        "Terceira Pessoa",
+        "Roguelite",
+        "RPG de Ação",
+        "Mundo Aberto",
+        "RPG",
+        "Sombrio",
+        "Violento",
+        "3D",
+        "Sobrevivência ",
+        "Enredo Rico",
+        "Boa Trama",
+        "Conteúdo Sexual"
+      ],
+      "developers": [
+        "FromSoftware, Inc."
+      ],
+      "publishers": [
+        "FromSoftware, Inc.",
+        "Bandai Namco Entertainment"
+      ],
+      "releaseDate": "2025-05-29",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2622380/header.jpg?t=1791488960",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2622380/800a6d64a1685c303bf985f084fbf5c08ac2ae5c/capsule_616x353.jpg?t=1791488960",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2622380/d3fec2085d29f131be9ff47b5aea72d360d4e453/library_hero.jpg?t=1791488960",
+      "storeUrl": "https://store.steampowered.com/app/2622380",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19790,
+        "finalCents": 19790,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$197,90",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1096530,
+      "name": "Solasta: Crown of the Magister",
+      "shortDescription": "Role para iniciativa, realize ataques de oportunidade, administre a localização de personagens em contraste com a verticalidade do campo de batalha neste novo RPG tático, de turnos, baseado nas regras do DRS 5.1. Em Solasta, você faz as escolhas e os dados decidem o seu destino.",
+      "tags": [
+        "Fantasia",
+        "Personalização de Personagem",
+        "RPG",
+        "Boa Trama",
+        "Combate em Turnos",
+        "Aventura",
+        "Você Decide",
+        "Visão Superior",
+        "RPG de Estratégia",
+        "Campanha Cooperativa",
+        "RPG de Grupos",
+        "Estratégia em Turnos",
+        "Um Jogador",
+        "Baseado em Classes",
+        "CRPG",
+        "Cooperativo On-line",
+        "Multijogador",
+        "Combate",
+        "Editor de Níveis",
+        "Baseado em Equipes"
+      ],
+      "developers": [
+        "Tactical Adventures"
+      ],
+      "publishers": [
+        "Tactical Adventures"
+      ],
+      "releaseDate": "2021-05-27",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1096530/header.jpg?t=1772029038",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1096530/6ffcfa1c834ce810d16e71af12f90ea10b9f7a2f/capsule_616x353.jpg?t=1772029038",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1096530/68b8a75a889a4a16503f7d8adc631add9f8009c6/library_hero.jpg?t=1772029038",
+      "storeUrl": "https://store.steampowered.com/app/1096530",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 8899,
+        "finalCents": 8899,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$88,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 553850,
+      "name": "HELLDIVERS™ 2",
+      "shortDescription": "A última linha ofensiva da Galáxia. Aliste-se aos Helldivers e lute pela Liberdade numa galáxia hostil neste feroz, frenético e veloz jogo de tiro em terceira pessoa.",
+      "tags": [
+        "Cooperativo On-line",
+        "Jogador X Ambiente (PvE)",
+        "Tiro em Terceira Pessoa",
+        "Multijogador",
+        "Tiro",
+        "Ação",
+        "Cooperativo",
+        "Ficção Científica",
+        "Tiro de Extração",
+        "Capitalismo",
+        "Espacial",
+        "Terceira Pessoa",
+        "Comédia",
+        "Violência Detalhada",
+        "Trilha Sonora Boa",
+        "Violento",
+        "Impiedoso",
+        "Terror Psicológico",
+        "Um Jogador",
+        "Mundo Aberto"
+      ],
+      "developers": [
+        "Arrowhead Game Studios"
+      ],
+      "publishers": [
+        "PlayStation Publishing LLC"
+      ],
+      "releaseDate": "2024-02-08",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/553850/de5955080cc5e2fa13d0e7b35668ac4e048f7a7e/header_brazilian.jpg?t=1789585784",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/553850/2533d048b2ed82c7324c1ab793a5bec4faedda42/capsule_616x353_brazilian.jpg?t=1789585784",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/553850/6cb2177e422438e35b0cd1f1111a468130a83a11/library_hero.jpg?t=1789585784",
+      "storeUrl": "https://store.steampowered.com/app/553850",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19950,
+        "finalCents": 19950,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$199,50",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2638890,
+      "name": "Onimusha: Way of the Sword",
+      "shortDescription": "Um samurai que empunha uma Manopla Oni se posiciona contra a ameaça dos Genma invasores em Quioto. Através de batalhas árduas e sangrentas, ele busca sua razão para lutar. Qual destino o aguarda no final do seu caminho?",
+      "tags": [
+        "Ação",
+        "Um Jogador",
+        "Espada",
+        "Ação / Aventura",
+        "Soulslike",
+        "Samurai",
+        "RPG de Ação",
+        "Hack and Slash",
+        "Luta Espetacular",
+        "Fantasia Sombria",
+        "Violência Detalhada",
+        "Violento",
+        "Aventura",
+        "RPG",
+        "Terror",
+        "Mundo Aberto",
+        "3D",
+        "Realístico",
+        "Mistério",
+        "Terror de Sobrevivência"
+      ],
+      "developers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "publishers": [
+        "CAPCOM Co., Ltd."
+      ],
+      "releaseDate": "2026-09-04",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2638890/ce31174fea86d0bafa21b26e853dcd0b7326e36f/header.jpg?t=1790383151",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2638890/d1dbd37ec8ae2471bfd07f4235ea57dfc1f2a767/capsule_616x353.jpg?t=1790383151",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2638890/90eada3290f1fd9e93073d1c2ff01e8fcae18aff/library_hero.jpg?t=1790383151",
+      "storeUrl": "https://store.steampowered.com/app/2638890",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 29900,
+        "finalCents": 29900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$299,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 761600,
+      "name": "Onimusha: Warlords",
+      "shortDescription": "O retorno da aventura fascinante de samurai da Capcom! Esta versão inclui a história de vingança dramática e instensas batalhas de espada do jogo original, controles melhorados, resolução wide, nova trilha sonora e mais. Vivencie esta versão melhorada do clássico ação-aventura campeão de vendas!",
+      "tags": [
+        "Ação",
+        "Hack and Slash",
+        "Violento",
+        "Clássico",
+        "Samurai",
+        "Um Jogador",
+        "Ninja",
+        "Terror de Sobrevivência",
+        "Terceira Pessoa",
+        "Fantasia Sombria",
+        "Terror",
+        "Demônios",
+        "Atmosférico",
+        "Espada",
+        "Ação / Aventura",
+        "Boa Trama",
+        "Impiedoso",
+        "Anime",
+        "Remake",
+        "Fantasia"
+      ],
+      "developers": [
+        "CAPCOM CO., LTD"
+      ],
+      "publishers": [
+        "CAPCOM CO., LTD"
+      ],
+      "releaseDate": "2019-01-15",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/761600/header.jpg?t=1784004466",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/761600/capsule_616x353.jpg?t=1784004466",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/761600/library_hero.jpg?t=1784004466",
+      "storeUrl": "https://store.steampowered.com/app/761600",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 7900,
+        "finalCents": 7900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$79,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 330020,
+      "name": "Children of Morta",
+      "shortDescription": "Children of Morta é  um jogo de RPG de ação baseado em histórias sobre uma extraordinária família de heróis . Lidere os Bergsons, com todas as suas falhas e virtudes, contra a próxima corrupção. Você será capaz de sacrificar tudo para salvar aqueles de quem gosta?",
+      "tags": [
+        "Multijogador",
+        "Roguelike",
+        "Gráficos Pixelados",
+        "Cooperativo On-line",
+        "Hack and Slash",
+        "Roguelike de Ação",
+        "Cooperativo Local",
+        "RPG",
+        "Roguelite",
+        "Explorador de Calabouços",
+        "Ação",
+        "Cooperativo",
+        "Boa Trama",
+        "Um Jogador",
+        "RPG de Ação",
+        "2D ",
+        "Isométrico",
+        "Geração Procedural",
+        "Fantasia",
+        "Ação / Aventura"
+      ],
+      "developers": [
+        "Dead Mage"
+      ],
+      "publishers": [
+        "11 bit studios"
+      ],
+      "releaseDate": "2019-09-03",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/330020/header.jpg?t=1765218667",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/330020/capsule_616x353.jpg?t=1765218667",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/330020/library_hero.jpg?t=1765218667",
+      "storeUrl": "https://store.steampowered.com/app/330020",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 4749,
+        "finalCents": 4749,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$47,49",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1340990,
+      "name": "Rise of the Ronin",
+      "shortDescription": "Embarque em uma jornada épica pela Era do Bakumatsu arrasada pela guerra neste RPG de ação em mundo aberto do estúdio veterano Team NINJA, o mesmo por trás de Nioh e NINJA GAIDEN.",
+      "tags": [
+        "Mundo Aberto",
+        "RPG de Ação",
+        "RPG",
+        "Espada",
+        "Ação",
+        "Terceira Pessoa",
+        "Aventura",
+        "Histórico",
+        "3D",
+        "Personalização de Personagem",
+        "Soulslike",
+        "Um Jogador",
+        "Samurai",
+        "Vários Finais",
+        "Violência Detalhada",
+        "Cooperativo On-line",
+        "Violento",
+        "Ninja",
+        "Cooperativo",
+        "Multijogador Assíncrono"
+      ],
+      "developers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "publishers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "releaseDate": "2025-03-11",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1340990/header_brazilian.jpg?t=1775540130",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1340990/df3e0aa2022d32fdfe559ff535ee5bdc74d67898/capsule_616x353_brazilian.jpg?t=1775540130",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1340990/6cb0f38b1da1688c8a0c022cd43e646fc1c2c579/library_hero.jpg?t=1775540130",
+      "storeUrl": "https://store.steampowered.com/app/1340990",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 24900,
+        "finalCents": 24900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$249,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1902690,
+      "name": "Fate/Samurai Remnant",
+      "shortDescription": "“A tua vontade desaparecerá...” Uma Holy Grail War começa em Edo, no Japão. Um novo RPG de ação Fate pelas mãos da TYPE-MOON e da KOEI TECMO GAMES.",
+      "tags": [
+        "JRPG",
+        "Anime",
+        "RPG",
+        "RPG de Ação",
+        "Ação",
+        "Boa Trama",
+        "Luta Espetacular",
+        "Histórico",
+        "Mágica",
+        "Um Jogador",
+        "Vários Finais",
+        "Estilizado",
+        "Musou",
+        "Hack and Slash",
+        "Conteúdo Sexual",
+        "Romance Visual",
+        "Fantasia",
+        "Violento",
+        "Violência Detalhada",
+        "Fofo"
+      ],
+      "developers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "publishers": [
+        "KOEI TECMO GAMES CO., LTD."
+      ],
+      "releaseDate": "2023-09-29",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1902690/header.jpg?t=1760594680",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1902690/capsule_616x353.jpg?t=1760594680",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1902690/library_hero.jpg?t=1760594680",
+      "storeUrl": "https://store.steampowered.com/app/1902690",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 19900,
+        "finalCents": 19900,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$199,00",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 1607680,
+      "name": "Bread & Fred",
+      "shortDescription": "Grab your best bud for help in this new co-op challenge to help two adorable penguins, Bread and Fred, reach the top of the snowy summit. Time your jumps, cling to walls and swing across gaps to see how far you can make it before you tumble all the way back down the mountain.",
+      "tags": [
+        "Cooperativo",
+        "Cooperativo Local",
+        "Fofo",
+        "Gráficos Pixelados",
+        "Multijogador",
+        "Plataforma 2D",
+        "Impiedoso",
+        "Plataforma de Precisão",
+        "Plataforma",
+        "2D ",
+        "Multijogador Local",
+        "Para Toda a Família",
+        "Engraçado",
+        "Comédia",
+        "Cooperativo On-line",
+        "Neve",
+        "Câmera Lateral",
+        "Controle",
+        "Casual",
+        "Colorido"
+      ],
+      "developers": [
+        "SandCastles Studio"
+      ],
+      "publishers": [
+        "Infogrames",
+        "Atari"
+      ],
+      "releaseDate": "2023-05-23",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1607680/header.jpg?t=1773071421",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1607680/6fd34db9044f359c056bb3b6f8268ba5f1e653c5/capsule_616x353.jpg?t=1773071421",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1607680/library_hero.jpg?t=1773071421",
+      "storeUrl": "https://store.steampowered.com/app/1607680",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 4699,
+        "finalCents": 4699,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$46,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 768520,
+      "name": "Red Solstice 2: Survivors",
+      "shortDescription": "A sequência do aclamado The Red Solstice. Elabore uma estratégia e infiltre-se num campo de batalha tático em tempo real, seja sozinho ou com um esquadrão de até 7 membros. Será que sua habilidade em combate é suficiente para sobreviver e assegurar um futuro para a humanidade?",
+      "tags": [
+        "RPG de Estratégia",
+        "Zumbis",
+        "Terceira Pessoa",
+        "Tática em Tempo Real",
+        "Multijogador",
+        "RPG",
+        "Estratégia",
+        "Ficção Científica",
+        "Futurista",
+        "Alienígenas",
+        "Baseado em Equipes",
+        "Geração Procedural",
+        "Personalização de Personagem",
+        "Cooperativo",
+        "Atmosférico",
+        "Um Jogador",
+        "Cooperativo On-line",
+        "Tático",
+        "Campanha Cooperativa",
+        "SHMUP com Visão Superior"
+      ],
+      "developers": [
+        "Ironward"
+      ],
+      "publishers": [
+        "505 Games"
+      ],
+      "releaseDate": "2021-06-17",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/768520/header.jpg?t=1729321715",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/768520/capsule_616x353.jpg?t=1729321715",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/768520/library_hero.jpg?t=1729321715",
+      "storeUrl": "https://store.steampowered.com/app/768520",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 4699,
+        "finalCents": 4699,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$46,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 493520,
+      "name": "GTFO",
+      "shortDescription": "GTFO é um jogo de tiro de horror cooperativo hardcore que leva você do suspense eletrizante à ação explosiva num piscar de olhos. É preciso furtividade, estratégia e trabalho em equipe para sobreviver em sua mortal prisão subterrânea. Trabalhem juntos ou morram juntos.",
+      "tags": [
+        "Cooperativo On-line",
+        "Terror",
+        "Tiro em Primeira Pessoa (FPS)",
+        "Cooperativo",
+        "Impiedoso",
+        "Multijogador",
+        "Tiro",
+        "Terror de Sobrevivência",
+        "Ação",
+        "Furtivo",
+        "Tático",
+        "Baseado em Equipes",
+        "Violência Detalhada",
+        "Primeira Pessoa",
+        "Zumbis",
+        "Jogador X Ambiente (PvE)",
+        "Atmosférico",
+        "Personalização de Personagem",
+        "Violento",
+        "Alta Rejogabilidade"
+      ],
+      "developers": [
+        "10 Chambers"
+      ],
+      "publishers": [
+        "10 Chambers"
+      ],
+      "releaseDate": "2021-12-10",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/493520/header.jpg?t=1773842359",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/493520/1f73e0a96f592c76f7140cce484901cc0baf5eca/capsule_616x353.jpg?t=1773842359",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/493520/library_hero.jpg?t=1773842359",
+      "storeUrl": "https://store.steampowered.com/app/493520",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 7499,
+        "finalCents": 7499,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$74,99",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2680010,
+      "name": "The First Berserker: Khazan",
+      "shortDescription": "The First Berserker: Khazan é um RPG de ação extrema. Assuma o papel de Khazan, o grande general do império Pell Los, que venceu a morte e sai em uma jornada para revelar os incidentes que levaram à queda dele e se vingar dos adversários.",
+      "tags": [
+        "Soulslike",
+        "Impiedoso",
+        "Hack and Slash",
+        "RPG de Ação",
+        "Anime",
+        "Ação / Aventura",
+        "Terceira Pessoa",
+        "RPG",
+        "Ação",
+        "3D",
+        "Fantasia Sombria",
+        "Cartunizado",
+        "Atmosférico",
+        "Aventura",
+        "Sombrio",
+        "Violência Detalhada",
+        "Combate",
+        "Desenho Animado",
+        "Um Jogador",
+        "Linear"
+      ],
+      "developers": [
+        "Neople"
+      ],
+      "publishers": [
+        "NEXON"
+      ],
+      "releaseDate": "2025-03-27",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2680010/header.jpg?t=1776936760",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2680010/77f0471fc4cb000cdf1e0c4e1da2e047217195fa/capsule_616x353.jpg?t=1776936760",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2680010/1081b7fd33cd4f3252a6005adf464da284185202/library_hero.jpg?t=1776936760",
+      "storeUrl": "https://store.steampowered.com/app/2680010",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 22950,
+        "finalCents": 22950,
+        "discountPercent": 0,
+        "discountEndsAt": null,
+        "isFree": false,
+        "formatted": "R$229,50",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    },
+    {
+      "appId": 2071280,
+      "name": "Ravenswatch",
+      "shortDescription": "Heróis dos antigos contos e lendas: vocês estão à beira de uma batalha crucial contra o Pesadelo que invade e corrompe o seu mundo. Um jogo de ação roguelike dos criadores de Curse of the Dead Gods©, com opção de um jogador ou modo cooperativo online.",
+      "tags": [
+        "Roguelike",
+        "Cooperativo",
+        "Roguelike de Ação",
+        "Cooperativo On-line",
+        "Ação",
+        "Multijogador",
+        "Roguelite",
+        "Impiedoso",
+        "Indie",
+        "Um Jogador",
+        "Hack and Slash",
+        "Aventura",
+        "RPG",
+        "Visão Superior",
+        "Alta Rejogabilidade",
+        "Atmosférico",
+        "Fantasia Sombria",
+        "Isométrico",
+        "Sombrio",
+        "Exploração"
+      ],
+      "developers": [
+        "Passtech Games"
+      ],
+      "publishers": [
+        "Nacon"
+      ],
+      "releaseDate": "2024-09-26",
+      "headerUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2071280/header.jpg?t=1789141862",
+      "capsuleUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2071280/8e60ae4a2e160ffe05282c983bda455fa6bfa170/capsule_616x353.jpg?t=1789141862",
+      "heroUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2071280/3f938416d7abcb5628ba7cf2936fbd1f27be8519/library_hero.jpg?t=1789141862",
+      "storeUrl": "https://store.steampowered.com/app/2071280",
+      "price": {
+        "currency": "BRL",
+        "initialCents": 7499,
+        "finalCents": 3749,
+        "discountPercent": 50,
+        "discountEndsAt": "2026-10-22T17:00:00.000Z",
+        "isFree": false,
+        "formatted": "R$37,49",
+        "fetchedAt": "2026-10-12T01:36:10.917Z"
+      }
+    }
+  ]
+}
