@@ -6,7 +6,7 @@ import {
   type Session,
   type SupabaseClient,
 } from '@supabase/supabase-js';
-import { clearScoringCache } from '../scoring-cache';
+import { clearDataCache } from '../data-cache';
 
 /** Resposta de GET /api/v1/config (URL + publishable key são públicas por design). */
 interface PublicConfig {
@@ -65,7 +65,7 @@ export class AuthService {
     this.client.auth.onAuthStateChange((event, session) => {
       this.session.set(session);
       if (event === 'PASSWORD_RECOVERY') void this.router.navigateByUrl('/redefinir-senha');
-      if (event === 'SIGNED_OUT') clearScoringCache();
+      if (event === 'SIGNED_OUT') clearDataCache();
       if (event === 'SIGNED_OUT' && !this.router.url.startsWith('/login'))
         void this.router.navigate(['/login'], { queryParams: { redirect: this.router.url } });
     });
@@ -147,7 +147,7 @@ export class AuthService {
 
   /** Encerra a sessão; o redirecionamento para /login acontece no evento SIGNED_OUT. */
   async signOut(scope: 'global' | 'local' = 'local'): Promise<void> {
-    clearScoringCache();
+    clearDataCache();
     await this.client?.auth.signOut({ scope });
   }
 

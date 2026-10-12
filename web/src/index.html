@@ -4,8 +4,28 @@
     <meta charset="utf-8" />
     <title>Checkpoint · Meus jogos</title>
     <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#116747" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6f8f7" />
+    <script>
+      // Tema e cor de destaque antes do 1º paint (ver web/src/appearance.ts).
+      (function () {
+        var html = document.documentElement;
+        var v = {};
+        try {
+          v = JSON.parse(localStorage.getItem('checkpoint:appearance:last') || '{}') || {};
+        } catch (e) {}
+        var dark =
+          v.theme === 'dark' ||
+          (v.theme !== 'light' &&
+            window.matchMedia &&
+            matchMedia('(prefers-color-scheme: dark)').matches);
+        html.setAttribute('data-theme', dark ? 'dark' : 'light');
+        if (/^(green|blue|violet|orange|rose)$/.test(v.accent))
+          html.setAttribute('data-accent', v.accent);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', dark ? '#0e1412' : '#f6f8f7');
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>

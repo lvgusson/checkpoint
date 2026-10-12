@@ -1,5 +1,5 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { Component, inject, provideAppInitializer, signal } from '@angular/core';
+import { Component, inject, provideAppInitializer } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
@@ -16,68 +16,81 @@ import { Queue } from './queue';
 import { Detail } from './detail';
 import { Settings } from './settings';
 import { Wishlist } from './wishlist';
+import { AppearancePage } from './appearance-page';
+import { AppearanceStore } from './appearance';
+import { Logo } from './logo';
 import { AuthService } from './auth/auth.service';
 import { authGuard, guestGuard } from './auth/auth.guard';
 import { authInterceptor } from './auth/auth.interceptor';
 import { Login } from './auth/login';
+
+/** Destinos da navegação (barra lateral no desktop, barra inferior no celular). */
+const NAV = [
+  { path: '/jogos', icon: '▦', label: 'Lista de jogos', short: 'Jogos' },
+  { path: '/ordem', icon: '≋', label: 'Ordem de jogos', short: 'Ordem' },
+  { path: '/desejos', icon: '♡', label: 'Lista de desejos', short: 'Desejos' },
+  { path: '/configuracoes', icon: '⚙', label: 'Regras da fila', short: 'Regras' },
+  { path: '/aparencia', icon: '◐', label: 'Aparência e conta', short: 'Aparência' },
+];
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
-  template: `<div class="shell" [class.bare]="bare()">
-    @if (!bare()) {
-      <aside [class.open]="menu()">
-        <a class="brand" routerLink="/jogos" (click)="menu.set(false)"
-          ><span class="brand-mark">C<span>•</span></span
-          ><span>checkpoint<small>SUA BIBLIOTECA, SEU RITMO</small></span></a
-        >
-        <div class="nav-label">BIBLIOTECA</div>
-        <nav>
-          <a routerLink="/jogos" routerLinkActive="active" (click)="menu.set(false)"
-            ><span>▦</span> Lista de jogos</a
-          ><a routerLink="/ordem" routerLinkActive="active" (click)="menu.set(false)"
-            ><span>≋</span> Ordem de jogos</a
-          ><a routerLink="/desejos" routerLinkActive="active" (click)="menu.set(false)"
-            ><span>♡</span> Lista de desejos</a
-          ><a routerLink="/configuracoes" routerLinkActive="active" (click)="menu.set(false)"
-            ><span>⚙</span> Configurações</a
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, Logo],
+  template: `<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <div class="shell" [class.bare]="bare()">
+      @if (!bare()) {
+        <aside class="sidebar">
+          <a class="brand" routerLink="/jogos"
+            ><app-logo /><span>checkpoint<small>SUA BIBLIOTECA, SEU RITMO</small></span></a
           >
-        </nav>
-        <div class="sidebar-note">
-          <span class="dot"></span> Biblioteca local
-          <p>Uma boa partida de cada vez.</p>
+          <nav aria-label="Principal">
+            @for (n of nav; track n.path) {
+              <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page"
+                ><span aria-hidden="true">{{ n.icon }}</span> {{ n.label }}</a
+              >
+            }
+          </nav>
           @if (auth.user(); as user) {
-            <div class="account">
+            <div class="sidebar-note">
               <span class="account-email" [title]="user.email ?? ''">{{ user.email }}</span>
               <button type="button" class="button" (click)="auth.signOut()">Sair</button>
             </div>
           }
-        </div>
-      </aside>
-      @if (menu()) {
-        <button class="scrim" aria-label="Fechar menu" (click)="menu.set(false)"></button>
+        </aside>
       }
-    }
-    <div class="main">
-      @if (!bare()) {
-        <header class="topbar">
-          <button
-            class="icon-button hamburger"
-            aria-label="Abrir menu"
-            [attr.aria-expanded]="menu()"
-            (click)="menu.set(!menu())"
-          >
-            ☰</button
-          ><span>MEU ESPAÇO DE JOGOS</span
-          ><span class="local-pill"><span class="dot"></span> Salvo neste computador</span>
-        </header>
-      }
-      <main><router-outlet /></main>
-      @if (!bare()) {
-        <footer>Checkpoint <span>Feito para jogar no seu ritmo.</span></footer>
-      }
-    </div>
-  </div>`,
+      <div class="main">
+        @if (!bare()) {
+          <header class="topbar">
+            <a class="brand compact" routerLink="/jogos" aria-label="Checkpoint, início"
+              ><app-logo /><span>checkpoint</span></a
+            ><span class="topbar-title">MEU ESPAÇO DE JOGOS</span>
+            <button
+              type="button"
+              class="icon-button theme-toggle"
+              (click)="toggleTheme()"
+              [attr.aria-label]="
+                appearance.resolved() === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'
+              "
+            >
+              <span aria-hidden="true">{{ appearance.resolved() === 'dark' ? '☀' : '☾' }}</span>
+            </button>
+          </header>
+        }
+        <main id="conteudo" tabindex="-1"><router-outlet /></main>
+        @if (!bare()) {
+          <footer>Checkpoint <span>Feito para jogar no seu ritmo.</span></footer>
+          <nav class="tabbar" aria-label="Principal">
+            @for (n of nav; track n.path) {
+              <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page"
+                ><span aria-hidden="true">{{ n.icon }}</span
+                >{{ n.short }}</a
+              >
+            }
+          </nav>
+        }
+      </div>
+    </div>`,
   // Telas de login/redefinição ocupam a página inteira (sem menu/topo).
   styles: `
     .shell.bare .main {
@@ -88,28 +101,12 @@ import { Login } from './auth/login';
       padding: 0;
       max-width: none;
     }
-    .account {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .account-email {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .account .button {
-      padding: 7px 10px;
-      font-size: 11px;
-    }
   `,
 })
 class App {
-  menu = signal(false);
+  readonly nav = NAV;
   protected auth = inject(AuthService);
+  protected appearance = inject(AppearanceStore);
   private router = inject(Router);
   private url = toSignal(
     this.router.events.pipe(
@@ -119,12 +116,17 @@ class App {
     { initialValue: location.pathname },
   );
   bare = () => /^\/(login|redefinir-senha)(\?|#|$)/.test(this.url());
+  toggleTheme() {
+    this.appearance.update({ theme: this.appearance.resolved() === 'dark' ? 'light' : 'dark' });
+  }
 }
 bootstrapApplication(App, {
   providers: [
     provideHttpClient(withInterceptors([authInterceptor])),
     // Carrega /api/v1/config e restaura a sessão antes da 1ª navegação (guards já sabem se há login).
     provideAppInitializer(() => inject(AuthService).init()),
+    // Aparência do usuário logado (o script do index.html já aplicou a última usada).
+    provideAppInitializer(() => void inject(AppearanceStore)),
     provideRouter([
       { path: 'login', component: Login, canActivate: [guestGuard], data: { mode: 'login' } },
       { path: 'redefinir-senha', component: Login, data: { mode: 'reset' } },
@@ -136,6 +138,7 @@ bootstrapApplication(App, {
       { path: 'desejos', component: Wishlist, canActivate: [authGuard] },
       { path: 'configuracoes', component: Settings, canActivate: [authGuard] },
       { path: 'configuracoes/:listId', component: Settings, canActivate: [authGuard] },
+      { path: 'aparencia', component: AppearancePage, canActivate: [authGuard] },
       { path: '', redirectTo: 'jogos', pathMatch: 'full' },
       { path: '**', redirectTo: 'jogos' },
     ]),
