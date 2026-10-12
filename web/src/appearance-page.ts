@@ -360,6 +360,6 @@ export class AppearancePage {
     }
   }
   removeCustom() {
-    this.store.update({ customLogo: null, logo: 'monogram' });
+    this.store.update({ customLogo: null, logo: 'bonfire' });
   }
 }

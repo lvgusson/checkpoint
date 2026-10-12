@@ -124,7 +124,7 @@ const message = (e: unknown, fallback: string) =>
   template: `<div class="list-picker">
     @if (mode() === 'idle') {
       <label class="list-select">
-        <span>LISTA</span>
+        <span class="sr-only">Lista</span>
         <select
           [value]="current() ?? ''"
           (change)="go($any($event.target).value)"
@@ -135,19 +135,31 @@ const message = (e: unknown, fallback: string) =>
           }
         </select>
       </label>
-      <button type="button" class="button" (click)="start('create')">+ Nova lista</button>
-      <button type="button" class="button" (click)="start('rename')" [disabled]="!current()">
-        Renomear
-      </button>
-      <button
-        type="button"
-        class="button"
-        (click)="remove()"
-        [disabled]="!current() || store.lists().length < 2"
-        [title]="store.lists().length < 2 ? 'Você precisa de ao menos uma lista' : ''"
-      >
-        Apagar
-      </button>
+      <details class="list-menu" #menu>
+        <summary class="button icon-button" aria-label="Ações da lista" title="Ações da lista">
+          <span aria-hidden="true">⋯</span>
+        </summary>
+        <div class="list-menu-items">
+          <button type="button" (click)="menu.open = false; start('create')">+ Nova lista</button>
+          <button
+            type="button"
+            (click)="menu.open = false; start('rename')"
+            [disabled]="!current()"
+          >
+            Renomear
+          </button>
+          <button
+            type="button"
+            class="danger"
+            (click)="menu.open = false; remove()"
+            [disabled]="!current() || store.lists().length < 2"
+            [title]="store.lists().length < 2 ? 'Você precisa de ao menos uma lista' : ''"
+          >
+            Apagar lista
+          </button>
+        </div>
+      </details>
+      <ng-content />
     } @else {
       <form class="list-form" (submit)="$event.preventDefault(); submit()">
         <input
@@ -172,25 +184,71 @@ const message = (e: unknown, fallback: string) =>
     .list-picker {
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-end;
+      align-items: center;
       gap: 8px;
-      margin: 0 0 18px;
+      margin: 0 0 14px;
     }
     .list-select {
-      display: grid;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      color: var(--muted);
+      display: flex;
+      flex: 1 1 160px;
       min-width: 0;
+      max-width: 320px;
+    }
+    .list-select select {
+      flex: 1;
+      min-height: 44px;
+      font-weight: 600;
+    }
+    .list-menu {
+      position: relative;
+    }
+    .list-menu summary {
+      list-style: none;
+    }
+    .list-menu summary::-webkit-details-marker {
+      display: none;
+    }
+    .list-menu-items {
+      position: absolute;
+      z-index: 30;
+      top: calc(100% + 6px);
+      right: 0;
+      display: grid;
+      min-width: 180px;
+      padding: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+    }
+    .list-menu-items button {
+      min-height: 44px;
+      padding: 0 12px;
+      text-align: left;
+      font: inherit;
+      font-size: 15px;
+      color: var(--text);
+      background: none;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .list-menu-items button:hover:not(:disabled) {
+      background: var(--surface-2, rgb(127 127 127 / 0.1));
+    }
+    .list-menu-items button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .list-menu-items .danger {
+      color: var(--danger);
     }
     .list-select select,
     .list-form input {
       min-width: 0;
       max-width: 100%;
       padding: 8px 10px;
-      font-size: 14px;
+      font-size: 16px;
       color: inherit;
       background: var(--surface);
       border: 1px solid var(--border);

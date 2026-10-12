@@ -1,5 +1,6 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { AppearanceStore, type LogoChoice } from './appearance';
+import { Bonfire } from './bonfire';
 
 /**
  * Marca do Checkpoint. As variações são formas geométricas simples (pedido explícito de
@@ -8,7 +9,11 @@ import { AppearanceStore, type LogoChoice } from './appearance';
 @Component({
   selector: 'app-logo',
   standalone: true,
+  imports: [Bonfire],
   template: `@switch (choice()) {
+    @case ('bonfire') {
+      <app-bonfire />
+    }
     @case ('custom') {
       <img class="logo-img" [src]="store.value().customLogo" alt="" />
     }
@@ -72,6 +77,9 @@ import { AppearanceStore, type LogoChoice } from './appearance';
       flex-shrink: 0;
       width: var(--logo-size, 38px);
       height: var(--logo-size, 38px);
+    }
+    app-bonfire {
+      --bonfire-size: 100%;
     }
     svg,
     .logo-img {
