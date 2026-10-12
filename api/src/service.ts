@@ -35,7 +35,7 @@ import {
   type ScoringConfigRepository,
   type StoredScoringConfig,
 } from './settings-repository.ts';
-export const statuses = ['Não iniciado', 'Jogando', 'Abandonado', 'Finalizado'];
+export const statuses = ['Não iniciado', 'Jogando', 'Abandonado', 'Finalizado', 'Desejado'];
 export const desires = ['Imediata', 'Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
 export class AppError extends Error {
   code: number;

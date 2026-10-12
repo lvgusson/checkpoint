@@ -139,16 +139,16 @@ const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
         </div>
         <ul class="legend">
           <li>
-            <var>D</var> vontade de jogar: Imediata e Muito Alta 100, Alta 75, Média 50, Baixa 25,
+            <var>D</var> - vontade de jogar: Imediata e Muito Alta 100, Alta 75, Média 50, Baixa 25,
             Muito Baixa 0. Jogos com vontade Imediata vão para o topo da fila, entre si pelo score.
           </li>
           <li>
-            <var>A</var> afinidade bayesiana: média das suas notas (1–5 viram 0–100) nos <var>n</var
-            ><sub>x</sub> jogos avaliados com o mesmo gênero, ritmo ou mecânica, puxada para a
-            afinidade neutra com força <var>k</var> = {{ num(d.weights.priorStrength) }}.
+            <var>A</var> - afinidade bayesiana: média das suas notas (1–5 viram 0–100) nos
+            <var>n</var><sub>x</sub> jogos avaliados com o mesmo gênero, ritmo ou mecânica, puxada
+            para a afinidade neutra com força <var>k</var> = {{ num(d.weights.priorStrength) }}.
           </li>
           <li>
-            <var>T</var> duração: quanto menor a estimativa <var>H</var>, maior. <var>f</var> é o
+            <var>T</var> - duração: quanto menor a estimativa <var>H</var>, maior. <var>f</var> é o
             seu ritmo, a mediana de horas reais ÷ estimadas dos <var>m</var> jogos finalizados,
             suavizada e limitada a 0,5×–2×.
           </li>

@@ -774,6 +774,231 @@
           }
         }
       ]
+    },
+    "/steam/search": {
+      "get": {
+        "summary": "Buscar jogos na loja da Steam pelo nome",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SteamSearchItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "502": {
+            "description": "Steam indisponível"
+          }
+        }
+      }
+    },
+    "/steam/apps/{appId}": {
+      "parameters": [
+        {
+          "name": "appId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Detalhes de um app da Steam (descrição, tags, imagens, preço)",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SteamApp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "Não encontrado"
+          },
+          "502": {
+            "description": "Steam indisponível"
+          }
+        }
+      }
+    },
+    "/wishlist": {
+      "get": {
+        "summary": "Lista de desejos com preço atual",
+        "description": "Jogos com status Desejado. Preços com mais de 6 h são buscados de novo (se a Steam falhar, devolve os antigos).",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WishlistItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Cadastrar jogo desejado",
+        "description": "Idempotente: se o jogo já está no app (mesmo appid ou nome), devolve-o com created=false e 200.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WishlistAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Já existia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/WishlistItem"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "const": false
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/WishlistItem"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "const": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida"
+          },
+          "404": {
+            "description": "App não encontrado na Steam"
+          }
+        }
+      }
+    },
+    "/wishlist/import-steam": {
+      "post": {
+        "summary": "Importar a lista de desejos da Steam",
+        "description": "Perfil: SteamID64, URL do perfil ou nome personalizado (padrão: STEAM_PROFILE). A lista precisa ser pública. Idempotente.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WishlistImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Perfil inválido"
+          },
+          "404": {
+            "description": "Perfil não encontrado ou lista vazia/privada"
+          },
+          "502": {
+            "description": "Steam indisponível"
+          }
+        }
+      }
+    },
+    "/wishlist/prices/refresh": {
+      "post": {
+        "summary": "Atualizar todos os preços da lista de desejos",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WishlistItem"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Steam indisponível"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -848,7 +1073,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["Não iniciado", "Jogando", "Abandonado", "Finalizado"]
+            "enum": ["Não iniciado", "Jogando", "Abandonado", "Finalizado", "Desejado"]
           },
           "desire": {
             "type": "string",
@@ -1430,24 +1655,54 @@
         "description": "Filtros de conteúdo da fila. Opcional no PUT (ausente = padrão neutro); chaves ausentes = padrão. Textos comparados sem acento/maiúsculas. Horas = plannedHours.",
         "additionalProperties": false,
         "properties": {
-          "excludedGenres": { "type": "array", "items": { "type": "string" }, "maxItems": 200 },
-          "excludedTags": { "type": "array", "items": { "type": "string" }, "maxItems": 200 },
+          "excludedGenres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200
+          },
+          "excludedTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200
+          },
           "stores": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "maxItems": 200,
             "description": "Só estas lojas (vazio = todas)."
           },
           "paces": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "maxItems": 200,
             "description": "Só estes ritmos (vazio = todos)."
           },
-          "minHours": { "type": "number", "minimum": 0, "maximum": 10000, "nullable": true },
-          "maxHours": { "type": "number", "minimum": 0, "maximum": 10000, "nullable": true },
-          "excludeUnknownHours": { "type": "boolean" },
-          "coopOnly": { "type": "boolean" },
+          "minHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "nullable": true
+          },
+          "maxHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "nullable": true
+          },
+          "excludeUnknownHours": {
+            "type": "boolean"
+          },
+          "coopOnly": {
+            "type": "boolean"
+          },
           "minDesire": {
             "type": "string",
             "enum": ["Muito Alta", "Alta", "Média", "Baixa", "Muito Baixa"],
@@ -1457,20 +1712,62 @@
       },
       "FilterOption": {
         "type": "object",
-        "properties": { "value": { "type": "string" }, "count": { "type": "integer" } }
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
       },
       "FilterOptions": {
         "type": "object",
         "description": "Valores dos filtros com contagem sobre os candidatos da fila sem filtros de conteúdo.",
         "properties": {
-          "total": { "type": "integer" },
-          "genres": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
-          "tags": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
-          "stores": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
-          "paces": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
-          "desires": { "type": "array", "items": { "$ref": "#/components/schemas/FilterOption" } },
-          "coop": { "type": "integer" },
-          "hours": { "type": "array", "items": { "type": "number", "nullable": true } }
+          "total": {
+            "type": "integer"
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "stores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "paces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "desires": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          },
+          "coop": {
+            "type": "integer"
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "nullable": true
+            }
+          }
         }
       },
       "ScoringFactor": {
@@ -1561,6 +1858,287 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ReorderResult": {
+        "type": "object",
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "fromPosition": {
+            "type": "integer"
+          },
+          "requestedPosition": {
+            "type": "integer"
+          },
+          "effectivePosition": {
+            "type": "integer"
+          },
+          "exact": {
+            "type": "boolean"
+          },
+          "pointsDelta": {
+            "type": "number"
+          },
+          "manualPoints": {
+            "type": "number"
+          },
+          "recommendations": {
+            "$ref": "#/components/schemas/Recommendations"
+          }
+        }
+      },
+      "SteamPrice": {
+        "type": ["object", "null"],
+        "description": "Preço atual na Steam (centavos). finalCents null = sem preço à venda.",
+        "required": [
+          "currency",
+          "initialCents",
+          "finalCents",
+          "discountPercent",
+          "discountEndsAt",
+          "isFree",
+          "formatted",
+          "fetchedAt"
+        ],
+        "properties": {
+          "currency": {
+            "type": ["string", "null"],
+            "example": "BRL"
+          },
+          "initialCents": {
+            "type": ["integer", "null"]
+          },
+          "finalCents": {
+            "type": ["integer", "null"]
+          },
+          "discountPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "discountEndsAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "isFree": {
+            "type": "boolean"
+          },
+          "formatted": {
+            "type": ["string", "null"],
+            "example": "R$46,99"
+          },
+          "fetchedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SteamSearchItem": {
+        "type": "object",
+        "required": ["appId", "name", "imageUrl", "price"],
+        "properties": {
+          "appId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": ["string", "null"]
+          },
+          "price": {
+            "$ref": "#/components/schemas/SteamPrice"
+          }
+        }
+      },
+      "SteamApp": {
+        "type": "object",
+        "required": [
+          "appId",
+          "name",
+          "shortDescription",
+          "tags",
+          "developers",
+          "publishers",
+          "releaseDate",
+          "headerUrl",
+          "capsuleUrl",
+          "heroUrl",
+          "storeUrl",
+          "price"
+        ],
+        "properties": {
+          "appId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shortDescription": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tags da comunidade em pt-BR, mais votadas primeiro."
+          },
+          "developers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "publishers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "releaseDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "headerUrl": {
+            "type": ["string", "null"]
+          },
+          "capsuleUrl": {
+            "type": ["string", "null"]
+          },
+          "heroUrl": {
+            "type": ["string", "null"]
+          },
+          "storeUrl": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/SteamPrice"
+          }
+        }
+      },
+      "WishlistItem": {
+        "type": "object",
+        "required": ["game", "price", "description"],
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/Game"
+          },
+          "price": {
+            "$ref": "#/components/schemas/SteamPrice"
+          },
+          "description": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "WishlistAdd": {
+        "description": "Por appid (dados da Steam) ou manual (name obrigatório + campos de Game).",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["appId"],
+            "additionalProperties": false,
+            "properties": {
+              "appId": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "desire": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "primaryGenre": {
+                "type": "string"
+              },
+              "secondaryTags": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "desire": {
+                "type": "string"
+              },
+              "store": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string"
+              },
+              "pace": {
+                "type": "string"
+              },
+              "structure": {
+                "type": "string"
+              },
+              "coop": {
+                "type": "string"
+              },
+              "mechanic": {
+                "type": "string"
+              },
+              "size": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "mainHours": {
+                "type": ["number", "null"]
+              },
+              "extraHours": {
+                "type": ["number", "null"]
+              },
+              "completionistHours": {
+                "type": ["number", "null"]
+              },
+              "steamAppId": {
+                "type": ["integer", "null"]
+              }
+            }
+          }
+        ]
+      },
+      "WishlistImportResult": {
+        "type": "object",
+        "required": ["total", "created", "existing", "failed"],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "existing": {
+            "type": "integer",
+            "description": "Já estavam no app (qualquer status)."
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "appId": {
+                  "type": "integer"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }
