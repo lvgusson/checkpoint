@@ -11,6 +11,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "ng build",
     "vercel-build": "ng build && node scripts/record-release.mjs",
+    "master:create": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env scripts/master-user.mjs",
     "release:list": "node --env-file-if-exists=.env scripts/rollback.mjs list",
     "release:rollback": "node --env-file-if-exists=.env scripts/rollback.mjs rollback",
     "release:tag": "node scripts/rollback.mjs tag",
