@@ -234,6 +234,8 @@ export interface GameList {
 export interface Recommendations {
   /** Lista cuja configuração gerou esta fila (ausente em chamadas diretas ao algoritmo). */
   listId?: string;
+  /** Games currently being played, independent of the selected list's queue filters. */
+  playing?: ScoredGame[];
   items: QueueEntry[];
   total: number;
   estimatedHours: number;
@@ -255,6 +257,10 @@ export interface Catalog {
   genres: string[];
   stores: string[];
   tags: string[];
+  paces: string[];
+  mechanics: string[];
+  structures: string[];
+  platforms: string[];
   statuses: GameStatus[];
   desires: Desire[];
   counts: {

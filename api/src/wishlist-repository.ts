@@ -140,6 +140,13 @@ export class PgWishlistStore implements WishlistStore {
             SELECT id, code FROM game WHERE steam_app_id = ${appId} ORDER BY id LIMIT 1`
         : [];
       const newCatalog = !target;
+      // Only trusted Steam responses may extend the controlled vocabulary.
+      if (app && newCatalog) {
+        if (game.primaryGenre)
+          await tx`INSERT INTO genre (name) VALUES (${game.primaryGenre}) ON CONFLICT (key) DO NOTHING`;
+        for (const name of game.secondaryTags)
+          await tx`INSERT INTO tag (name) VALUES (${name}) ON CONFLICT (key) DO NOTHING`;
+      }
       if (!target)
         [target] = await tx<{ id: string; code: string }[]>`
           INSERT INTO game (name, steam_app_id, created_by)

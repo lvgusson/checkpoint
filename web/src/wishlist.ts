@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { color } from './api';
+import { Api, color } from './api';
 import { WishlistApi, formatPrice } from './wishlist-api';
 import type { Desire, SteamPrice, SteamSearchItem, WishlistItem } from '../../shared/models';
 
@@ -66,12 +66,12 @@ const message = (e: unknown, fallback: string) =>
             [(ngModel)]="manual.name"
             required
           />
-          <input
-            aria-label="Gênero"
-            placeholder="Gênero"
-            name="genre"
-            [(ngModel)]="manual.primaryGenre"
-          />
+          <select aria-label="Gênero" name="genre" [(ngModel)]="manual.primaryGenre">
+            <option value="">Sem gênero</option>
+            @for (genre of genres(); track genre) {
+              <option [value]="genre">{{ genre }}</option>
+            }
+          </select>
           <input
             aria-label="Horas"
             type="number"
@@ -280,6 +280,8 @@ const message = (e: unknown, fallback: string) =>
 })
 export class Wishlist {
   private api = inject(WishlistApi);
+  private gamesApi = inject(Api);
+  genres = signal<string[]>([]);
   color = color;
   price = formatPrice;
   original = (p: SteamPrice) => formatPrice({ ...p, finalCents: p.initialCents });
@@ -302,6 +304,10 @@ export class Wishlist {
 
   constructor() {
     this.load();
+    this.gamesApi
+      .catalog()
+      .then((catalog) => this.genres.set(catalog.genres))
+      .catch(() => {});
   }
 
   sorted() {

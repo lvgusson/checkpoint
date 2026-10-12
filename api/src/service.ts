@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { metadataCatalog, metadataFields, normalizeMetadata } from '../../shared/metadata.ts';
 import type {
   Catalog,
   Game,
@@ -201,12 +202,11 @@ export class GameService {
   }
   async catalog(): Promise<Catalog> {
     const games = await this.repository.list();
-    const unique = (values: string[]) =>
-      [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const metadata = this.repository.metadataCatalog
+      ? await this.repository.metadataCatalog()
+      : structuredClone(metadataCatalog);
     return {
-      genres: unique(games.map((g) => g.primaryGenre)),
-      stores: unique(games.map((g) => g.store)),
-      tags: unique(games.flatMap((g) => g.secondaryTags)),
+      ...metadata,
       statuses: statuses as Catalog['statuses'],
       desires: desires as Catalog['desires'],
       counts: {
@@ -340,6 +340,24 @@ export class GameService {
       };
     });
   }
+  /** Name search is bounded and delegated to the database repository when available. */
+  async searchGames(query: string, excludeId?: string) {
+    const text = query.trim();
+    if (text.length < 3) return [];
+    if (text.length > 120) throw new AppError('Busque usando até 120 caracteres');
+    const normalize = (s: string) =>
+      s
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const games = this.repository.searchByName
+      ? await this.repository.searchByName(text, excludeId)
+      : (await this.repository.list())
+          .filter((g) => g.id !== excludeId && normalize(g.name).includes(normalize(text)))
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+          .slice(0, 12);
+    return scoreGames(games).games;
+  }
   async patch(id: string, body: Record<string, unknown>) {
     const old = await this.repository.get(id);
     if (!old) throw new AppError('Jogo não encontrado', 404);
@@ -367,6 +385,15 @@ export class GameService {
       'mechanic',
     ];
     const dates = ['startedAt', 'finishedAt'];
+    const controlledFields = Object.fromEntries(
+      Object.entries(metadataFields).map(([catalogKey, field]) => [field, catalogKey]),
+    ) as Record<string, keyof typeof metadataCatalog>;
+    const needsCatalog = Object.keys(body).some((key) => controlledFields[key]);
+    const metadata = needsCatalog
+      ? this.repository.metadataCatalog
+        ? await this.repository.metadataCatalog()
+        : metadataCatalog
+      : metadataCatalog;
     for (const [key, value] of Object.entries(body)) {
       if (key === 'autoFinish') {
         if (typeof value !== 'boolean') throw new AppError('autoFinish precisa ser booleano');
@@ -408,10 +435,45 @@ export class GameService {
         )
           throw new AppError('Use até três tags secundárias');
       } else if (key === 'prerequisiteId') {
-        if (value !== null && (typeof value !== 'string' || value === id))
+        if (
+          value !== null &&
+          (typeof value !== 'string' || !value || value.length > 200 || value === id)
+        )
           throw new AppError('Predecessor inválido');
+        if (typeof value === 'string') {
+          const seen = new Set([id]);
+          let predecessorId: string | null = value;
+          while (predecessorId) {
+            if (seen.has(predecessorId))
+              throw new AppError('O predecessor criaria uma sequência circular');
+            seen.add(predecessorId);
+            const predecessor = await this.repository.get(predecessorId);
+            if (!predecessor) {
+              if (predecessorId === value) throw new AppError('Predecessor não encontrado', 404);
+              break;
+            }
+            predecessorId = predecessor.prerequisiteId;
+          }
+        }
       } else throw new AppError('Campo não editável: ' + key);
-      Object.assign(next, { [key]: value });
+      const catalogKey = controlledFields[key];
+      if (catalogKey) {
+        const canonical = (entry: string) =>
+          metadata[catalogKey].find(
+            (option) => normalizeMetadata(option) === normalizeMetadata(entry),
+          );
+        if (key === 'secondaryTags') {
+          const tags = (value as string[]).map(canonical);
+          if (tags.some((tag) => !tag) || new Set(tags).size !== tags.length)
+            throw new AppError('Tags secundárias inválidas');
+          Object.assign(next, { secondaryTags: tags });
+        } else {
+          const entry = (value as string).trim();
+          const option = entry ? canonical(entry) : '';
+          if (option === undefined) throw new AppError('Opção inválida: ' + key);
+          Object.assign(next, { [key]: option });
+        }
+      } else Object.assign(next, { [key]: value });
     }
     if (
       Object.hasOwn(body, 'rating') &&
@@ -423,6 +485,8 @@ export class GameService {
       next.finishedAt ??= new Date().toISOString().slice(0, 10);
     }
     if (body.status === 'Finalizado') next.finishedAt ??= new Date().toISOString().slice(0, 10);
+    if (next.status === 'Jogando' && old.status !== 'Jogando' && !next.startedAt)
+      next.startedAt = new Date().toISOString().slice(0, 10);
     if (
       body.status &&
       body.status !== 'Finalizado' &&
@@ -432,17 +496,21 @@ export class GameService {
       next.finishedAt = null;
     next.updatedAt = new Date().toISOString();
     await this.repository.save(next);
-    // Finalizado sai da fila: a posição fixa perde o sentido em todas as listas.
-    if (next.status === 'Finalizado' && old.status !== 'Finalizado')
-      for (const list of await this.lists.list())
-        await this.manual.remove(list.id, id, {
-          id: randomUUID(),
-          gameId: id,
-          kind: 'reset',
-          fromPosition: null,
-          toPosition: null,
-          createdAt: next.updatedAt,
-        });
-    return (await this.all()).find((g) => g.id === id)!;
+    // Leaving the upcoming queue clears stale manual positions in every list.
+    if ((next.status === 'Finalizado' || next.status === 'Jogando') && old.status !== next.status)
+      await Promise.all(
+        (await this.lists.list()).map((list) =>
+          this.manual.remove(list.id, id, {
+            id: randomUUID(),
+            gameId: id,
+            kind: 'reset',
+            fromPosition: null,
+            toPosition: null,
+            createdAt: next.updatedAt!,
+          }),
+        ),
+      );
+    const inputs = await this.inputs();
+    return scoreGames(inputs.games, inputs.settings.config).games.find((g) => g.id === id)!;
   }
 }

@@ -3,10 +3,18 @@ import { dirname } from 'node:path';
 import type { Game, GameList } from '../../shared/models.ts';
 import type { StoredScoringConfig } from './settings-repository.ts';
 import type { ManualPin } from './scoring.ts';
+import {
+  metadataCatalog,
+  metadataFields,
+  normalizeMetadata,
+  type MetadataCatalog,
+} from '../../shared/metadata.ts';
 export interface GameRepository {
   list(): Promise<Game[]>;
+  searchByName?(query: string, excludeId?: string): Promise<Game[]>;
   get(id: string): Promise<Game | undefined>;
   save(game: Game): Promise<void>;
+  metadataCatalog?(): Promise<MetadataCatalog>;
 }
 
 /** Entradas do algoritmo da fila de uma lista. */
@@ -56,6 +64,25 @@ export class LocalGameRepository implements GameRepository {
   async get(id: string) {
     await this.ready;
     return structuredClone(this.games.get(id));
+  }
+  async metadataCatalog(): Promise<MetadataCatalog> {
+    const catalog = structuredClone(metadataCatalog);
+    const games = await this.list();
+    for (const [category, field] of Object.entries(metadataFields)) {
+      const options = catalog[category as keyof MetadataCatalog];
+      const known = new Set(options.map(normalizeMetadata));
+      for (const game of games) {
+        const values = field === 'secondaryTags' ? game.secondaryTags : [game[field]];
+        for (const value of values) {
+          const key = normalizeMetadata(value);
+          if (key && !known.has(key)) {
+            options.push(value.trim());
+            known.add(key);
+          }
+        }
+      }
+    }
+    return catalog;
   }
   async save(game: Game) {
     await this.ready;

@@ -662,6 +662,20 @@ textarea {
   line-height: 1.25;
   white-space: normal;
 }
+.metadata-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--metadata-color);
+  background: color-mix(in srgb, var(--metadata-color) 14%, var(--surface));
+}
+.metadata-badge svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  fill: currentColor;
+  stroke: none;
+}
 .green {
   background: var(--b-green-bg);
   color: var(--b-green);
@@ -780,6 +794,107 @@ footer {
 }
 .method p {
   line-height: 1.8;
+}
+.playing-section {
+  margin: 0 0 28px;
+}
+.playing-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.playing-heading p,
+.playing-copy p {
+  margin: 4px 0 12px;
+  font-size: 13px;
+}
+.playing-list {
+  display: grid;
+  gap: 10px;
+}
+.playing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 14px;
+}
+.playing-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.playing-copy {
+  min-width: 0;
+}
+.playing-copy h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0 0 7px;
+}
+.playing-copy p {
+  margin-bottom: 0;
+}
+.playing-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.playing-empty {
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+app-list-picker .list-action {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+app-list-picker .list-action:hover,
+app-list-picker .list-action:focus-visible {
+  background: var(--surface-2);
+}
+@media (max-width: 600px) {
+  .playing-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .playing-actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+  .playing-link .queue-cover {
+    width: 64px;
+    flex-shrink: 0;
+  }
+  .playing-copy {
+    flex: 1;
+  }
+  .playing-copy h3 {
+    font-size: 15px;
+  }
 }
 .queue-list {
   position: relative;

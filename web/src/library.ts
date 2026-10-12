@@ -1,12 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, color } from './api';
 import { ImmediateButton } from './immediate';
+import { PlayingButton } from './playing';
 import type { Catalog, Desire, GamePage } from '../../shared/models';
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink, ImmediateButton],
+  imports: [FormsModule, RouterLink, ImmediateButton, PlayingButton],
   template: `<div class="page-heading">
       <div>
         <span class="eyebrow">TUDO O QUE VOCÊ QUER JOGAR</span>
@@ -113,6 +114,7 @@ import type { Catalog, Desire, GamePage } from '../../shared/models';
             </div></a
           >
           @if (g.status !== 'Finalizado' && g.status !== 'Desejado') {
+            <app-playing [game]="g" />
             <app-immediate
               class="card-immediate"
               [game]="g"
@@ -140,6 +142,7 @@ import type { Catalog, Desire, GamePage } from '../../shared/models';
 })
 export class Library {
   api = inject(Api);
+  private destroyRef = inject(DestroyRef);
   color = color;
   catalog = signal<Catalog | null>(null);
   data = signal<GamePage | null>(null);
@@ -154,6 +157,60 @@ export class Library {
   request = 0;
   timer: ReturnType<typeof setTimeout> | undefined;
   constructor() {
+    const seen = new WeakSet<object>();
+    effect(() => {
+      const events = this.api.playingEvents();
+      untracked(() => {
+        for (const event of events.values()) {
+          if (seen.has(event)) continue;
+          seen.add(event);
+          const previous = this.data()?.items.find((game) => game.id === event.game.id);
+          if (previous) {
+            this.data.update(
+              (data) =>
+                data && {
+                  ...data,
+                  items: data.items.map((game) =>
+                    game.id === event.game.id
+                      ? {
+                          ...game,
+                          status: event.game.status,
+                          startedAt: event.game.startedAt,
+                          finishedAt: event.game.finishedAt,
+                        }
+                      : game,
+                  ),
+                },
+            );
+            const delta =
+              Number(event.game.status === 'Jogando') - Number(previous.status === 'Jogando');
+            this.catalog.update(
+              (catalog) =>
+                catalog && {
+                  ...catalog,
+                  counts: {
+                    ...catalog.counts,
+                    playing: catalog.counts.playing + delta,
+                    pending:
+                      catalog.counts.pending +
+                      Number(event.game.status === 'Não iniciado') -
+                      Number(previous.status === 'Não iniciado'),
+                  },
+                },
+            );
+          }
+          if (event.phase === 'failed') {
+            const message = `Não foi possível mudar o status de ${event.game.name}.`;
+            this.error.set(message);
+            if (!this.api.pendingPlaying)
+              void this.playingSaved().finally(() => {
+                if (!this.destroyRef.destroyed) this.error.set(message);
+              });
+          }
+          if (event.phase === 'saved' && !this.api.pendingPlaying) void this.playingSaved();
+        }
+      });
+    });
     this.api.catalog((c) => this.catalog.set(c)).catch(() => {});
     this.load();
   }
@@ -182,8 +239,9 @@ export class Library {
       (d) => d && { ...d, items: d.items.map((g) => (g.id === id ? { ...g, desire } : g)) },
     );
   }
-  async load() {
+  async load(skipCache = false) {
     const id = ++this.request;
+    const playingEvents = this.api.playingEvents();
     this.error.set('');
     // Cache mostra na hora; o indicador só aparece quando não há nada para mostrar.
     let shown = false;
@@ -199,12 +257,20 @@ export class Library {
           page: this.page,
           pageSize: 24,
         },
-        (d) => {
-          if (id !== this.request) return;
+        (d, fromCache) => {
+          if (skipCache && fromCache) return;
+          if (
+            id !== this.request ||
+            this.destroyRef.destroyed ||
+            this.api.pendingPlaying ||
+            playingEvents !== this.api.playingEvents()
+          )
+            return;
           this.data.set(d);
           if (!shown) this.loading.set(false);
           shown = true;
         },
+        skipCache,
       );
     } catch {
       if (id === this.request)
@@ -212,5 +278,13 @@ export class Library {
     } finally {
       if (id === this.request) this.loading.set(false);
     }
+  }
+  async playingSaved() {
+    await Promise.all([
+      this.load(true),
+      this.api.catalog((c, fromCache) => {
+        if (!fromCache && !this.api.pendingPlaying) this.catalog.set(c);
+      }, true),
+    ]);
   }
 }

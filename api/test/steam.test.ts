@@ -287,7 +287,7 @@ test('lista de desejos: cadastro pela Steam e manual, idempotente e fora da fila
     assert.equal(again.item.game.id, first.item.game.id);
     const manual = await wishlist.add({
       name: 'Jogo Sem Steam',
-      primaryGenre: 'RPG',
+      primaryGenre: 'RPG de ação',
       mainHours: 20,
     });
     assert.equal(manual.created, true);
@@ -300,6 +300,7 @@ test('lista de desejos: cadastro pela Steam e manual, idempotente e fora da fila
       { appId: 0 },
       { appId: 10, name: 'x' },
       { name: 'x', desire: 'Imediata!' },
+      { name: 'x', primaryGenre: 'Unknown genre' },
     ])
       await assert.rejects(wishlist.add(bad), JSON.stringify(bad));
     await assert.rejects(wishlist.add({ appId: 40 }), /não encontrado/);

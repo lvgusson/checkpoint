@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import type {
@@ -11,6 +11,7 @@ import type {
   ManualResetResult,
 } from '../../shared/models';
 import { DataCache, GAME_DEPENDENTS, keys } from './data-cache';
+import { PlayingUpdates, type PlayingEvent } from './playing-updates';
 /** Prefixo das rotas de uma lista (fila, ajustes manuais e configuração são por lista). */
 export const listUrl = (listId: string) => '/api/v1/lists/' + encodeURIComponent(listId);
 /**
@@ -21,20 +22,41 @@ export const listUrl = (listId: string) => '/api/v1/lists/' + encodeURIComponent
 export class Api {
   private http = inject(HttpClient);
   private cache = inject(DataCache);
-  catalog(onValue: (c: Catalog) => void = () => {}) {
+  readonly playingEvents = signal(new Map<string, PlayingEvent>());
+  private playingUpdates = new PlayingUpdates(
+    (id, patch) => this.persistSave(id, patch),
+    (event) => {
+      if (event.phase === 'failed') this.cache.invalidate(...GAME_DEPENDENTS);
+      this.playingEvents.update((events) => new Map(events).set(event.game.id, event));
+    },
+    (id) => firstValueFrom(this.http.get<ScoredGame>('/api/v1/games/' + encodeURIComponent(id))),
+  );
+  private writes = new Map<string, Promise<ScoredGame>>();
+  get pendingPlaying() {
+    return this.playingUpdates.pending;
+  }
+  togglePlaying(game: ScoredGame) {
+    return this.playingUpdates.toggle(game);
+  }
+  catalog(onValue: (c: Catalog, fromCache: boolean) => void = () => {}, force = false) {
     return this.cache.swr(
       keys.catalog,
       () => firstValueFrom(this.http.get<Catalog>('/api/v1/catalog')),
       onValue,
+      { force },
     );
   }
-  list(params: Record<string, string | number>, onValue: (p: GamePage) => void = () => {}) {
+  list(
+    params: Record<string, string | number>,
+    onValue: (p: GamePage, fromCache: boolean) => void = () => {},
+    force = false,
+  ) {
     return this.cache.swr(
       keys.games(params),
       () => firstValueFrom(this.http.get<GamePage>('/api/v1/games', { params })),
       onValue,
       // Buscas digitadas ficam só na memória (não enchem o localStorage).
-      { persist: !params['q'] },
+      { persist: !params['q'], force },
     );
   }
   game(id: string, onValue: (g: ScoredGame) => void = () => {}) {
@@ -42,6 +64,15 @@ export class Api {
       keys.game(id),
       () => firstValueFrom(this.http.get<ScoredGame>('/api/v1/games/' + encodeURIComponent(id))),
       onValue,
+    );
+  }
+  /** Search predecessor candidates by name without persisting typed queries. */
+  searchGames(query: string, excludeId?: string) {
+    if (query.trim().length < 3) return Promise.resolve([] as ScoredGame[]);
+    return firstValueFrom(
+      this.http.get<ScoredGame[]>('/api/v1/games/search', {
+        params: { q: query.trim(), ...(excludeId ? { excludeId } : {}) },
+      }),
     );
   }
   /** Fila da lista; `force` ignora a janela de frescor (botão Recalcular, pós-erro). */
@@ -80,6 +111,21 @@ export class Api {
     return r;
   }
   async save(id: string, patch: Record<string, unknown>) {
+    await this.playingUpdates.wait(id);
+    return this.persistSave(id, patch);
+  }
+  private persistSave(id: string, patch: Record<string, unknown>) {
+    const run = (this.writes.get(id) ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => this.writeGame(id, patch));
+    this.writes.set(id, run);
+    const cleanup = () => {
+      if (this.writes.get(id) === run) this.writes.delete(id);
+    };
+    run.then(cleanup, cleanup);
+    return run;
+  }
+  private async writeGame(id: string, patch: Record<string, unknown>) {
     const g = await firstValueFrom(
       this.http.patch<ScoredGame>('/api/v1/games/' + encodeURIComponent(id), patch),
     );

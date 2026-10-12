@@ -1,4 +1,13 @@
-import { Component, Injectable, effect, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Injectable,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -117,150 +126,279 @@ export function routeListId(base: string) {
 const message = (e: unknown, fallback: string) =>
   (e as { error?: { error?: { message?: string } } })?.error?.error?.message ?? fallback;
 
-/** Seletor da lista atual + criar/renomear/apagar. Trocar de lista navega para `base/:id`. */
+/** Selects the active list and manages list names and actions. */
 @Component({
   selector: 'app-list-picker',
   standalone: true,
+  host: {
+    '(document:pointerdown)': 'onOutsidePointer($event)',
+    '(keydown)': 'onKeydown($event)',
+    '(focusout)': 'onFocusOut()',
+    '(click)': 'onActionClick($event)',
+  },
   template: `<div class="list-picker">
-    @if (mode() === 'idle') {
-      <label class="list-select">
-        <span class="sr-only">Lista</span>
-        <select
-          [value]="current() ?? ''"
-          (change)="go($any($event.target).value)"
-          aria-label="Lista atual"
-        >
-          @for (l of store.lists(); track l.id) {
-            <option [value]="l.id" [selected]="l.id === current()">{{ l.name }}</option>
-          }
-        </select>
-      </label>
-      <details class="list-menu" #menu>
-        <summary class="button icon-button" aria-label="Ações da lista" title="Ações da lista">
-          <span aria-hidden="true">⋯</span>
-        </summary>
-        <div class="list-menu-items">
-          <button type="button" (click)="menu.open = false; start('create')">+ Nova lista</button>
+    <div class="list-controls">
+      @if (mode() === 'idle') {
+        <div class="list-select">
           <button
             type="button"
-            (click)="menu.open = false; start('rename')"
-            [disabled]="!current()"
+            class="list-trigger"
+            aria-label="Lista atual"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="openMenu() === 'lists'"
+            (click)="toggleMenu('lists')"
+            data-menu-trigger="lists"
           >
-            Renomear
+            <span>{{ currentName() }}</span
+            ><span aria-hidden="true">⌄</span>
+          </button>
+          @if (openMenu() === 'lists') {
+            <div class="list-popup" role="menu" aria-label="Listas" data-menu="lists">
+              @for (list of store.lists(); track list.id) {
+                <div class="list-option" role="group" [attr.aria-label]="list.name">
+                  <button
+                    type="button"
+                    class="list-option-name"
+                    role="menuitemradio"
+                    [attr.aria-checked]="list.id === current()"
+                    tabindex="-1"
+                    (click)="go(list.id); closeMenu(true)"
+                  >
+                    <span>{{ list.name }}</span
+                    ><span aria-hidden="true">{{ list.id === current() ? '✓' : '' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-button rename-button"
+                    role="menuitem"
+                    tabindex="-1"
+                    [attr.aria-label]="'Renomear ' + list.name"
+                    [title]="'Renomear ' + list.name"
+                    (click)="start('rename', list.id)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      aria-hidden="true"
+                    >
+                      <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <form class="list-form" (submit)="$event.preventDefault(); submit()">
+          <input
+            [value]="name()"
+            (input)="name.set($any($event.target).value)"
+            maxlength="60"
+            required
+            [attr.aria-label]="
+              mode() === 'create' ? 'Nome da nova lista' : 'Novo nome de ' + editingName()
+            "
+            [placeholder]="mode() === 'create' ? 'Nome da nova lista' : 'Novo nome da lista'"
+            [disabled]="busy()"
+          />
+          <button
+            type="submit"
+            class="button icon-button primary"
+            [disabled]="busy() || !name().trim()"
+            [attr.aria-label]="mode() === 'create' ? 'Criar lista' : 'Salvar nome'"
+            [title]="mode() === 'create' ? 'Criar lista' : 'Salvar nome'"
+          >
+            <span aria-hidden="true">✓</span>
+          </button>
+          <button
+            type="button"
+            class="button icon-button"
+            (click)="cancel()"
+            [disabled]="busy()"
+            aria-label="Cancelar edição"
+            title="Cancelar edição"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </form>
+      }
+      <div class="list-actions">
+        <button
+          type="button"
+          class="button icon-button"
+          aria-label="Ações da lista"
+          title="Ações da lista"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="openMenu() === 'actions'"
+          data-menu-trigger="actions"
+          [disabled]="mode() !== 'idle' || busy()"
+          (click)="toggleMenu('actions')"
+        >
+          <span aria-hidden="true">⋯</span>
+        </button>
+        <div
+          class="list-popup action-popup"
+          role="menu"
+          aria-label="Ações da lista"
+          data-menu="actions"
+          [hidden]="openMenu() !== 'actions'"
+        >
+          <button type="button" role="menuitem" tabindex="-1" (click)="start('create')">
+            Adicionar lista
           </button>
           <button
             type="button"
             class="danger"
-            (click)="menu.open = false; remove()"
+            role="menuitem"
+            tabindex="-1"
+            (click)="closeMenu(true); remove()"
             [disabled]="!current() || store.lists().length < 2"
             [title]="store.lists().length < 2 ? 'Você precisa de ao menos uma lista' : ''"
           >
-            Apagar lista
+            Remover lista
           </button>
+          <ng-content />
         </div>
-      </details>
-      <ng-content />
-    } @else {
-      <form class="list-form" (submit)="$event.preventDefault(); submit()">
-        <input
-          [value]="name()"
-          (input)="name.set($any($event.target).value)"
-          maxlength="60"
-          required
-          [attr.aria-label]="mode() === 'create' ? 'Nome da nova lista' : 'Novo nome da lista'"
-          [placeholder]="mode() === 'create' ? 'Nome da nova lista' : 'Novo nome'"
-        />
-        <button type="submit" class="button primary" [disabled]="busy() || !name().trim()">
-          {{ mode() === 'create' ? 'Criar' : 'Salvar' }}
-        </button>
-        <button type="button" class="button" (click)="cancel()">Cancelar</button>
-      </form>
-    }
+      </div>
+    </div>
     @if (error()) {
       <span class="list-error" role="alert">{{ error() }}</span>
     }
   </div>`,
   styles: `
+    :host {
+      display: block;
+      min-width: 0;
+    }
     .list-picker {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
       margin: 0 0 14px;
     }
-    .list-select {
+    .list-controls {
       display: flex;
-      flex: 1 1 160px;
-      min-width: 0;
-      max-width: 320px;
-    }
-    .list-select select {
-      flex: 1;
+      align-items: center;
+      gap: 8px;
       min-height: 44px;
-      font-weight: 600;
     }
-    .list-menu {
+    .list-select,
+    .list-form {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .list-select,
+    .list-actions {
       position: relative;
     }
-    .list-menu summary {
-      list-style: none;
+    .list-actions {
+      flex: 0 0 44px;
     }
-    .list-menu summary::-webkit-details-marker {
-      display: none;
+    .list-trigger,
+    .list-form input {
+      min-width: 0;
+      height: 44px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 16px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
     }
-    .list-menu-items {
+    .list-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .list-trigger > span:first-child,
+    .list-option-name > span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .list-popup {
       position: absolute;
       z-index: 30;
       top: calc(100% + 6px);
+      left: 0;
       right: 0;
-      display: grid;
-      min-width: 180px;
+      max-height: min(360px, 60vh);
+      overflow-y: auto;
       padding: 6px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
     }
-    .list-menu-items button {
+    .list-popup[hidden] {
+      display: none;
+    }
+    .action-popup {
+      left: auto;
+      width: min(240px, calc(100vw - 32px));
+    }
+    .list-option {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .list-option-name,
+    .action-popup > button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       min-height: 44px;
-      padding: 0 12px;
+      min-width: 0;
+      padding: 8px 12px;
       text-align: left;
       font: inherit;
-      font-size: 15px;
       color: var(--text);
       background: none;
       border: 0;
       border-radius: 8px;
       cursor: pointer;
     }
-    .list-menu-items button:hover:not(:disabled) {
-      background: var(--surface-2, rgb(127 127 127 / 0.1));
+    .list-option-name {
+      flex: 1;
     }
-    .list-menu-items button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
+    .action-popup > button {
+      width: 100%;
     }
-    .list-menu-items .danger {
+    .list-option-name[aria-checked='true'] {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .list-option-name:hover,
+    .action-popup > button:hover:not(:disabled) {
+      background: var(--surface-2);
+    }
+    .rename-button {
+      flex: 0 0 44px;
+    }
+    .action-popup .danger {
       color: var(--danger);
-    }
-    .list-select select,
-    .list-form input {
-      min-width: 0;
-      max-width: 100%;
-      padding: 8px 10px;
-      font-size: 16px;
-      color: inherit;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
     }
     .list-form {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
     }
+    .list-form input {
+      flex: 1 1 0;
+      width: 0;
+    }
+    .list-form .icon-button {
+      flex: 0 0 44px;
+    }
     .list-error {
-      flex-basis: 100%;
+      display: block;
+      margin-top: 8px;
       color: var(--danger);
       font-size: 13px;
     }
@@ -269,39 +407,130 @@ const message = (e: unknown, fallback: string) =>
 export class ListPicker {
   readonly store = inject(ListsStore);
   private router = inject(Router);
-  /** Rota base (`/ordem` ou `/configuracoes`). */
+  private host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly base = input.required<string>();
   readonly current = input<string | null>(null);
   readonly mode = signal<'idle' | 'create' | 'rename'>('idle');
+  readonly openMenu = signal<'lists' | 'actions' | null>(null);
   readonly name = signal('');
+  readonly editingId = signal<string | null>(null);
   readonly busy = signal(false);
   readonly error = signal('');
+  readonly currentName = computed(
+    () => this.store.lists().find((list) => list.id === this.current())?.name ?? 'Selecionar lista',
+  );
+  readonly editingName = computed(
+    () => this.store.lists().find((list) => list.id === this.editingId())?.name ?? 'lista',
+  );
 
   go(id: string) {
     if (id && id !== this.current()) void this.router.navigate([this.base(), id]);
   }
-  start(mode: 'create' | 'rename') {
-    this.error.set('');
-    this.name.set(
-      mode === 'rename'
-        ? (this.store.lists().find((l) => l.id === this.current())?.name ?? '')
-        : '',
+  toggleMenu(menu: 'lists' | 'actions') {
+    if (this.openMenu() === menu) {
+      this.closeMenu(true);
+      return;
+    }
+    this.openMenu.set(menu);
+    this.focusAfterRender(() => this.menuItems()[0]);
+  }
+  closeMenu(restoreFocus = false) {
+    const menu = this.openMenu();
+    this.openMenu.set(null);
+    if (restoreFocus && menu)
+      this.host.querySelector<HTMLElement>(`[data-menu-trigger="${menu}"]`)?.focus();
+  }
+  onOutsidePointer(event: PointerEvent) {
+    if (!this.host.contains(event.target as Node)) this.closeMenu();
+  }
+  onFocusOut() {
+    queueMicrotask(() => {
+      if (!this.host.contains(document.activeElement)) this.closeMenu();
+    });
+  }
+  onActionClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('[data-menu="actions"]')) return;
+    const button = target.closest('button');
+    if (button && !button.disabled) this.closeMenu(this.mode() === 'idle');
+  }
+  onKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      if (this.openMenu()) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeMenu(true);
+      } else if (this.mode() !== 'idle' && !this.busy()) {
+        event.preventDefault();
+        this.cancel();
+      }
+      return;
+    }
+    const target = event.target as HTMLElement;
+    if (!this.openMenu()) {
+      const menu = target.dataset['menuTrigger'];
+      if (
+        (event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
+        (menu === 'lists' || menu === 'actions')
+      ) {
+        event.preventDefault();
+        this.toggleMenu(menu);
+        if (event.key === 'ArrowUp') this.focusAfterRender(() => this.menuItems().at(-1));
+      }
+      return;
+    }
+    const items = this.menuItems();
+    if (!items.length) return;
+    const index = items.findIndex((item) => item === target);
+    let next: number;
+    if (event.key === 'ArrowDown') next = (index + 1) % items.length;
+    else if (event.key === 'ArrowUp') next = (index - 1 + items.length) % items.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = items.length - 1;
+    else if (event.key === 'Tab') {
+      this.closeMenu(true);
+      return;
+    } else return;
+    event.preventDefault();
+    items[next].focus();
+  }
+  private menuItems() {
+    return Array.from(
+      this.host.querySelectorAll<HTMLButtonElement>(
+        `[data-menu="${this.openMenu()}"] button:not(:disabled)`,
+      ),
     );
+  }
+  private focusAfterRender(target: () => HTMLElement | null | undefined) {
+    setTimeout(() => target()?.focus(), 0);
+  }
+  start(mode: 'create' | 'rename', id: string | null = this.current()) {
+    this.closeMenu();
+    this.error.set('');
+    this.editingId.set(mode === 'rename' ? id : null);
+    this.name.set(mode === 'rename' ? this.editingName() : '');
     this.mode.set(mode);
+    this.focusAfterRender(() => this.host.querySelector<HTMLInputElement>('input'));
   }
   cancel() {
     this.mode.set('idle');
     this.error.set('');
+    this.focusAfterRender(() =>
+      this.host.querySelector<HTMLElement>('[data-menu-trigger="lists"]'),
+    );
   }
   async submit() {
     const name = this.name().trim();
-    if (!name || this.busy()) return;
+    if (!name || this.busy() || this.mode() === 'idle') return;
     this.busy.set(true);
     this.error.set('');
     try {
       if (this.mode() === 'create') this.go((await this.store.create(name)).id);
-      else await this.store.rename(this.current()!, name);
+      else if (this.editingId()) await this.store.rename(this.editingId()!, name);
       this.mode.set('idle');
+      this.focusAfterRender(() =>
+        this.host.querySelector<HTMLElement>('[data-menu-trigger="lists"]'),
+      );
     } catch (e) {
       this.error.set(message(e, 'Não foi possível salvar a lista.'));
     } finally {
@@ -309,12 +538,15 @@ export class ListPicker {
     }
   }
   async remove() {
-    const list = this.store.lists().find((l) => l.id === this.current());
+    const list = this.store.lists().find((list) => list.id === this.current());
     if (
       !list ||
+      this.busy() ||
+      this.store.lists().length < 2 ||
       !confirm(`Apagar a lista "${list.name}"? A ordem manual e as regras dela serão perdidas.`)
     )
       return;
+    this.busy.set(true);
     this.error.set('');
     try {
       await this.store.remove(list.id);
@@ -322,6 +554,8 @@ export class ListPicker {
       if (next) void this.router.navigate([this.base(), next.id], { replaceUrl: true });
     } catch (e) {
       this.error.set(message(e, 'Não foi possível apagar a lista.'));
+    } finally {
+      this.busy.set(false);
     }
   }
 }

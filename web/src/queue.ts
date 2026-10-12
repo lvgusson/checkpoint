@@ -10,13 +10,16 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Api, color } from './api';
+import { Api } from './api';
+import { metadataPresentation } from './metadata-presentation';
 import { ScoringSettingsStore } from './scoring-settings';
 import { ListPicker, routeListId } from './lists';
 import { ImmediateButton } from './immediate';
+import { PlayingButton } from './playing';
+import { updatePlayingQueue } from './playing-updates';
 import { FinishDialog } from './finish-dialog';
 import { DataCache, GAME_DEPENDENTS } from './data-cache';
-import type { Desire, Recommendations, ScoredGame } from '../../shared/models';
+import type { Desire, QueueEntry, Recommendations, ScoredGame } from '../../shared/models';
 
 /** Minúsculas sem acento (busca tolerante: "acao" encontra "Ação"). */
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -64,7 +67,7 @@ const LONG_PRESS_MS = 320;
 
 @Component({
   standalone: true,
-  imports: [RouterLink, ListPicker, ImmediateButton],
+  imports: [RouterLink, ListPicker, ImmediateButton, PlayingButton],
   template: `<div class="page-heading queue-heading">
       <div>
         <span class="eyebrow">MENOS DECISÃO, MAIS DIVERSÃO</span>
@@ -75,19 +78,131 @@ const LONG_PRESS_MS = 320;
     <app-list-picker base="/ordem" [current]="listId()">
       <button
         type="button"
-        class="button icon-button"
+        class="list-action"
+        role="menuitem"
+        tabindex="-1"
         (click)="load(true)"
         [disabled]="loading()"
         aria-label="Recalcular a fila"
         title="Recalcular a fila"
       >
         <span aria-hidden="true">↻</span>
+        Recalcular a fila
       </button>
     </app-list-picker>
     @if (error()) {
       <div class="error" role="alert">{{ error() }}</div>
     }
     @if (data(); as d) {
+      <section class="playing-section" aria-labelledby="playing-heading">
+        <div class="playing-heading">
+          <h2 id="playing-heading">
+            Jogando agora <span class="badge blue">{{ d.playing?.length ?? 0 }}</span>
+          </h2>
+          <p class="muted">
+            Continue suas partidas. O controle inicia ou pausa um jogo; a espada ajusta a
+            prioridade.
+          </p>
+        </div>
+        @if (d.playing?.length) {
+          <div class="playing-list">
+            @for (game of d.playing; track game.id) {
+              <article class="playing-row">
+                <a
+                  class="playing-link"
+                  [routerLink]="['/jogos', game.id]"
+                  [queryParams]="{ from: 'ordem' }"
+                >
+                  <div class="queue-cover">
+                    @if (game.coverUrl) {
+                      <img
+                        [src]="game.coverUrl"
+                        alt=""
+                        loading="lazy"
+                        (error)="$any($event.target).style.display = 'none'"
+                      />
+                    }
+                    <span>{{ game.name.slice(0, 1) }}</span>
+                  </div>
+                  <div class="playing-copy">
+                    <h3>{{ game.name }}</h3>
+                    <div class="tags">
+                      <span
+                        class="badge metadata-badge"
+                        [style.--metadata-color]="presentation('status', game.status).color"
+                        ><svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path [attr.d]="presentation('status', game.status).icon" /></svg
+                        >{{ game.status }}</span
+                      >
+                      <span
+                        class="badge metadata-badge"
+                        [style.--metadata-color]="presentation('genre', game.primaryGenre).color"
+                        ><svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path [attr.d]="presentation('genre', game.primaryGenre).icon" /></svg
+                        >{{ game.primaryGenre }}</span
+                      >
+                      @for (tag of game.secondaryTags; track tag) {
+                        <span
+                          class="badge metadata-badge"
+                          [style.--metadata-color]="presentation('tag', tag).color"
+                          ><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path [attr.d]="presentation('tag', tag).icon" /></svg
+                          >{{ tag }}</span
+                        >
+                      }
+                      <span
+                        class="badge metadata-badge"
+                        [style.--metadata-color]="presentation('desire', game.desire).color"
+                        ><svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path [attr.d]="presentation('desire', game.desire).icon" /></svg
+                        >{{ game.desire }}</span
+                      >
+                    </div>
+                    <p class="muted">
+                      {{
+                        game.startedAt
+                          ? 'Iniciado em ' + displayDate(game.startedAt)
+                          : 'Data de início não informada'
+                      }}
+                    </p>
+                  </div>
+                </a>
+                <div class="playing-actions">
+                  <app-playing [game]="game" />
+                  <app-immediate
+                    [game]="game"
+                    (changed)="setDesire(game.id, $event)"
+                    (saved)="desireSaved()"
+                    (failed)="error.set($event); desireSaved()"
+                  />
+                  <button
+                    type="button"
+                    class="icon-button finish-btn"
+                    [attr.aria-label]="'Finalizar ' + game.name"
+                    title="Finalizar: nota, horas e avaliação"
+                    (click)="finish(game, $event)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M5 21V4m0 0h13l-2.5 4L18 12H5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="playing-empty">
+            Nenhum jogo em andamento. Clique no controle de um jogo para começar.
+          </p>
+        }
+      </section>
       <p class="stats-line">
         <b>{{ d.total }}</b> jogos · <b>{{ d.estimatedHours }}</b> h · ritmo
         <b>{{ d.timeFactor.toFixed(2) }}×</b>
@@ -113,10 +228,17 @@ const LONG_PRESS_MS = 320;
             <span class="eyebrow">01 / SUA PRÓXIMA PARTIDA</span>
             <h2>{{ first.game.name }}</h2>
             <div class="tags">
-              <span [class]="'badge ' + color(first.game.primaryGenre)">{{
-                first.game.primaryGenre
-              }}</span
-              ><span [class]="'badge ' + color(first.game.desire)"
+              <span
+                class="badge metadata-badge"
+                [style.--metadata-color]="presentation('genre', first.game.primaryGenre).color"
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path [attr.d]="presentation('genre', first.game.primaryGenre).icon" /></svg
+                >{{ first.game.primaryGenre }}</span
+              ><span
+                class="badge metadata-badge"
+                [style.--metadata-color]="presentation('desire', first.game.desire).color"
+                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path [attr.d]="presentation('desire', first.game.desire).icon" /></svg
                 >Vontade {{ first.game.desire.toLowerCase() }}</span
               >
             </div>
@@ -145,37 +267,6 @@ const LONG_PRESS_MS = 320;
           </div></a
         >
       }
-      <details class="method">
-        <summary>Como sua ordem é calculada <span>＋</span></summary>
-        <p>
-          <b>50% vontade · 35% afinidade · 15% duração.</b> As notas de 1 a 5 alimentam sua
-          afinidade com gêneros, mecânicas e ritmos. Campanhas longas e estilos repetidos recebem
-          descontos; jogos curtos e mudanças de ritmo recebem bônus.
-        </p>
-        <div class="tags">
-          <span class="badge violet">Gênero repetido −18</span
-          ><span class="badge blue">Subgênero repetido até −8</span
-          ><span class="badge rose">Longos seguidos −24</span
-          ><span class="badge green">Contraste de ritmo +8</span
-          ><span class="badge amber">Jogando +8</span>
-        </div>
-        <p>
-          Subgêneros pesam proporcionalmente à sobreposição de tags. A fila também olha os últimos
-          três jogos, incluindo concluídos com data. Predecessores cadastrados vêm antes das
-          continuações, com espaço para intercalar outros jogos. Finalizados, abandonados e jogos
-          sem fim ficam fora.
-        </p>
-        <p>
-          O tempo aprende com a relação entre suas horas reais e as estimativas dos jogos
-          finalizados. Estimativas desconhecidas não são inventadas; o total de horas soma apenas os
-          tempos disponíveis.
-        </p>
-        <p>
-          <b>Posição fixa.</b> O jogo que você arrasta fica exatamente onde foi solto (“Fixado”) e
-          os demais descem uma posição. Se ele ficar antes do jogo anterior da série, aparece um
-          aviso ⚠. Solte a posição no × do chip. Vontade <b>Imediata</b> leva o jogo ao topo.
-        </p>
-      </details>
       <section class="filters queue-search" role="search">
         <label class="search"
           ><span aria-hidden="true">⌕</span
@@ -271,14 +362,35 @@ const LONG_PRESS_MS = 320;
               <div class="queue-title">
                 <h3>{{ item.game.name }}</h3>
                 <div class="tags">
-                  <span [class]="'badge ' + color(item.game.primaryGenre)">{{
-                    item.game.primaryGenre
-                  }}</span>
+                  <span
+                    class="badge metadata-badge"
+                    [style.--metadata-color]="presentation('genre', item.game.primaryGenre).color"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path [attr.d]="presentation('genre', item.game.primaryGenre).icon" /></svg
+                    >{{ item.game.primaryGenre }}</span
+                  >
                   @for (t of item.game.secondaryTags; track t) {
-                    <span [class]="'badge ' + color(t)">{{ t }}</span>
+                    <span
+                      class="badge metadata-badge"
+                      [style.--metadata-color]="presentation('tag', t).color"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path [attr.d]="presentation('tag', t).icon" /></svg
+                      >{{ t }}</span
+                    >
                   }
-                  <span [class]="'badge ' + color(item.game.status)">{{ item.game.status }}</span
-                  ><span [class]="'badge ' + color(item.game.desire)">{{ item.game.desire }}</span>
+                  <span
+                    class="badge metadata-badge"
+                    [style.--metadata-color]="presentation('status', item.game.status).color"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path [attr.d]="presentation('status', item.game.status).icon" /></svg
+                    >{{ item.game.status }}</span
+                  ><span
+                    class="badge metadata-badge"
+                    [style.--metadata-color]="presentation('desire', item.game.desire).color"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path [attr.d]="presentation('desire', item.game.desire).icon" /></svg
+                    >{{ item.game.desire }}</span
+                  >
                 </div>
                 <p>{{ item.reasons.join(' · ') }}</p>
               </div>
@@ -340,6 +452,7 @@ const LONG_PRESS_MS = 320;
                   </svg>
                 </button>
               }
+              <app-playing [game]="item.game" />
               <app-immediate
                 [game]="item.game"
                 (changed)="setDesire(item.game.id, $event)"
@@ -402,7 +515,7 @@ export class Queue {
   private settings = inject(ScoringSettingsStore);
   /** Lista cuja fila está na tela (da URL). */
   readonly listId = routeListId('/ordem');
-  color = color;
+  presentation = metadataPresentation;
   data = signal<Recommendations | null>(null);
   /** Jogos fora da fila agrupados por motivo (filtros, predecessores). */
   excludedReasons(d: Recommendations) {
@@ -440,6 +553,7 @@ export class Queue {
   announcement = signal('');
 
   private host: HTMLElement = inject(ElementRef).nativeElement;
+  private destroyRef = inject(DestroyRef);
   private cdr = inject(ChangeDetectorRef);
   private drag: DragState | null = null;
   private pending: PendingPress | null = null;
@@ -454,6 +568,36 @@ export class Queue {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   constructor() {
+    const seen = new WeakSet<object>();
+    const originals = new Map<string, QueueEntry>();
+    effect(() => {
+      const events = this.api.playingEvents();
+      untracked(() => {
+        for (const event of events.values()) {
+          if (seen.has(event)) continue;
+          seen.add(event);
+          const previous = this.data();
+          if (previous) {
+            const key = `${previous.listId}:${event.game.id}`;
+            const entry = previous.items.find((item) => item.game.id === event.game.id);
+            if (entry && !originals.has(key)) originals.set(key, entry);
+            const original = event.phase === 'failed' ? originals.get(key) : undefined;
+            this.data.set(updatePlayingQueue(previous, event.game, original));
+            if (event.phase !== 'changed') originals.delete(key);
+          }
+          if (event.phase === 'failed') {
+            const message = `Não foi possível mudar o status de ${event.game.name}.`;
+            this.error.set(message);
+            if (!this.api.pendingPlaying)
+              void this.load(true).finally(() => {
+                if (!this.destroyRef.destroyed) this.error.set(message);
+              });
+          }
+          if (event.phase === 'saved' && !this.api.pendingPlaying)
+            void this.playingSaved(event.game);
+        }
+      });
+    });
     effect(() => {
       if (this.listId()) untracked(() => void this.load());
     });
@@ -473,7 +617,7 @@ export class Queue {
     this.host.addEventListener('click', onClick, true);
     this.host.addEventListener('contextmenu', onContext);
     this.host.addEventListener('dragstart', onNativeDrag);
-    inject(DestroyRef).onDestroy(() => {
+    this.destroyRef.onDestroy(() => {
       this.host.removeEventListener('click', onClick, true);
       this.host.removeEventListener('contextmenu', onContext);
       this.host.removeEventListener('dragstart', onNativeDrag);
@@ -490,6 +634,7 @@ export class Queue {
    */
   async load(force = false) {
     const listId = this.listId();
+    const playingEvents = this.api.playingEvents();
     if (!listId) return;
     this.loading.set(this.data()?.listId !== listId);
     this.error.set('');
@@ -497,7 +642,17 @@ export class Queue {
       await this.api.queue(
         listId,
         (next, fromCache) => {
-          if (listId !== this.listId() || this.drag || this.pending || this.pendingMoves) return;
+          if (force && fromCache) return;
+          if (
+            this.destroyRef.destroyed ||
+            listId !== this.listId() ||
+            this.drag ||
+            this.pending ||
+            this.pendingMoves ||
+            this.api.pendingPlaying ||
+            playingEvents !== this.api.playingEvents()
+          )
+            return;
           if (!fromCache) this.settings.syncVersion(listId, next.configVersion);
           // Mesma lista: anima a diferença; outra lista: troca direto.
           if (this.data()?.listId === listId) this.flipTo(next);
@@ -542,8 +697,20 @@ export class Queue {
         to++;
       items.splice(to, 0, moved);
     }
-    this.flipTo({ ...prev, items });
+    const playing = prev.playing?.map((g) => (g.id === id ? { ...g, desire } : g));
+    this.flipTo({ ...prev, items, playing });
     this.showFlash(id);
+  }
+  displayDate(date: string) {
+    return date.split('-').reverse().join('/');
+  }
+  async playingSaved(game: ScoredGame) {
+    this.notice.set(
+      game.status === 'Jogando'
+        ? `${game.name} está em andamento.`
+        : `${game.name} voltou para a fila.`,
+    );
+    await this.load(true);
   }
   /** Complete through the shared dialog and reconcile the queue after saving. */
   async finish(game: ScoredGame, e: Event) {
@@ -986,12 +1153,21 @@ export class Queue {
       return;
     }
     const listId = this.listId();
+    const playingEvents = this.api.playingEvents();
     if (!listId) return;
     try {
       await this.api.queue(
         listId,
         (next, fromCache) => {
-          if (fromCache || this.drag || this.pendingMoves) return; // outro movimento resincroniza
+          if (
+            this.destroyRef.destroyed ||
+            fromCache ||
+            this.drag ||
+            this.pendingMoves ||
+            this.api.pendingPlaying ||
+            playingEvents !== this.api.playingEvents()
+          )
+            return; // outro movimento resincroniza
           if (listId !== this.listId()) return; // trocou de lista nesse meio-tempo
           this.settings.syncVersion(listId, next.configVersion);
           if (animate) this.flipTo(next);

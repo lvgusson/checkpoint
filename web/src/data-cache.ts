@@ -121,6 +121,8 @@ export class DataCache {
   invalidate(...prefixes: string[]): void {
     const scope = this.scope();
     const hit = (full: string) => prefixes.some((p) => full.startsWith(scope + p));
+    // Reads started before a mutation must not populate the cache or be reused afterward.
+    for (const full of this.inflight.keys()) if (hit(full)) this.inflight.delete(full);
     for (const [full, e] of this.mem) if (hit(full)) this.mem.set(full, { ...e, stale: true });
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -156,12 +158,15 @@ export class DataCache {
     if (running) return running;
     const p = fetcher()
       .then((value) => {
+        if (this.inflight.get(full) !== p) return value;
         const e: Entry<T> = { at: Date.now(), value };
         this.mem.set(full, e);
         if (persist) this.persist(full, e);
         return value;
       })
-      .finally(() => this.inflight.delete(full));
+      .finally(() => {
+        if (this.inflight.get(full) === p) this.inflight.delete(full);
+      });
     this.inflight.set(full, p);
     return p;
   }

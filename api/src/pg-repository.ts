@@ -23,6 +23,7 @@ import type { Sql } from './db.ts';
 /** Valor serializado como json pelo driver (sql.json). */
 const json = (v: unknown) => v as postgres.JSONValue;
 import type { AppUserResolver } from './app-user.ts';
+import type { MetadataCatalog } from '../../shared/metadata.ts';
 import type { GameRepository, QueueInputs, QueueInputsReader } from './repository.ts';
 import type { ManualAdjustmentRepository } from './manual-repository.ts';
 import { DEFAULT_LIST_NAME, duplicateListName, type ListRepository } from './list-repository.ts';
@@ -120,6 +121,21 @@ export class PgGameRepository implements GameRepository {
        WHERE e.user_id = ${u}`;
     return row.games.map(toGame);
   }
+  /** Search only the current user's library; treat wildcard characters literally. */
+  async searchByName(query: string, excludeId?: string): Promise<Game[]> {
+    const sql = this.sql;
+    const u = await this.user();
+    const pattern = '%' + query.replace(/[\\%_]/g, '\\$&') + '%';
+    const rows = await sql<{ game: RawGame }[]>`
+      SELECT ${sql.unsafe(GAME_JSON)} AS game
+        FROM ${sql.unsafe(GAME_FROM)}
+       WHERE e.user_id = ${u}
+         AND norm_key(g.name) LIKE norm_key(${pattern}) ESCAPE '\\'
+         AND (${excludeId ?? null}::text IS NULL OR g.code <> ${excludeId ?? null}::text)
+       ORDER BY lower(g.name), g.code
+       LIMIT 12`;
+    return rows.map((r) => toGame(r.game));
+  }
   async get(id: string): Promise<Game | undefined> {
     const sql = this.sql;
     const u = await this.user();
@@ -128,6 +144,19 @@ export class PgGameRepository implements GameRepository {
         FROM ${sql.unsafe(GAME_FROM)}
        WHERE e.user_id = ${u} AND g.code = ${id}`;
     return row ? toGame(row.game) : undefined;
+  }
+  async metadataCatalog(): Promise<MetadataCatalog> {
+    const [row] = await this.sql<{ catalog: MetadataCatalog }[]>`
+      SELECT json_build_object(
+        'genres', (SELECT coalesce(json_agg(name ORDER BY name), '[]') FROM genre),
+        'tags', (SELECT coalesce(json_agg(name ORDER BY name), '[]') FROM tag),
+        'mechanics', (SELECT coalesce(json_agg(name ORDER BY name), '[]') FROM mechanic),
+        'stores', (SELECT coalesce(json_agg(name ORDER BY name), '[]') FROM store),
+        'paces', (SELECT coalesce(json_agg(name ORDER BY sort_order, name), '[]') FROM ref_pace WHERE name <> ''),
+        'structures', (SELECT coalesce(json_agg(name ORDER BY sort_order, name), '[]') FROM ref_structure WHERE name <> ''),
+        'platforms', (SELECT coalesce(json_agg(name ORDER BY sort_order, name), '[]') FROM ref_platform WHERE name <> '')
+      ) AS catalog`;
+    return row.catalog;
   }
   /**
    * Grava a edição numa ÚNICA instrução (um round trip, atômica): estado pessoal em
@@ -141,32 +170,14 @@ export class PgGameRepository implements GameRepository {
     const sql = this.sql;
     const u = await this.user();
     const tags = sql.json(cleanTags(game.secondaryTags));
-    const vocab = (table: string, value: string) => sql`
-      ${sql(table + '_ins')} AS (
-        INSERT INTO ${sql(table)} (name)
-        SELECT x FROM (SELECT btrim(${value}::text) AS x) s
-         WHERE x <> '' AND NOT EXISTS (SELECT 1 FROM ${sql(table)} WHERE key = norm_key(x))
-        ON CONFLICT (key) DO NOTHING
-        RETURNING id)`;
-    const vocabId = (table: string, value: string) => sql`coalesce(
-      (SELECT id FROM ${sql(table)} WHERE key = norm_key(${value}::text)),
-      (SELECT id FROM ${sql(table + '_ins')}))`;
+    const vocabId = (table: string, value: string) => sql`
+      (SELECT id FROM ${sql(table)} WHERE key = norm_key(${value}::text))`;
     try {
       await sql`
-        WITH ${vocab('genre', game.primaryGenre)},
-             ${vocab('mechanic', game.mechanic)},
-             ${vocab('store', game.store)},
-             tag_ins AS (
-               INSERT INTO tag (name)
-               SELECT DISTINCT btrim(x) FROM jsonb_array_elements_text(${tags}::jsonb) AS t(x)
-                WHERE NOT EXISTS (SELECT 1 FROM tag WHERE key = norm_key(x))
-               ON CONFLICT (key) DO NOTHING
-               RETURNING id, key),
-             tags AS (
-               SELECT n.ord, coalesce(t.id, i.id) AS id
+        WITH tags AS (
+               SELECT n.ord, t.id
                  FROM jsonb_array_elements_text(${tags}::jsonb) WITH ORDINALITY AS n(x, ord)
-                 LEFT JOIN tag t ON t.key = norm_key(n.x)
-                 LEFT JOIN tag_ins i ON i.key = norm_key(n.x)),
+                 LEFT JOIN tag t ON t.key = norm_key(n.x)),
              target AS (
                SELECT e.game_id AS id FROM library_entry e JOIN game g ON g.id = e.game_id
                 WHERE e.user_id = ${u} AND g.code = ${game.id}),

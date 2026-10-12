@@ -71,6 +71,13 @@ export function makeServer(
         }
         if (path === '/api/v1/catalog' && req.method === 'GET')
           return send(await service.catalog());
+        if (path === '/api/v1/games/search' && req.method === 'GET')
+          return send(
+            await service.searchGames(
+              url.searchParams.get('q') ?? '',
+              url.searchParams.get('excludeId') ?? undefined,
+            ),
+          );
         if (path === '/api/v1/games' && req.method === 'GET') {
           let games = await service.all();
           const normalize = (s: string) =>

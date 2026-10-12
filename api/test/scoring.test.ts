@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { scoreGames, recommendGames, defaultWeights } from '../src/scoring.ts';
 import type { Game } from '../../shared/models.ts';
+import { defaultConfig } from '../src/scoring.ts';
 
 const game = (id: string, patch: Partial<Game> = {}): Game => ({
   id,
@@ -42,6 +43,33 @@ const game = (id: string, patch: Partial<Game> = {}): Game => ({
     previousPendingId: null,
   },
   ...patch,
+});
+
+test('playing games stay above the queue, including games excluded by list filters', () => {
+  const result = recommendGames(
+    [
+      game('active-a', { status: 'Jogando', startedAt: '2026-10-10' }),
+      game('active-b', { status: 'Jogando', structure: 'Sem fim definido' }),
+      game('priority', { desire: 'Imediata' }),
+      game('pending'),
+    ],
+    { ...defaultConfig, filters: { ...defaultConfig.filters, excludedGenres: ['FPS'] } },
+  );
+  assert.deepEqual(
+    result.playing?.map((g) => g.id),
+    ['active-a', 'active-b'],
+  );
+  assert.equal(result.total, 0);
+  assert.equal(result.estimatedHours, 0);
+  assert.ok(!result.excluded.some((g) => g.gameId.startsWith('active')));
+  const unfiltered = recommendGames([
+    game('active', { status: 'Jogando', desire: 'Baixa' }),
+    game('priority', { desire: 'Imediata' }),
+    game('pending'),
+  ]);
+  assert.equal(unfiltered.items[0].game.id, 'priority');
+  assert.equal(unfiltered.total, 2);
+  assert.ok(unfiltered.items.every((i) => i.game.status !== 'Jogando'));
 });
 
 test('só mudar vontade eleva a pontuação e muda a ordem', () => {

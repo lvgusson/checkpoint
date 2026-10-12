@@ -83,10 +83,15 @@ const digest = (q: Recommendations) =>
     )
     .digest('hex');
 
-test('config padrão reproduz exatamente a fila anterior às regras (481 jogos do seed)', () => {
+test('default queue snapshot separates the two playing seed games', () => {
   const q = recommendGames(seedGames, defaultConfig);
-  assert.equal(q.total, 394);
-  assert.equal(digest(q), '74f7c5144036bb2a01eb33e44a220697eb43263bb2611ecae1f3f9f7b54be85b');
+  assert.equal(q.total, 392);
+  assert.deepEqual(
+    q.playing?.map((g) => g.id),
+    ['J0018', 'J0349'],
+  );
+  assert(q.items.every((i) => i.game.status !== 'Jogando'));
+  assert.equal(digest(q), '8936f82bdb571f98efaa223f29c2a7319649ab5fed3ae6aea1231751354ca010');
   assert.deepEqual(recommendGames(seedGames), q);
 });
 
@@ -118,7 +123,6 @@ test('cada ajuste contextual some quando a regra é desligada', () => {
     pace: 'Calmo',
   });
   const cases: [ScoringRuleId, string, Partial<Game>][] = [
-    ['inProgress', 'Concluir o que já começou', { status: 'Jogando' }],
     ['repeatGenre', 'Gênero repetido', {}],
     ['repeatMechanic', 'Mesma mecânica', {}],
     ['repeatTag', 'Subgêneros repetidos', { secondaryTags: ['x'] }],
@@ -221,7 +225,7 @@ test('filtro não bloqueia a sequência de um predecessor filtrado', () => {
 
 test('opções dos filtros contam os candidatos da fila', () => {
   const o = filterOptions(seedGames);
-  assert.equal(o.total, 394); // mesma base da fila padrão
+  assert.equal(o.total, 392); // Upcoming queue candidates exclude playing games.
   assert.equal(o.hours.length, o.total);
   const sum = (xs: { count: number }[]) => xs.reduce((s, x) => s + x.count, 0);
   assert.equal(sum(o.genres), o.total);
@@ -367,7 +371,7 @@ test('API: GET/PUT/reset de /settings/scoring e fila usando a config', async () 
     const q = await json<Recommendations>(call('/recommendations'));
     assert.equal(q.configVersion, 1);
     assert(q.items.every((i) => !isCompetitive(i.game)));
-    assert.equal(first.filterOptions.total, 394);
+    assert.equal(first.filterOptions.total, 392);
     const long = await call('/settings/scoring', 'PUT', {
       weights: first.config.weights,
       rules: first.config.rules,
@@ -377,7 +381,7 @@ test('API: GET/PUT/reset de /settings/scoring e fila usando a config', async () 
     assert.equal((await json<ScoringSettings>(long)).config.filters.maxHours, 15);
     const short = await json<Recommendations>(call('/recommendations'));
     assert(short.items.every((i) => i.game.plannedHours !== null && i.game.plannedHours <= 15));
-    assert.equal(short.total + short.excluded.length, 394);
+    assert.equal(short.total + short.excluded.length, 392);
     assert.equal(
       (await call('/settings/scoring', 'PUT', { ...first.config, filters: { minHours: -2 } }))
         .status,
@@ -386,7 +390,7 @@ test('API: GET/PUT/reset de /settings/scoring e fila usando a config', async () 
     const reset = await json<ScoringSettings>(call('/settings/scoring/reset', 'POST'));
     assert.equal(reset.version, 3);
     assert.deepEqual(reset.config, defaultConfig);
-    assert.equal((await json<Recommendations>(call('/recommendations'))).total, 394);
+    assert.equal((await json<Recommendations>(call('/recommendations'))).total, 392);
   } finally {
     server.close();
     await rm(dir, { recursive: true, force: true });

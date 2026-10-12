@@ -39,7 +39,7 @@ const SECTIONS: { id: ScoringSection; title: string; hint: string }[] = [
 ];
 type ListFilter = 'excludedGenres' | 'excludedTags' | 'stores' | 'paces';
 /** Ajustes que somam (os demais subtraem); os de tags são multiplicados pela sobreposição. */
-const BONUS = new Set<string>(['inProgress', 'contrastingPace', 'shortAfterLong']);
+const BONUS = new Set<string>(['contrastingPace', 'shortAfterLong']);
 const OVERLAP = new Set<string>(['repeatTag', 'repeatTagTwoBack']);
 
 @Component({
@@ -862,7 +862,9 @@ export class Settings {
     }
   }
   rows(section: ScoringSection): ScoringFactor[] {
-    return (this.settings()?.factors ?? []).filter((f) => f.section === section);
+    return (this.settings()?.factors ?? []).filter(
+      (f) => f.section === section && f.id !== 'inProgress',
+    );
   }
   valid(f: ScoringFactor, v: number) {
     return Number.isFinite(v) && v >= f.min && v <= f.max;
@@ -874,13 +876,13 @@ export class Settings {
     return OVERLAP.has(f.id);
   }
   queueRule({ rules: r }: ScoringConfig) {
-    const statuses = ['Não iniciado', 'Jogando', ...(r.excludeAbandoned ? [] : ['Abandonado'])];
+    const statuses = ['Não iniciado', ...(r.excludeAbandoned ? [] : ['Abandonado'])];
     const extra = [
       r.excludeEndless && 'exceto os sem fim definido',
       r.excludeCompetitive && 'exceto competitivos/online',
       r.prerequisites && 'respeitando a ordem da série',
     ].filter(Boolean);
-    return `Entram na fila: ${statuses.join(', ')}${extra.length ? ', ' + extra.join(', ') : ''}.`;
+    return `Entram na fila: ${statuses.join(', ')}${extra.length ? ', ' + extra.join(', ') : ''}. Jogos em andamento aparecem em Jogando agora.`;
   }
   num(n: number) {
     return Number.isFinite(n) ? n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '?';

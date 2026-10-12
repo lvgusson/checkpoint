@@ -1,12 +1,16 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Api, color } from './api';
+import { Api } from './api';
 import { FinishDialog } from './finish-dialog';
+import { MetadataSelect } from './metadata-select';
+import { PrerequisiteSearch } from './prerequisite-search';
+import { metadataPresentation } from './metadata-presentation';
 import type { Catalog, ScoredGame } from '../../shared/models';
 @Component({
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MetadataSelect, PrerequisiteSearch],
+  styleUrl: './detail.css',
   template: `<a class="back-link" [routerLink]="back"
       >← {{ back === '/ordem' ? 'Voltar para a ordem de jogos' : 'Voltar para a biblioteca' }}</a
     >
@@ -25,10 +29,27 @@ import type { Catalog, ScoredGame } from '../../shared/models';
           <span class="eyebrow">{{ g.store }} · {{ g.platform }}</span>
           <h1>{{ g.name }}</h1>
           <div class="tags">
-            <span [class]="'badge ' + color(g.status)">{{ g.status }}</span
-            ><span [class]="'badge ' + color(g.primaryGenre)">{{ g.primaryGenre }}</span>
+            <span
+              class="badge metadata-badge"
+              [style.--metadata-color]="presentation('status', g.status).color"
+              ><svg aria-hidden="true" viewBox="0 0 24 24">
+                <path [attr.d]="presentation('status', g.status).icon" /></svg
+              >{{ g.status }}</span
+            ><span
+              class="badge metadata-badge"
+              [style.--metadata-color]="presentation('genre', g.primaryGenre).color"
+              ><svg aria-hidden="true" viewBox="0 0 24 24">
+                <path [attr.d]="presentation('genre', g.primaryGenre).icon" /></svg
+              >{{ g.primaryGenre }}</span
+            >
             @for (t of g.secondaryTags; track t) {
-              <span [class]="'badge ' + color(t)">{{ t }}</span>
+              <span
+                class="badge metadata-badge"
+                [style.--metadata-color]="presentation('tag', t).color"
+                ><svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path [attr.d]="presentation('tag', t).icon" /></svg
+                >{{ t }}</span
+              >
             }
           </div>
           <p class="muted">{{ g.pace }} · {{ g.structure }} · {{ g.coop }}</p>
@@ -71,19 +92,21 @@ import type { Catalog, ScoredGame } from '../../shared/models';
                 nova nota, marcar como finalizado</label
               >
               <div class="form-grid">
+                <metadata-select
+                  label="Status"
+                  kind="status"
+                  [options]="catalog()?.statuses ?? []"
+                  [value]="form.status"
+                  (valueChange)="setStatus($event)"
+                />
+                <metadata-select
+                  label="Vontade de jogar"
+                  kind="desire"
+                  [options]="catalog()?.desires ?? []"
+                  [value]="form.desire"
+                  (valueChange)="setDesire($event)"
+                />
                 <label
-                  >Status<select name="status" [(ngModel)]="form.status">
-                    @for (s of catalog()?.statuses ?? []; track s) {
-                      <option>{{ s }}</option>
-                    }
-                  </select></label
-                ><label
-                  >Vontade de jogar<select name="desire" [(ngModel)]="form.desire">
-                    @for (s of catalog()?.desires ?? []; track s) {
-                      <option>{{ s }}</option>
-                    }
-                  </select></label
-                ><label
                   >Horas para finalizar<input
                     type="number"
                     name="actual"
@@ -114,27 +137,51 @@ import type { Catalog, ScoredGame } from '../../shared/models';
               <span class="eyebrow">CLASSIFICAÇÃO</span>
               <h2>Metadados do jogo</h2>
               <div class="form-grid">
-                <label>Nome<input name="name" [(ngModel)]="form.name" required /></label
-                ><label
-                  >Gênero principal<input
-                    name="genre"
-                    [(ngModel)]="form.primaryGenre"
-                    list="genres" /><datalist id="genres">
-                    @for (v of catalog()?.genres ?? []; track v) {
-                      <option [value]="v"></option>
-                    }</datalist></label
-                ><label
-                  >Tags secundárias<input
-                    name="tags"
-                    [(ngModel)]="tags"
-                    placeholder="Separe até 3 tags por vírgulas"
-                  /><small>As tags também influenciam a repetição de estilos.</small></label
-                ><label>Ritmo<input name="pace" [(ngModel)]="form.pace" /></label
-                ><label>Mecânica<input name="mechanic" [(ngModel)]="form.mechanic" /></label
-                ><label>Estrutura<input name="structure" [(ngModel)]="form.structure" /></label
-                ><label>Loja<input name="store" [(ngModel)]="form.store" /></label
-                ><label>Plataforma<input name="platform" [(ngModel)]="form.platform" /></label
-                ><label
+                <label>Nome<input name="name" [(ngModel)]="form.name" required /></label>
+                <metadata-select
+                  label="Gênero principal"
+                  kind="genre"
+                  [options]="catalog()?.genres ?? []"
+                  [(value)]="form.primaryGenre"
+                />
+                <metadata-select
+                  label="Tags secundárias"
+                  kind="tag"
+                  [options]="catalog()?.tags ?? []"
+                  [multiple]="true"
+                  [(values)]="form.secondaryTags"
+                />
+                <metadata-select
+                  label="Ritmo"
+                  kind="pace"
+                  [options]="catalog()?.paces ?? []"
+                  [(value)]="form.pace"
+                />
+                <metadata-select
+                  label="Mecânica"
+                  kind="mechanic"
+                  [options]="catalog()?.mechanics ?? []"
+                  [(value)]="form.mechanic"
+                />
+                <metadata-select
+                  label="Estrutura"
+                  kind="structure"
+                  [options]="catalog()?.structures ?? []"
+                  [(value)]="form.structure"
+                />
+                <metadata-select
+                  label="Loja"
+                  kind="store"
+                  [options]="catalog()?.stores ?? []"
+                  [(value)]="form.store"
+                />
+                <metadata-select
+                  label="Plataforma"
+                  kind="platform"
+                  [options]="catalog()?.platforms ?? []"
+                  [(value)]="form.platform"
+                />
+                <label
                   >Campanha principal (h)<input
                     type="number"
                     name="main"
@@ -154,13 +201,9 @@ import type { Catalog, ScoredGame } from '../../shared/models';
                     name="complete"
                     min="0"
                     step="0.1"
-                    [(ngModel)]="form.completionistHours" /></label
-                ><label
-                  >Predecessor (ID)<input
-                    name="prerequisite"
-                    [(ngModel)]="form.prerequisiteId"
-                    placeholder="Opcional"
+                    [(ngModel)]="form.completionistHours"
                 /></label>
+                <prerequisite-search [excludeId]="g.id" [(value)]="form.prerequisiteId" />
               </div>
             </section>
             <div class="save-bar">
@@ -232,14 +275,13 @@ export class Detail {
   api = inject(Api);
   route = inject(ActivatedRoute);
   private finishDialog = inject(FinishDialog);
-  color = color;
+  presentation = metadataPresentation;
   game = signal<ScoredGame | null>(null);
   catalog = signal<Catalog | null>(null);
   error = signal('');
   saving = signal(false);
   saved = signal(false);
   form = {} as ScoredGame;
-  tags = '';
   autoFinish = true;
   back = this.route.snapshot.queryParamMap.get('from') === 'ordem' ? '/ordem' : '/jogos';
   constructor() {
@@ -258,18 +300,22 @@ export class Detail {
       if (!this.game()) this.error.set('Não foi possível carregar o jogo.');
     }
   }
-  /** Cache e depois versão nova: só troca o formulário se o usuário ainda não editou. */
+  /** Refresh cached data only while the form remains untouched. */
   private show(g: ScoredGame) {
     const old = this.game();
-    const untouched =
-      !old ||
-      (JSON.stringify(this.form) === JSON.stringify(old) &&
-        this.tags === old.secondaryTags.join(', '));
+    const untouched = !old || JSON.stringify(this.form) === JSON.stringify(old);
     this.game.set(g);
     if (untouched) {
       this.form = structuredClone(g);
-      this.tags = g.secondaryTags.join(', ');
     }
+  }
+  setStatus(value: string) {
+    if (this.catalog()?.statuses.includes(value as ScoredGame['status']))
+      this.form.status = value as ScoredGame['status'];
+  }
+  setDesire(value: string) {
+    if (this.catalog()?.desires.includes(value as ScoredGame['desire']))
+      this.form.desire = value as ScoredGame['desire'];
   }
   /** Open the shared completion dialog and reload the saved game. */
   async finish(g: ScoredGame) {
@@ -284,14 +330,6 @@ export class Detail {
     this.saved.set(false);
     try {
       const old = this.game()!;
-      this.form.secondaryTags = [
-        ...new Set(
-          this.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
-        ),
-      ];
       if (this.form.secondaryTags.length > 3) throw new Error('Use até três tags secundárias.');
       const fields = [
         'name',

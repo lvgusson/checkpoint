@@ -12,6 +12,7 @@ import type {
 import { AppError, desires, type GameService } from './service.ts';
 import { SteamError, type SteamClient } from './steam.ts';
 import { emptyGame, gameFromSteamApp } from './steam-mapping.ts';
+import { metadataFields, normalizeMetadata } from '../../shared/metadata.ts';
 import type { WishlistStore } from './wishlist-repository.ts';
 
 export interface WishlistOptions {
@@ -190,7 +191,26 @@ export class WishlistService {
         throw new AppError('Vontade inválida');
       app = await this.app(appId);
       game = gameFromSteamApp(app, (desire as Desire | undefined) ?? 'Média');
-    } else game = manualGame(body);
+    } else {
+      game = manualGame(body);
+      const catalog = await this.games.catalog();
+      for (const [category, field] of Object.entries(metadataFields)) {
+        const options = catalog[category as keyof typeof metadataFields];
+        const canonical = (value: string) => {
+          if (!value) return '';
+          const match = options.find(
+            (option) => normalizeMetadata(option) === normalizeMetadata(value),
+          );
+          if (!match) throw new AppError('Valor fora do catálogo: ' + field);
+          return match;
+        };
+        if (field === 'secondaryTags') {
+          game.secondaryTags = game.secondaryTags.map(canonical);
+          if (new Set(game.secondaryTags).size !== game.secondaryTags.length)
+            throw new AppError('Tags secundárias repetidas');
+        } else game[field] = canonical(game[field]);
+      }
+    }
     const { id, created } = await this.store.create(game, app);
     if (app?.price) await this.store.savePrices(new Map([[app.appId, app.price]]));
     const scored = (await this.games.all()).find((g) => g.id === id);

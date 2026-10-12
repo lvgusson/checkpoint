@@ -342,6 +342,14 @@ export function recommendGames(
   const r = config.rules;
   const scored = scoreGames(games, config),
     all = new Map(scored.games.map((g) => [g.id, g]));
+  const playing = scored.games
+    .filter((g) => g.status === 'Jogando')
+    .sort(
+      (a, b) =>
+        (a.startedAt ?? '9999').localeCompare(b.startedAt ?? '9999') ||
+        a.name.localeCompare(b.name, 'pt-BR') ||
+        a.id.localeCompare(b.id),
+    );
   const filtered: Recommendations['excluded'] = [];
   const reasonOf = contentFilter(config.filters);
   const inQueue: ScoredGame[] = [];
@@ -440,6 +448,7 @@ export function recommendGames(
   });
   return {
     items,
+    playing,
     total: items.length,
     estimatedHours: cumulativeHours,
     timeFactor: round(scored.timeFactor, 4),
@@ -459,7 +468,7 @@ export function recommendGames(
 
 /** Elegível pelas regras de status/fim/competitivos (antes dos filtros de conteúdo). */
 const eligible = (g: Game, r: ScoringRules) =>
-  pending(g, r) && !(r.excludeCompetitive && isCompetitive(g));
+  g.status !== 'Jogando' && pending(g, r) && !(r.excludeCompetitive && isCompetitive(g));
 
 /** Valores dos filtros com contagem sobre os candidatos da fila sem filtros de conteúdo. */
 export function filterOptions(games: Game[], config: ScoringConfig = defaultConfig): FilterOptions {
