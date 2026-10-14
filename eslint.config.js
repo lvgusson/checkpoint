@@ -10,13 +10,11 @@ import globals from 'globals';
 export default defineConfig(
   {
     ignores: [
-      'dist/',
-      '.angular/',
+      '**/dist/',
+      '**/.angular/',
       'node_modules/',
-      'supabase/',
-      'data/',
-      'db/',
-      'api/src/seed.ts', // snapshot gerado
+      'apps/api/infra/',
+      'apps/api/src/seed.ts', // snapshot gerado
     ],
   },
   // Scripts JS (config, scripts/, api/index.mjs): Node
@@ -27,13 +25,13 @@ export default defineConfig(
   },
   // API + modelos compartilhados (Node, TS por type stripping)
   {
-    files: ['api/**/*.ts', 'shared/**/*.ts'],
+    files: ['apps/api/**/*.ts', 'packages/**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: { globals: globals.node },
   },
   // Front Angular: TS dos componentes + templates inline
   {
-    files: ['web/**/*.ts'],
+    files: ['apps/web/**/*.ts'],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
@@ -47,7 +45,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['web/**/*.html'],
+    files: ['apps/web/**/*.html'],
     extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
   },
   {

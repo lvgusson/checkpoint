@@ -1,14 +1,9 @@
 dist
 .angular
 node_modules
-package-lock.json
-supabase/.temp
-data/
+pnpm-lock.yaml
+apps/api/infra/supabase/.temp
+apps/api/infra/data/
 .vercel
-# Snapshot gerado (570 KB): formatar só gera diff ruidoso
-api/src/seed.ts
-# Skills de terceiros (vendorizadas; skills-lock.json guarda o hash)
-.agents/
-
-# Preserve exact append-only historical Markdown, including original line endings.
-AI/Deprecate/
+# Generated snapshot (570 KB): formatting only produces noisy diffs
+apps/api/src/seed.ts

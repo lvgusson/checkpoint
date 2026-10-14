@@ -7,9 +7,8 @@ dist
 !.env.example
 *.env
 local-env.env
-api/test
-api/data
-supabase/.temp
-supabase/.branches
+apps/api/data
+apps/api/infra/supabase/.temp
+apps/api/infra/supabase/.branches
 *.tmp
 *.log
