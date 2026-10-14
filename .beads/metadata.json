@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "checkpoint",
+  "project_id": "2b735ba5-0f0e-4530-a23a-16da815662e8"
+}
