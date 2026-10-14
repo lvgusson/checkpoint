@@ -1,31 +1,33 @@
 # Checkpoint — biblioteca de jogos
 
-Aplicação local com API Node e Angular, sem login, com **481 jogos reais importados da sua planilha**. Três telas: lista de jogos, ordem recomendada e detalhes/avaliação. O visual usa componentes próprios inspirados no shadcn, com tags coloridas e layout responsivo.
+Aplicação local com API Node e React, sem login, com **481 jogos reais importados da sua planilha**. Três telas: lista de jogos, ordem recomendada e detalhes/avaliação. O visual usa componentes próprios inspirados no shadcn, com tags coloridas e layout responsivo.
 
 ## Abrir o app
 
-Instale **Node 24.15 ou mais recente**. Este pacote já inclui o Angular compilado:
+Instale **Node 24.15 ou mais recente**. Compile o front uma vez e inicie a API, que serve o build em `apps/web/dist`:
 
 ```bash
-npm start
+pnpm install
+pnpm build
+pnpm start
 ```
 
-Abra **http://localhost:3000**. Para simplesmente executar a versão pronta, não é necessário instalar dependências: a API utiliza os módulos nativos do Node. Mantenha o terminal aberto durante o uso.
+Abra **http://localhost:3000**. Mantenha o terminal aberto durante o uso.
 
 ## Desenvolvimento
 
 ```bash
-npm ci
+pnpm install
 pnpm dev
 ```
 
-Angular: http://localhost:4200; API: http://localhost:3000. Para validar e recompilar:
+Front (Vite): http://localhost:5173; API: http://localhost:3000. Para validar e recompilar:
 
 ```bash
 pnpm check
 ```
 
-`pnpm dev` recarrega a API com `node --watch` e o front com o dev server do Angular (HMR). Qualidade: `pnpm lint` / `lint:fix` (ESLint), `pnpm format` / `format:check` (Prettier).
+`pnpm dev` recarrega a API com `node --watch` e o front com o dev server do Vite (HMR). Qualidade: `pnpm lint` / `lint:fix` (ESLint), `pnpm format` / `format:check` (Prettier).
 
 ## Autenticação (Supabase Auth)
 

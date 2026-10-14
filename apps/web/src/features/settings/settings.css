@@ -1,0 +1,396 @@
+/* Ported from the Angular settings page; scoped under .settings. */
+.settings {
+  .formula-panel h2 {
+    margin-bottom: 16px;
+  }
+  .formula {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 8px 18px;
+    font-family: 'Cambria Math', 'STIX Two Math', Georgia, serif;
+    font-size: 15px;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .formula .eq {
+    font-size: 15px;
+    line-height: 2.4;
+    margin: 6px 0;
+  }
+  .formula var {
+    font-style: italic;
+    font-weight: 600;
+  }
+  .formula b {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .formula small {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .op {
+    font-size: 19px;
+  }
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: middle;
+    text-align: center;
+    line-height: 1.5;
+    margin: 0 3px;
+  }
+  .frac > span:first-child {
+    border-bottom: 1px solid currentColor;
+    padding: 0 4px;
+  }
+  .off {
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
+  .chip {
+    display: inline-block;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 2px 8px;
+    margin: 2px 2px;
+    border-radius: 999px;
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+  .chip.bonus {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+  }
+  .legend {
+    margin: 16px 0 0;
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-2);
+  }
+  .legend var {
+    font-family: 'Cambria Math', Georgia, serif;
+    font-weight: 700;
+  }
+  .settings-section .muted {
+    margin-top: 0;
+  }
+  .factors {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .factors th,
+  .factors td {
+    text-align: left;
+    padding: 11px 10px;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .factors thead th {
+    border-top: 0;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .factors tbody th {
+    font-weight: 600;
+    width: 26%;
+  }
+  .factors .desc {
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .factors .weight {
+    width: 150px;
+  }
+  .factors .toggle {
+    width: 64px;
+    text-align: center;
+  }
+  .factors tr.off th,
+  .factors tr.off .desc,
+  .factors tr.off .weight {
+    opacity: 0.5;
+  }
+  .number {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    margin: 0 !important;
+    font-weight: 400 !important;
+    color: var(--muted);
+  }
+  .panel .number input {
+    width: 96px;
+    margin: 0;
+    padding: 8px 9px;
+    text-align: right;
+  }
+  .number.invalid input {
+    border-color: var(--danger-line);
+    background: var(--danger-bg);
+  }
+  .hint {
+    display: block;
+    color: var(--danger);
+    font-size: 10px;
+    margin-top: 4px;
+  }
+  .switch {
+    position: relative;
+    display: inline-block !important;
+    width: 38px;
+    height: 22px;
+    margin: 0 !important;
+  }
+  .switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .switch span {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: var(--faint);
+    transition: background 0.15s;
+    pointer-events: none;
+  }
+  .switch span::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: 0 1px 2px var(--shadow-mid);
+    transition: translate 0.15s;
+  }
+  .switch input:checked + span {
+    background: var(--accent);
+  }
+  .switch input:checked + span::after {
+    translate: 16px 0;
+  }
+  .switch input:focus-visible + span {
+    outline: 3px solid var(--accent-bright);
+    outline-offset: 2px;
+  }
+  .switch input:disabled + span {
+    opacity: 0.5;
+  }
+  .filter-group {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 0;
+    padding: 14px 0 12px;
+    min-width: 0;
+  }
+  .filter-group legend,
+  .filter-group summary {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0;
+    margin-bottom: 10px;
+  }
+  .filter-group summary {
+    cursor: pointer;
+  }
+  .filter-group legend small,
+  .check small {
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pick {
+    font: inherit;
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: inherit;
+    cursor: pointer;
+  }
+  .pick small {
+    color: var(--muted);
+    margin-left: 2px;
+  }
+  .pick[aria-pressed='true'] {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent-ink);
+  }
+  .pick.exclude[aria-pressed='true'] {
+    background: var(--warn-bg);
+    border-color: var(--warn-line);
+    color: var(--warn);
+    text-decoration: line-through;
+  }
+  .pick:focus-visible {
+    outline: 3px solid var(--accent-bright);
+    outline-offset: 2px;
+  }
+  .pick:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .hours,
+  .inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+  }
+  .inline legend {
+    width: 100%;
+  }
+  .check,
+  .select {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    margin: 0 !important;
+    font-size: 12px;
+    font-weight: 400 !important;
+  }
+  .check input {
+    width: auto;
+    margin: 0;
+  }
+  .select select {
+    width: auto;
+    margin: 0;
+    padding: 7px 9px;
+  }
+  .removed {
+    font-size: 11px;
+    color: var(--warn);
+  }
+  .muted.small {
+    font-size: 11px;
+    margin: 8px 0 0;
+  }
+  .link {
+    font: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin-left: 6px;
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .settings-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 14px 0;
+    flex-wrap: wrap;
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .reorder-notice a {
+    color: var(--accent);
+    text-decoration: underline;
+    margin-left: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .switch span,
+    .switch span::after {
+      transition: none;
+    }
+  }
+  /* Toque: área de 44px no switch (o label inteiro alterna) e nos chips/campos. */
+  .switch::before {
+    content: '';
+    position: absolute;
+    inset: -11px -6px;
+  }
+  @media (max-width: 800px) {
+    .settings-actions {
+      bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    }
+    .pick {
+      min-height: 44px;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+    .panel .number input,
+    .select select {
+      min-height: 44px;
+    }
+    .check {
+      min-height: 44px;
+      font-size: 14px;
+    }
+    .check input {
+      width: 22px;
+      height: 22px;
+    }
+    .filter-group legend,
+    .filter-group summary {
+      font-size: 14px;
+    }
+    .factors {
+      font-size: 14px;
+    }
+    .legend {
+      font-size: 13px;
+    }
+  }
+  @media (max-width: 700px) {
+    .factors thead {
+      display: none;
+    }
+    .factors tr {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 4px 10px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+    .factors th,
+    .factors td {
+      border: 0;
+      padding: 0;
+      width: auto !important;
+    }
+    .factors .desc {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 13px;
+    }
+    .panel .number input {
+      width: 76px;
+    }
+    .formula {
+      padding: 6px 12px;
+    }
+    .formula .eq {
+      font-size: 14px;
+      line-height: 2.2;
+    }
+  }
+}

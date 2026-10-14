@@ -1,7 +1,6 @@
 # Dependências e builds
 node_modules/
 dist/
-.angular/
 out-tsc/
 *.tsbuildinfo
 

@@ -1,5 +1,4 @@
 dist
-.angular
 node_modules
 pnpm-lock.yaml
 apps/api/infra/supabase/.temp

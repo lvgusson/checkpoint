@@ -1,18 +1,39 @@
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GameService, AppError, desires } from './service.ts';
 import { createService } from './setup.ts';
 import { SEED_APP_USER_ID } from './app-user.ts';
-import { authenticatorFromEnv, publicAuthConfig, type Authenticator } from './auth.ts';
-import { runWithContext, setContext } from './context.ts';
+import {
+  assertNoAuthAllowed,
+  authenticatorFromEnv,
+  publicAuthConfig,
+  type Authenticator,
+} from './auth.ts';
+import { can, type Permission } from '../../../packages/core/src/authorization.ts';
+import { toProblem } from './http-errors.ts';
+import { flushLogs, logger, metrics } from './logger.ts';
+import { telemetryRoute } from './telemetry-routes.ts';
+import { getContext, runWithContext, setContext } from './context.ts';
 import { currentVersion } from './version.ts';
 import { runInBackground } from './background.ts';
 import type { WishlistService } from './wishlist.ts';
 import { wishlistRoute } from './wishlist-routes.ts';
 import { releaseRoute, releaseStoreFromEnv, type ReleaseStore } from './releases.ts';
 const root = fileURLToPath(new URL('../', import.meta.url));
+const MAX_BODY_BYTES = 100_000;
+const REQUEST_ID = /^[\w.-]{8,64}$/;
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+};
+const need = (permission: Permission) => {
+  if (!can(getContext()?.role, permission)) throw new AppError('Acesso negado', 403);
+};
 // auth: null desliga a autenticação (dev/testes sem SUPABASE_URL). Ver api/src/auth.ts.
 export function makeServer(
   service: GameService,
@@ -20,8 +41,34 @@ export function makeServer(
   wishlist: WishlistService | null = null,
   releases: ReleaseStore | null = releaseStoreFromEnv(),
 ) {
-  return createServer((req, res) =>
-    runWithContext({}, async () => {
+  return createServer((req, res) => {
+    const incoming = req.headers['x-request-id'];
+    const requestId =
+      typeof incoming === 'string' && REQUEST_ID.test(incoming) ? incoming : randomUUID();
+    const startedAt = performance.now();
+    res.setHeader('X-Request-Id', requestId);
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+    if (req.url?.startsWith('/api/'))
+      res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+    let logged = false;
+    const onDone = () => {
+      if (logged) return;
+      logged = true;
+      const ms = Math.round(performance.now() - startedAt);
+      const route = (req.url ?? '').split('?')[0];
+      logger.info('http.request', {
+        method: req.method,
+        path: route,
+        status: res.statusCode,
+        ms,
+        aborted: !res.writableFinished,
+        requestId,
+      });
+      metrics.timing('http.server.duration', ms, { method: req.method, status: res.statusCode });
+    };
+    res.on('finish', onDone);
+    res.on('close', onDone); // aborted requests never emit finish
+    return runWithContext({ requestId }, async () => {
       const send = (data: unknown, status = 200) => {
         res.writeHead(status, {
           'Content-Type': 'application/json; charset=utf-8',
@@ -29,15 +76,19 @@ export function makeServer(
         });
         res.end(JSON.stringify(data));
       };
-      const readJson = async (): Promise<Record<string, unknown>> => {
-        let data = '';
+      const readJson = async (maxBytes = MAX_BODY_BYTES): Promise<Record<string, unknown>> => {
+        if (Number(req.headers['content-length'] ?? 0) > maxBytes)
+          throw new AppError('Conteúdo muito grande', 413);
+        const chunks: Buffer[] = [];
+        let size = 0;
         for await (const chunk of req) {
-          data += chunk;
-          if (data.length > 100000) throw new AppError('Conteúdo muito grande', 413);
+          size += chunk.length;
+          if (size > maxBytes) throw new AppError('Conteúdo muito grande', 413);
+          chunks.push(chunk);
         }
         let body;
         try {
-          body = JSON.parse(data);
+          body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
         } catch {
           throw new AppError('JSON inválido');
         }
@@ -60,14 +111,35 @@ export function makeServer(
         if (path.startsWith('/api/v1/releases')) {
           const hit = await releaseRoute(releases, req, url, readJson);
           if (hit) {
-            for (const [k, v] of Object.entries(hit.headers ?? {})) res.setHeader(k, v);
             return send(hit.data, hit.status);
           }
         }
         // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
         if (auth && path.startsWith('/api/')) {
-          const user = await auth.authenticate(req.headers.authorization);
-          setContext({ userId: user.id, accessToken: user.accessToken, email: user.email });
+          const user = await auth.authenticate(
+            req.headers.authorization,
+            String(req.headers['x-forwarded-for'] ?? '')
+              .split(',')[0]
+              .trim() || req.socket.remoteAddress,
+          );
+          setContext({
+            userId: user.id,
+            accessToken: user.accessToken,
+            email: user.email,
+            role: user.role,
+          });
+        } else if (path.startsWith('/api/')) setContext({ role: 'admin' }); // no-auth dev mode
+        if (path === '/api/v1/telemetry' && req.method === 'POST')
+          return send(await telemetryRoute(readJson), 202);
+        if (path.startsWith('/api/')) {
+          const read = req.method === 'GET' || req.method === 'HEAD';
+          need(
+            !read && path.includes('/settings/')
+              ? 'settings:update'
+              : read
+                ? 'games:read'
+                : 'games:update',
+          );
         }
         if (path === '/api/v1/catalog' && req.method === 'GET')
           return send(await service.catalog());
@@ -150,7 +222,7 @@ export function makeServer(
             // 200 assim que validar; o recálculo e a gravação continuam depois da resposta.
             const { accepted, done } = await service.reorder(body.gameId, body.toPosition, listId);
             runInBackground(done);
-            return send(accepted);
+            return send({ ...accepted, status: 'accepted' });
           }
           if (route === '/queue/adjustments' && method === 'GET')
             return send(await service.manualState(listId));
@@ -174,7 +246,7 @@ export function makeServer(
         }
         if (path.startsWith('/api/')) throw new AppError('Rota não encontrada', 404);
         if (req.method !== 'GET') throw new AppError('Método não permitido', 405);
-        const base = resolve(root, 'dist/web/browser');
+        const base = resolve(root, '../web/dist');
         let target = resolve(base, '.' + decodeURIComponent(path));
         if (!target.startsWith(base + sep)) target = resolve(base, 'index.html');
         let content;
@@ -196,16 +268,22 @@ export function makeServer(
         res.setHeader('Content-Type', mime[extname(target)] ?? 'application/octet-stream');
         res.end(content);
       } catch (e) {
-        send(
-          { error: { message: e instanceof Error ? e.message : 'Erro interno' } },
-          e instanceof AppError ? e.code : 500,
-        );
+        const { status, headers, body } = toProblem(e, requestId);
+        if (res.headersSent) return void res.end();
+        res.writeHead(status, {
+          ...headers,
+          'Content-Type': 'application/problem+json; charset=utf-8',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify(body));
       }
-    }),
-  );
+    });
+  });
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const auth = authenticatorFromEnv();
+  const host = process.env.HOST ?? '127.0.0.1';
+  if (!auth) assertNoAuthAllowed(process.env, host);
   const { service, storage, wishlist } = await createService({
     dataDir: resolve(root, 'data'),
     // Sem auth (dev), os dados do Postgres são os do dono do seed.
@@ -213,8 +291,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   });
   const server = makeServer(service, auth, wishlist);
   if (!auth)
-    console.warn('Aviso: SUPABASE_URL ausente — API rodando SEM autenticação (somente dev).');
-  server.listen(Number(process.env.PORT) || 3000, process.env.HOST ?? '127.0.0.1', () =>
-    console.log(`Checkpoint (${storage}): http://localhost:` + (process.env.PORT ?? 3000)),
+    logger.warn('server.no_auth', {
+      note: 'SUPABASE_URL is unset: running WITHOUT authentication (local dev only)',
+    });
+  for (const signal of ['SIGTERM', 'SIGINT'] as const)
+    process.on(signal, () => void flushLogs().finally(() => process.exit(0)));
+  server.listen(Number(process.env.PORT) || 3000, host, () =>
+    logger.info('server.listening', { storage, host, port: Number(process.env.PORT) || 3000 }),
   );
 }

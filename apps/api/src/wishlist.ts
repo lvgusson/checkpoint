@@ -9,6 +9,7 @@ import type {
   WishlistImportResult,
   WishlistItem,
 } from '../../../packages/core/src/models.ts';
+import { logger } from './logger.ts';
 import { AppError, desires, type GameService } from './service.ts';
 import { SteamError, type SteamClient } from './steam.ts';
 import { emptyGame, gameFromSteamApp } from './steam-mapping.ts';
@@ -91,8 +92,12 @@ async function steamCall<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (e) {
-    if (e instanceof SteamError)
-      throw new AppError(e.message, e.status >= 400 && e.status < 500 ? e.status : 502);
+    if (e instanceof SteamError) {
+      logger.warn('steam.call_failed', { status: e.status, error: e });
+      // 4xx messages are authored in steam.ts; upstream/5xx details stay in the logs.
+      if (e.status >= 400 && e.status < 500) throw new AppError(e.message, e.status);
+      throw new AppError('Steam indisponível', 502);
+    }
     throw e;
   }
 }
@@ -145,7 +150,7 @@ export class WishlistService {
       try {
         for (const [a, p] of await this.fetchPrices(stale)) prices.set(a, p);
       } catch (e) {
-        console.warn('Preços da Steam não atualizados:', (e as Error).message);
+        logger.warn('steam.prices_not_refreshed', { error: e });
       }
     return wished
       .map((game) => this.item(game, prices, descriptions))
@@ -261,7 +266,8 @@ export class WishlistService {
         else result.existing++;
         prices.set(appId, app.price ?? unavailable());
       } catch (e) {
-        result.failed.push({ appId, reason: e instanceof Error ? e.message : 'Erro' });
+        logger.warn('wishlist.import_item_failed', { appId, error: e });
+        result.failed.push({ appId, reason: 'Falha ao importar' });
       }
     }
     await this.store.savePrices(prices);

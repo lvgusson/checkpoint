@@ -86,3 +86,7 @@ O seed cria `app_user` com `00000000-0000-4000-8000-000000000001`, sem vínculo 
 update public.app_user set auth_user_id = '<auth.users.id>'
  where id = '00000000-0000-4000-8000-000000000001';
 ```
+
+## Migrations: canonical source
+
+`apps/api/infra/supabase/migrations` is canonical for deploys (Supabase CLI). `apps/api/infra/db/migrations` is the plain-Postgres mirror for environments without Supabase; keep it in sync by hand when adding a migration here. Product roles need no schema change: they come from the verified JWT `app_metadata.role` (`admin` or `user`, default `user`). Set it for an administrator with the Auth admin API (`app_metadata` is not editable by the user, unlike `user_metadata`).

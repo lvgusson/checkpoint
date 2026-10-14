@@ -6,6 +6,7 @@
 import { join } from 'node:path';
 import { GameService } from './service.ts';
 import { WishlistService } from './wishlist.ts';
+import { remoteEmailVerifier } from './auth.ts';
 import { steamClientFromEnv, steamProfileFromEnv, type SteamClient } from './steam.ts';
 
 type Env = Record<string, string | undefined>;
@@ -42,6 +43,7 @@ export async function createService({
     const user = createAppUserResolver(sql, {
       devAppUserId,
       seedOwnerEmail: env.SEED_OWNER_EMAIL,
+      isEmailVerified: remoteEmailVerifier(env),
     });
     const games = new pg.PgGameRepository(sql, user);
     const service = new GameService(

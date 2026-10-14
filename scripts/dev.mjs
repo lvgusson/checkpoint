@@ -3,7 +3,7 @@ const processes = [
   spawn(process.execPath, ['--watch', '--env-file-if-exists=.env', 'apps/api/src/server.ts'], {
     stdio: 'inherit',
   }),
-  spawn('pnpm', ['--filter', '@checkpoint/web', 'start', '--host', '127.0.0.1'], {
+  spawn('pnpm', ['--filter', '@checkpoint/web', 'dev', '--host', '127.0.0.1'], {
     stdio: 'inherit',
   }),
 ];

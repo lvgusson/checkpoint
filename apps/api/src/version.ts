@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.ts';
+import { logger } from './logger.ts';
 
 export interface VersionInfo {
   version: string;
@@ -85,7 +86,7 @@ export async function currentVersion(): Promise<VersionInfo> {
   try {
     info = await fromDb();
   } catch (err) {
-    console.error('version: falha ao ler app_release', err);
+    logger.error('version.read_failed', { error: err });
   }
   if (info) return (cached = info);
   const fb = await fallback();

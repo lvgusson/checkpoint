@@ -33,6 +33,8 @@ import {
   type MovePlan,
 } from './scoring.ts';
 import { getContext, runWithContext } from './context.ts';
+import { logger } from './logger.ts';
+import { can } from '../../../packages/core/src/authorization.ts';
 import { retry, type RetryOptions } from './retry.ts';
 import { parseScoringConfig, scoringFactors } from './scoring-config.ts';
 import {
@@ -44,11 +46,35 @@ export const statuses = ['Não iniciado', 'Jogando', 'Abandonado', 'Finalizado',
 export const desires = ['Imediata', 'Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
 export class AppError extends Error {
   code: number;
-  constructor(message: string, code = 400) {
+  /** Extra response headers (for example Allow or Retry-After). */
+  headers?: Record<string, string>;
+  constructor(message: string, code = 400, headers?: Record<string, string>) {
     super(message);
     this.code = code;
+    this.headers = headers;
   }
 }
+/** Fields stored on the shared `game` row (and its tags), as opposed to the user's library entry. */
+const CATALOG_FIELDS = [
+  'name',
+  'primaryGenre',
+  'mechanic',
+  'pace',
+  'structure',
+  'coop',
+  'size',
+  'mainHours',
+  'extraHours',
+  'completionistHours',
+  'previousEstimatedHours',
+  'timeVerification',
+  'timeSource',
+  'reviewNotes',
+  'prerequisiteId',
+  'secondaryTags',
+] as const;
+const catalogChanged = (a: Game, b: Game) =>
+  CATALOG_FIELDS.some((f) => JSON.stringify(a[f]) !== JSON.stringify(b[f]));
 /** Fila com a config da lista, carimbada com a lista e a versão dessa config. */
 const queue = (
   listId: string,
@@ -313,11 +339,20 @@ export class GameService {
           ...this.retryOptions,
           shouldRetry: (e) => !(e instanceof AppError),
           onRetry: (e, attempt, delay) =>
-            console.warn(`[reorder] tentativa ${attempt} falhou; nova em ${delay} ms`, e),
+            logger.warn('reorder.persist_retry', {
+              gameId: plan.gameId,
+              attempt,
+              retryInMs: delay,
+              error: e,
+            }),
         },
       );
     } catch (e) {
-      console.error(`[reorder] ${plan.gameId} → ${plan.toPosition} não foi gravado`, e);
+      logger.error('reorder.persist_failed', {
+        gameId: plan.gameId,
+        toPosition: plan.toPosition,
+        error: e,
+      });
     }
   }
   /** Solta o pin de um jogo (volta à posição do algoritmo) e devolve a fila recalculada. */
@@ -498,6 +533,9 @@ export class GameService {
       next.status !== 'Finalizado'
     )
       next.finishedAt = null;
+    // Work data (game rows and tags) is shared by every library; only admins may change it.
+    if (!can(getContext()?.role, 'catalog:update') && catalogChanged(old, next))
+      throw new AppError('Somente administradores editam dados do catálogo', 403);
     next.updatedAt = new Date().toISOString();
     await this.repository.save(next);
     // Leaving the upcoming queue clears stale manual positions in every list.

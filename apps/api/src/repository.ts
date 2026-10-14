@@ -13,7 +13,8 @@ export interface GameRepository {
   list(): Promise<Game[]>;
   searchByName?(query: string, excludeId?: string): Promise<Game[]>;
   get(id: string): Promise<Game | undefined>;
-  save(game: Game): Promise<void>;
+  /** `creator`: the caller just created the shared game row and may fill its catalog fields. */
+  save(game: Game, options?: { creator?: boolean }): Promise<void>;
   metadataCatalog?(): Promise<MetadataCatalog>;
 }
 

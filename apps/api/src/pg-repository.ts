@@ -29,6 +29,8 @@ import type { ManualAdjustmentRepository } from './manual-repository.ts';
 import { DEFAULT_LIST_NAME, duplicateListName, type ListRepository } from './list-repository.ts';
 import type { ManualPin } from './scoring.ts';
 import { AppError } from './service.ts';
+import { getContext } from './context.ts';
+import { can } from '../../../packages/core/src/authorization.ts';
 import { storedScoringConfig } from './scoring-config.ts';
 import type { ScoringConfigRepository, StoredScoringConfig } from './settings-repository.ts';
 
@@ -166,10 +168,12 @@ export class PgGameRepository implements GameRepository {
    * smallint a cada edição. Os triggers AFTER (tags → game → library_entry, invalidação da
    * fila) rodam no fim da instrução e veem o estado final.
    */
-  async save(game: Game): Promise<void> {
+  async save(game: Game, { creator = false } = {}): Promise<void> {
     const sql = this.sql;
     const u = await this.user();
     const tags = sql.json(cleanTags(game.secondaryTags));
+    // `game` and `game_tag` are shared by every library: only admins may write them.
+    const canCatalog = creator || can(getContext()?.role, 'catalog:update');
     const vocabId = (table: string, value: string) => sql`
       (SELECT id FROM ${sql(table)} WHERE key = norm_key(${value}::text))`;
     try {
@@ -204,6 +208,7 @@ export class PgGameRepository implements GameRepository {
                       review_notes = v.review_notes, prerequisite_game_id = v.prerequisite_game_id
                  FROM v, target
                 WHERE g.id = target.id
+                  AND ${canCatalog}::boolean
                   AND (g.name, g.primary_genre_id, g.mechanic_id, g.pace, g.structure, g.coop, g.size_label,
                        g.main_hours, g.extra_hours, g.completionist_hours, g.previous_estimated_hours,
                        g.time_verification, g.time_source, g.review_notes, g.prerequisite_game_id)
@@ -230,11 +235,13 @@ export class PgGameRepository implements GameRepository {
              del_tags AS (
                DELETE FROM game_tag gt USING target
                 WHERE gt.game_id = target.id
+                  AND ${canCatalog}::boolean
                   AND gt.tag_id NOT IN (SELECT id FROM tags WHERE id IS NOT NULL)
                RETURNING 1),
              ins_tags AS (
                INSERT INTO game_tag (game_id, tag_id, position)
-               SELECT target.id, tags.id, tags.ord FROM target, tags WHERE tags.id IS NOT NULL
+               SELECT target.id, tags.id, tags.ord FROM target, tags
+                WHERE tags.id IS NOT NULL AND ${canCatalog}::boolean
                ON CONFLICT (game_id, tag_id) DO UPDATE SET position = EXCLUDED.position
                 WHERE game_tag.position IS DISTINCT FROM EXCLUDED.position
                RETURNING 1)

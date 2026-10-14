@@ -168,7 +168,7 @@ export class PgWishlistStore implements WishlistStore {
           ON CONFLICT (game_id) DO NOTHING`;
       return { id: target.code, created: true, newCatalog };
     });
-    if (result.newCatalog) await this.games.save({ ...game, id: result.id });
+    if (result.newCatalog) await this.games.save({ ...game, id: result.id }, { creator: true });
     return { id: result.id, created: result.created };
   }
   async prices(appIds: number[]) {

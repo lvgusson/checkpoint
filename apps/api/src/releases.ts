@@ -392,17 +392,15 @@ export async function releaseRoute(
   url: URL,
   readJson: () => Promise<Record<string, unknown>>,
   token: string | undefined = process.env.RELEASE_API_TOKEN,
-): Promise<{ status: number; data: unknown; headers?: Record<string, string> } | null> {
+): Promise<{ status: number; data: unknown } | null> {
   const path = url.pathname;
   if (path !== '/api/v1/releases' && path !== '/api/v1/releases/latest') return null;
   const method = req.method ?? 'GET';
   const allow = path === '/api/v1/releases' ? 'GET, POST' : 'GET';
   if (method !== 'GET' && !(method === 'POST' && path === '/api/v1/releases'))
-    return {
-      status: 405,
-      data: { error: { message: 'Método não permitido: versões são só leitura e inserção' } },
-      headers: { Allow: allow },
-    };
+    throw new AppError('Método não permitido: versões são só leitura e inserção', 405, {
+      Allow: allow,
+    });
   if (!store) throw new AppError('Registro de versões indisponível (sem banco)', 503);
   const environment = (url.searchParams.get('environment') ?? 'production') as Environment;
   if (!ENVIRONMENTS.includes(environment)) throw new AppError('environment inválido');

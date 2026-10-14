@@ -2,7 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Checkpoint API",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "All responses carry X-Request-Id and basic security headers (nosniff, frame deny, no-referrer, HSTS, CSP for /api)."
   },
   "servers": [
     {
@@ -30,6 +31,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -49,6 +53,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -123,6 +130,9 @@
           },
           "404": {
             "description": "Não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -156,6 +166,9 @@
           },
           "404": {
             "description": "Não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -187,6 +200,9 @@
           },
           "404": {
             "description": "Não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -210,6 +226,9 @@
           },
           "404": {
             "description": "Não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         },
         "description": "Sem /lists/{listId}: usa a lista padrão do usuário."
@@ -234,6 +253,9 @@
           },
           "404": {
             "description": "Não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -255,6 +277,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -295,6 +320,9 @@
           },
           "409": {
             "description": "Já existe uma lista com esse nome (sem diferenciar maiúsculas)"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -351,6 +379,9 @@
           },
           "409": {
             "description": "Nome repetido"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -366,6 +397,9 @@
           },
           "409": {
             "description": "É a única lista do usuário"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -403,6 +437,9 @@
           },
           "409": {
             "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou filtrado) ou ajuste manual desativado nas configurações"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -420,6 +457,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         },
         "description": "Sem /lists/{listId}: usa a lista padrão do usuário."
@@ -451,6 +491,9 @@
           },
           "404": {
             "description": "Jogo não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         },
         "description": "Sem /lists/{listId}: usa a lista padrão do usuário."
@@ -470,6 +513,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -499,6 +545,9 @@
           },
           "400": {
             "description": "Configuração inválida"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -517,6 +566,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -540,6 +592,9 @@
           },
           "404": {
             "description": "Não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -576,7 +631,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReorderResult"
+                  "$ref": "#/components/schemas/ReorderAccepted"
                 }
               }
             }
@@ -589,6 +644,9 @@
           },
           "409": {
             "description": "Jogo fora da fila (finalizado, abandonado, sem fim ou bloqueado) ou ajuste manual desativado nas configurações"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -621,6 +679,9 @@
           },
           "404": {
             "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -673,6 +734,9 @@
           },
           "404": {
             "description": "Jogo não encontrado"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -694,6 +758,9 @@
           },
           "404": {
             "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -726,6 +793,9 @@
           },
           "404": {
             "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -759,6 +829,9 @@
           },
           "404": {
             "description": "Lista não encontrada (inexistente ou de outro usuário)"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -808,6 +881,9 @@
           },
           "502": {
             "description": "Steam indisponível"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -844,6 +920,9 @@
           },
           "502": {
             "description": "Steam indisponível"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -865,6 +944,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -931,6 +1013,9 @@
           },
           "404": {
             "description": "App não encontrado na Steam"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -973,6 +1058,9 @@
           },
           "502": {
             "description": "Steam indisponível"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -996,6 +1084,9 @@
           },
           "502": {
             "description": "Steam indisponível"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -1062,6 +1153,9 @@
           },
           "503": {
             "description": "Release storage unavailable"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -1135,6 +1229,9 @@
           },
           "503": {
             "description": "Release token or storage is not configured"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -1144,6 +1241,9 @@
         "responses": {
           "405": {
             "description": "Only GET and POST are permitted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -1153,6 +1253,9 @@
         "responses": {
           "405": {
             "description": "Only GET and POST are permitted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       },
@@ -1162,6 +1265,9 @@
         "responses": {
           "405": {
             "description": "Only GET and POST are permitted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         }
       }
@@ -1194,9 +1300,48 @@
           },
           "404": {
             "description": "No registered release"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
           }
         },
         "description": "Highest registered ID; registration and build evidence do not establish which deployment serves traffic."
+      }
+    },
+    "/telemetry": {
+      "post": {
+        "summary": "Client telemetry collector",
+        "description": "Authenticated. Body limited to 16 KiB, at most 20 events, 60 requests per minute per user (429 with Retry-After). Keys matching token, authorization, password, secret, api key, cookie or credential are redacted before logging. Recording is best effort.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetryBatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "const": "accepted"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
       }
     }
   },
@@ -1689,6 +1834,11 @@
           },
           "toPosition": {
             "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "const": "accepted",
+            "description": "The move was validated and accepted. Persistence continues after the response and failures are only logged, so clients should re-read the queue to confirm."
           }
         }
       },
@@ -2479,6 +2629,160 @@
             "enum": ["production", "preview", "development"],
             "default": "production"
           }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "RFC 9457 Problem Details (application/problem+json). `error.message` duplicates `detail` for clients written before the standard format; it is deprecated.",
+        "required": ["type", "title", "status", "detail", "code", "requestId"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "about:blank"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "bad_request",
+              "unauthenticated",
+              "forbidden",
+              "not_found",
+              "method_not_allowed",
+              "conflict",
+              "payload_too_large",
+              "rate_limited",
+              "bad_gateway",
+              "unavailable",
+              "internal_error"
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Same value as the X-Request-Id response header."
+          },
+          "error": {
+            "type": "object",
+            "deprecated": true,
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "TelemetryBatch": {
+        "type": "object",
+        "required": ["events"],
+        "properties": {
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["type", "level", "message"],
+                  "properties": {
+                    "type": {
+                      "const": "log"
+                    },
+                    "level": {
+                      "enum": ["debug", "info", "warn", "error"]
+                    },
+                    "message": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "attributes": {
+                      "type": "object"
+                    },
+                    "eventName": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z][\\w.:-]{0,79}$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": ["type", "message"],
+                  "properties": {
+                    "type": {
+                      "const": "error"
+                    },
+                    "message": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "stack": {
+                      "type": "string",
+                      "maxLength": 4000
+                    },
+                    "attributes": {
+                      "type": "object"
+                    },
+                    "eventName": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z][\\w.:-]{0,79}$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": ["type", "name", "value"],
+                  "properties": {
+                    "type": {
+                      "const": "metric"
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "value": {
+                      "type": "number"
+                    },
+                    "attributes": {
+                      "type": "object"
+                    },
+                    "eventName": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z][\\w.:-]{0,79}$"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Error (RFC 9457). Unclassified server errors return a generic 500 with only the requestId; details stay in server logs. A resource owned by another user is reported as 404. Role-based denials are 403.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "XRequestId": {
+        "description": "Request correlation id (echoed from a valid incoming X-Request-Id, otherwise generated).",
+        "schema": {
+          "type": "string"
         }
       }
     }

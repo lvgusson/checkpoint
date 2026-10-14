@@ -6,6 +6,7 @@
   "dependencies": {
     "@vercel/functions": "^3.9.11",
     "jose": "^6.2.12",
-    "postgres": "3.4.9"
+    "postgres": "3.4.9",
+    "zod": "^4.6.7"
   }
 }
