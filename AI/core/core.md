@@ -9,10 +9,39 @@ area: core
 
 ## `packages/core` (no framework, no vendor)
 
-Shared contracts and pure rules live in `packages/core/src`.
-Key files: `models.ts` (types), `metadata.ts` (vocabularies), `authorization.ts` (roles), `problem.ts` (errors), `observability.ts` (logs), and `telemetry.ts` (client events).
+Shared contracts and pure domain rules live in `packages/core/src`.
 
-Dependency rule: `packages/core` imports nothing from React, Node-only APIs, Supabase or the apps. The apps import from it with a relative path to `packages/core/src`.
+Key files:
+
+- `models.ts`: domain types (`Game`, `GameList`, `ScoringConfig`, `WishlistItem`).
+- `metadata.ts`: controlled vocabulary catalog and normalization functions.
+- `wishlist.ts`: wishlist sort definitions and item comparator.
+- `authorization.ts`: roles, permissions, and policy rules.
+- `problem.ts`: RFC 9457 error contracts.
+- `observability.ts`: log formats and event schemas.
+- `telemetry.ts`: client telemetry event contracts.
+
+Dependency rule: `packages/core` imports nothing from React, Node-only APIs, Supabase, or apps.
+The apps import from `packages/core` using relative paths to `packages/core/src`.
+
+## Domain models and scoring contracts
+
+`packages/core` provides contracts for scoring, purchases, and wishlists:
+
+- Purchase timestamp: `Game.purchasedAt` records the first purchase time as an ISO string.
+- Recency weight: `ScoreWeights.recentPurchase` defines the scoring bonus for games purchased within 30 days.
+- Wishlist items: `WishlistItem` combines a `ScoredGame` with optional `SteamPrice` and description.
+- Wishlist sorting: `compareWishlistItems` sorts items by `'name'`, `'price'`, `'discount'`, or `'recommendation'`.
+- Recommendation sort: `'recommendation'` orders wishlist entries by `game.baseScore` descending.
+
+## Controlled metadata vocabulary
+
+`packages/core/src/metadata.ts` standardizes metadata taxonomy:
+
+- `MetadataCatalog`: defines categories for `genres`, `tags`, `paces`, `mechanics`, `stores`, `structures`, and `platforms`.
+- `metadataFields`: maps catalog categories to properties on the `Game` model.
+- `normalizeMetadata`: removes accents, trims whitespace, and converts strings to lowercase for matching.
+- Database tables: backend drivers populate `MetadataCatalog` from existing database tables.
 
 ## `packages/ui-react` (product-agnostic UI kit)
 
@@ -23,7 +52,9 @@ Dependency rule: `packages/core` imports nothing from React, Node-only APIs, Sup
 | `SortableList`                                            | Drag and drop (pointer, keyboard); emits a move intent only           |
 | `EmptyState`, `ErrorState`, `Pagination`, `ConfirmDialog` | Common states                                                         |
 
-Dependency rule: the kit never imports from `apps/web`, and knows nothing about games, queues or wishlists. The app decides what a move means and persists it.
+Dependency rule: the kit never imports from `apps/web`.
+It knows nothing about games, queues, or wishlists.
+The consuming application decides list order and persistence.
 
 ## Extract a package only when
 
