@@ -428,17 +428,19 @@ export class GameService {
     return scoreGames(await this.repository.searchByName(text, excludeId)).games;
   }
   async purchase(id: string) {
-    const game = await this.repository.get(id);
-    if (!game) throw new AppError('Jogo não encontrado', 404);
-    if (game.purchasedAt && game.status !== GameStatus.Wishlist) return this.game(id);
-    if (game.status !== GameStatus.Wishlist)
-      throw new AppError('O jogo não está na lista de desejos', 409);
-    await this.repository.save({
-      ...game,
-      status: GameStatus.NotStarted,
-      purchasedAt: game.purchasedAt ?? new Date().toISOString(),
+    return this.serial(async () => {
+      const game = await this.repository.get(id);
+      if (!game) throw new AppError('Jogo não encontrado', 404);
+      if (game.purchasedAt && game.status !== GameStatus.Wishlist) return this.game(id);
+      if (game.status !== GameStatus.Wishlist)
+        throw new AppError('O jogo não está na lista de desejos', 409);
+      await this.repository.save({
+        ...game,
+        status: GameStatus.NotStarted,
+        purchasedAt: game.purchasedAt ?? new Date().toISOString(),
+      });
+      return this.game(id);
     });
-    return this.game(id);
   }
 
   async patch(id: string, body: Record<string, unknown>) {
