@@ -167,15 +167,16 @@ export function useInfiniteCatalog(options: UseInfiniteCatalogOptions = {}) {
   const lastPageData = lastQuery?.data;
   const hasMore = Boolean(
     firstQuery?.data &&
+    total > 0 &&
     items.length < total &&
     (lastPageData ? lastPageData.items.length >= pageSize : true),
   );
 
   const loadMore = useCallback(() => {
-    if (hasMore && !lastQuery?.isFetching) {
+    if (hasMore && !isFetching) {
       setLoadedPages((prev) => prev + 1);
     }
-  }, [hasMore, lastQuery?.isFetching]);
+  }, [hasMore, isFetching]);
 
   const isInitialError = Boolean(firstQuery?.isError);
   const nextPageError = loadedPages > 1 && Boolean(lastQuery?.isError);

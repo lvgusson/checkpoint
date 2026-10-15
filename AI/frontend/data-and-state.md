@@ -29,7 +29,9 @@ Each request sends `X-Client-Sent-At`. The browser reads `Server-Timing` from th
 3. Send the mutation. On failure, restore the snapshot and invalidate.
 4. Invalidate `keys.gameDependents()` or the precise keys on settle.
 
-`features/playing/gameWriter.ts` is the reference implementation; `features/queue/useQueue.ts` shows ordered moves reconciled by a delayed refetch.
+`features/playing/gameWriter.ts` is the reference implementation; `GameWriter.purchase(id)` is not optimistic. It waits for pending playing toggles, POSTs `games/:id/purchase`, writes the returned game into `k.game(id)` and invalidates dependents. The Wishlist screen uses its own `useWishlistActions().purchase` mutation.
+
+`features/queue/useQueue.ts` shows ordered moves reconciled by a delayed refetch.
 
 ## Errors
 

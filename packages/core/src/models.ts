@@ -50,6 +50,7 @@ export interface Game {
   steamHours: number | null;
   steamUpdatedAt: string | null;
   updatedAt: string | null;
+  coverUrl?: string | null;
   imported: {
     plannedHours: number | null;
     affinity: number | null;

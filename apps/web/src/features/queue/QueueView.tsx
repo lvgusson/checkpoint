@@ -12,6 +12,7 @@ import { MetadataBadge } from '../metadata';
 import { PlayingButton } from '../playing';
 import { AppLoader } from '../loader/AppLoader';
 import { GameDetailModal } from '../details';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { fold, PAGE_SIZE, displayDate, excludedReasons } from './queue-model';
 import { useQueue } from './useQueue';
 import './queue.css';
@@ -64,6 +65,18 @@ export function QueueView({ listId }: { listId: string }) {
   const [finishing, setFinishing] = useState<ScoredGame | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const searching = !!fold(search).trim();
+
+  const hasMore = !searching && Boolean(data && visible < data.items.length);
+  const handleLoadMore = useCallback(() => {
+    setVisible((v) => Math.min(v + PAGE_SIZE, data?.items.length ?? 0));
+  }, [data?.items.length]);
+
+  const sentinelRef = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore,
+    isLoading: false,
+    enabled: !searching,
+  });
 
   const haystacks = useMemo(() => {
     const cache = new Map<string, string>();
@@ -365,15 +378,14 @@ export function QueueView({ listId }: { listId: string }) {
           {searching && !rows.length && (
             <div className="empty">Nenhum jogo da fila com “{search}”.</div>
           )}
-          {!searching && visible < data.items.length && (
-            <button
+          {!searching && hasMore && (
+            <div
+              ref={sentinelRef}
               data-testid="queue-load-more"
-              type="button"
-              className="button load-more"
-              onClick={() => setVisible(visible + PAGE_SIZE)}
+              className="py-4 flex items-center justify-center text-sm text-[var(--muted)]"
             >
-              Mostrar mais {PAGE_SIZE} jogos
-            </button>
+              <AppLoader layout="inline" size="sm" label="Carregando mais jogos…" />
+            </div>
           )}
           {data.total === 0 && (
             <div className="empty">

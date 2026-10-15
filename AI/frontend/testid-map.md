@@ -39,12 +39,13 @@ area: frontend
 
 ## Library
 
-| Test ID                                                                 | Action                             | Destructive? |
-| ----------------------------------------------------------------------- | ---------------------------------- | ------------ |
-| `library-open-queue`, `library-game-<code>`                             | Open the queue or game page.       | no           |
-| `library-search`, `library-filter-{status,genre,store}`, `library-sort` | Search, filter, or sort games.     | no           |
-| `library-retry`, `library-error-retry`, `library-load-more-retry`       | Retry a failed request.            | no           |
-| `library-playing-<code>`, `library-immediate-<code>`                    | Change playing status or priority. | yes          |
+| Test ID                                                                 | Action                                     | Destructive? |
+| ----------------------------------------------------------------------- | ------------------------------------------ | ------------ |
+| `library-open-queue`, `library-game-<code>`                             | Open the queue or game page.               | no           |
+| `library-search`, `library-filter-{status,genre,store}`, `library-sort` | Search, filter, or sort games.             | no           |
+| `library-retry`, `library-error-retry`, `library-load-more-retry`       | Retry a failed request.                    | no           |
+| `library-playing-<code>`, `library-immediate-<code>`                    | Change playing status or priority.         | yes          |
+| `library-purchase-<code>`                                               | Open the purchase dialog (wishlist cards). | no           |
 
 ## Detail
 
@@ -64,17 +65,18 @@ area: frontend
 
 ## Queue
 
-| Test ID                                                                    | Action                                                   | Destructive? |
-| -------------------------------------------------------------------------- | -------------------------------------------------------- | ------------ |
-| `queue-{search,search-clear,notice-close,load-more,excluded-open}`         | Search, dismiss notices, load games, or show exclusions. | no           |
-| `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`    | Open game details.                                       | no           |
-| `queue-recalculate`                                                        | Recalculate recommendations.                             | no           |
-| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                   | Retry the queue or the lists request.                    | no           |
-| `queue-{playing,immediate,finish}-<code>`                                  | Change game status, priority, or open completion.        | yes          |
-| `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`            | Reorder games or remove a fixed position.                | yes          |
-| `queue-list-{trigger,actions}`, `queue-list-select-<id>`                   | Open list menus or select a list.                        | no           |
-| `queue-list-rename-<id>`, `queue-list-{rename-current,create,name,cancel}` | Edit a list name or cancel editing.                      | no           |
-| `queue-list-{save,remove}`                                                 | Save a list or request its deletion.                     | yes          |
+| Test ID                                                                    | Action                                            | Destructive? |
+| -------------------------------------------------------------------------- | ------------------------------------------------- | ------------ |
+| `queue-{search,search-clear,notice-close,excluded-open}`                   | Search, dismiss notices, or show exclusions.      | no           |
+| `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`    | Open game details.                                | no           |
+| `queue-load-more`                                                          | Infinite scroll sentinel (not a button).          | no           |
+| `queue-recalculate`                                                        | Recalculate recommendations.                      | no           |
+| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                   | Retry the queue or the lists request.             | no           |
+| `queue-{playing,immediate,finish}-<code>`                                  | Change game status, priority, or open completion. | yes          |
+| `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`            | Reorder games or remove a fixed position.         | yes          |
+| `queue-list-{trigger,actions}`, `queue-list-select-<id>`                   | Open list menus or select a list.                 | no           |
+| `queue-list-rename-<id>`, `queue-list-{rename-current,create,name,cancel}` | Edit a list name or cancel editing.               | no           |
+| `queue-list-{save,remove}`                                                 | Save a list or request its deletion.              | yes          |
 
 ## Wishlist
 
@@ -85,7 +87,8 @@ area: frontend
 | `wishlist-game-<code>`                                                    | Open game details.                          | no           |
 | `wishlist-prices-refresh`                                                 | Refresh stored prices.                      | yes          |
 | `wishlist-steam-add-<id>`, `wishlist-manual-add`, `wishlist-steam-import` | Add games or import a wishlist.             | yes          |
-| `wishlist-purchase-<code>`                                                | Move a wishlist game into the library.      | yes          |
+| `wishlist-purchase-<code>`                                                | Open the purchase dialog.                   | no           |
+| `wishlist-load-more`                                                      | Infinite scroll sentinel.                   | no           |
 | `wishlist-error-retry`                                                    | Retry the wishlist request.                 | no           |
 
 ## Settings
@@ -111,20 +114,22 @@ area: frontend
 | Test ID                                                 | Action                                              | Destructive? |
 | ------------------------------------------------------- | --------------------------------------------------- | ------------ |
 | `modal-game-<code>`, `modal-close`, `modal-open-detail` | Dismiss the backdrop, close, or open the full page. | no           |
-| `modal-{status,desire}`                                 | Open the metadata menu.                             | no           |
-| `modal-{status,desire}-option-<key>`                    | Persist a status or desire change.                  | yes          |
-| `modal-notes`                                           | Edit notes.                                         | no           |
-| `modal-notes-save`, `modal-finish`                      | Save notes or open completion.                      | yes          |
+
+The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focused.
+| `modal-{status,desire}` | Open the metadata menu. | no |
+| `modal-{status,desire}-option-<key>` | Persist a status or desire change. | yes |
+| `modal-notes` | Edit notes. | no |
+| `modal-notes-save`, `modal-finish` | Save notes or open completion. | yes |
 
 ## Dialog
 
-| Test ID                                                                           | Action                                                       | Destructive? |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ |
-| `dialog-finish-<code>`, `dialog-finish-{drag,cancel}`                             | Dismiss the backdrop, drag the sheet, or cancel completion.  | no           |
-| `dialog-finish-rating-{1,1-5,2,2-5,3,3-5,4,4-5,5}`, `dialog-finish-{hours,notes}` | Enter completion details.                                    | no           |
-| `dialog-finish-save`                                                              | Finish the game and save its rating, hours, date, and notes. | yes          |
-| `dialog-list-remove-<id>-cancel`, `dialog-settings-reset-cancel`                  | Cancel deletion or reset.                                    | no           |
-| `dialog-list-remove-<id>-confirm`, `dialog-settings-reset-confirm`                | Delete a list or reset scoring settings.                     | yes          |
+| Test ID                                                                                       | Action                                                       | Destructive? |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ |
+| `dialog-finish-<code>`, `dialog-finish-{drag,cancel}`                                         | Dismiss the backdrop, drag the sheet, or cancel completion.  | no           |
+| `dialog-finish-rating-{1,1-5,2,2-5,3,3-5,4,4-5,5}`, `dialog-finish-{hours,notes}`             | Enter completion details.                                    | no           |
+| `dialog-finish-save`                                                                          | Finish the game and save its rating, hours, date, and notes. | yes          |
+| `dialog-list-remove-<id>-cancel`, `dialog-settings-reset-cancel`, `dialog-purchase-cancel`    | Cancel deletion, reset, or purchase.                         | no           |
+| `dialog-list-remove-<id>-confirm`, `dialog-settings-reset-confirm`, `dialog-purchase-confirm` | Delete a list, reset settings, or confirm game purchase.     | yes          |
 
 ## Loader
 

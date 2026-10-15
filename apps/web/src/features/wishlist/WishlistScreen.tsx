@@ -1,11 +1,13 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { EmptyState, ErrorState } from '@checkpoint/ui-react';
-import type { Desire, SteamPrice } from '../../../../../packages/core/src/models';
+import { ConfirmDialog, EmptyState, ErrorState } from '@checkpoint/ui-react';
+import { CircleDollarSign } from 'lucide-react';
+import type { Desire, SteamPrice, WishlistItem } from '../../../../../packages/core/src/models';
 import { badgeColor } from '../metadata';
 import { formatPrice, useSteamSearch, useWishlist, useWishlistActions } from './wishlist';
 import { GameDetailModal } from '../details';
 import { AppLoader } from '../loader/AppLoader';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import './wishlist.css';
 
 const DESIRES: Desire[] = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
@@ -19,10 +21,12 @@ export function WishlistScreen() {
   const { wishlist, genres } = useWishlist();
   const actions = useWishlistActions();
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [purchasingGame, setPurchasingGame] = useState<WishlistItem['game'] | null>(null);
   const [q, setQ] = useState('');
   const [desire, setDesire] = useState<Desire>('Média');
   const [profile, setProfile] = useState('');
   const [sort, setSort] = useState<WishlistSort>('name');
+  const [visibleCount, setVisibleCount] = useState(24);
   const [manual, setManual] = useState({ name: '', primaryGenre: '', mainHours: '' });
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -32,6 +36,17 @@ export function WishlistScreen() {
     () => [...(wishlist.data ?? [])].sort(compareWishlistItems(sort)),
     [wishlist.data, sort],
   );
+  const displayed = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+  const hasMore = visibleCount < sorted.length;
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((v) => Math.min(v + 24, sorted.length));
+  }, [sorted.length]);
+
+  const sentinelRef = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore,
+    isLoading: false,
+  });
   const onSale = useMemo(() => sorted.filter((i) => i.price?.discountPercent).length, [sorted]);
   const busy =
     actions.add.isPending ||
@@ -256,7 +271,7 @@ export function WishlistScreen() {
         </label>
       </div>
       <div className="game-grid">
-        {sorted.map((i) => (
+        {displayed.map((i) => (
           <article className="game-card" key={i.game.id}>
             <Link
               data-testid={`wishlist-game-${i.game.id.toLowerCase()}`}
@@ -313,19 +328,29 @@ export function WishlistScreen() {
             <button
               data-testid={`wishlist-purchase-${i.game.id.toLowerCase()}`}
               type="button"
-              className="button"
+              className="wishlist-purchase-btn"
               disabled={busy}
-              onClick={() =>
-                void run(async () => {
-                  await actions.purchase.mutateAsync(i.game.id);
-                  return `${i.game.name} entrou na biblioteca.`;
-                })
-              }
+              aria-label={`Comprar ${i.game.name}`}
+              title="Marcar como comprado"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPurchasingGame(i.game);
+              }}
             >
-              Comprei
+              <CircleDollarSign size={20} />
             </button>
           </article>
         ))}
+        {hasMore && (
+          <div
+            ref={sentinelRef}
+            data-testid="wishlist-load-more"
+            className="col-span-full py-4 flex items-center justify-center text-sm text-[var(--muted)]"
+          >
+            <AppLoader layout="inline" size="sm" label="Carregando mais desejos…" />
+          </div>
+        )}
       </div>
       {wishlist.isPending ? (
         <AppLoader fill="block" label="Carregando desejos…" data-testid="loader-wishlist" />
@@ -348,6 +373,23 @@ export function WishlistScreen() {
         gameId={selectedGameId}
         open={Boolean(selectedGameId)}
         onOpenChange={(open) => !open && setSelectedGameId(null)}
+      />
+      <ConfirmDialog
+        data-testid="dialog-purchase"
+        open={Boolean(purchasingGame)}
+        title="Você comprou o jogo?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        onConfirm={() => {
+          if (!purchasingGame) return;
+          const game = purchasingGame;
+          setPurchasingGame(null);
+          void run(async () => {
+            await actions.purchase.mutateAsync(game.id);
+            return `${game.name} entrou na biblioteca.`;
+          });
+        }}
+        onCancel={() => setPurchasingGame(null)}
       />
     </div>
   );

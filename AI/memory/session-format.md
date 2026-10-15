@@ -47,8 +47,8 @@ Every file has `name`, `description`, `type: memory`, `area: memory`, `session`,
 
 ## Entry IDs
 
-- Log entry: a heading `## E<n>`, with `n` = previous number + 1. Link one entry with `[[AI/memory/<session>/log-<writer>#E3]]`.
-- Decision: a heading `## D<n>`. Link it with `[[AI/memory/<session>/decisions#D2]]`.
+- Log entry: a heading `## E<n>`, with `n` = previous number + 1. Link one entry with the path form `AI/memory/<session>/log-<writer>#E3` inside a wikilink.
+- Decision: a heading `## D<n>`. Link it with the path form `AI/memory/<session>/decisions#D2` inside a wikilink.
 - Never edit or delete an entry. To correct one, append a new entry that names the old ID.
 - Times are local and have the offset: `2026-10-14 22:40 -03`. Beads shows UTC.
 
