@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { errorMessage } from '../../query/errors';
+import { AppLoader } from '../loader/AppLoader';
 import { useListMutations, useLists } from './lists-store';
 
 type Mode = 'idle' | 'create' | 'rename';
@@ -28,7 +29,7 @@ export function ListPicker({
 }) {
   const screen = base === '/ordem' ? 'queue' : 'settings';
   const navigate = useNavigate();
-  const { data: lists = [] } = useLists();
+  const { data: lists = [], isLoading } = useLists();
   const { create, rename, remove } = useListMutations();
   const [mode, setMode] = useState<Mode>('idle');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -101,46 +102,52 @@ export function ListPicker({
                 className="w-(--radix-dropdown-menu-trigger-width) max-h-[min(360px,60vh)] overflow-y-auto"
                 aria-label="Listas"
               >
-                {lists.map((list) => (
-                  <div
-                    key={list.id}
-                    className="flex items-center gap-1"
-                    role="group"
-                    aria-label={list.name}
-                  >
-                    <DropdownMenuItem
-                      data-testid={`${screen}-list-select-${list.id}`}
-                      className="min-h-11 flex-1 justify-between"
-                      onSelect={() => list.id !== current && go(list.id)}
-                    >
-                      <span
-                        className={
-                          list.id === current ? 'truncate font-semibold text-primary' : 'truncate'
-                        }
-                      >
-                        {list.name}
-                      </span>
-                      <span aria-hidden="true">{list.id === current ? '✓' : ''}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid={`${screen}-list-rename-${list.id}`}
-                      className="size-11 justify-center"
-                      aria-label={'Renomear ' + list.name}
-                      title={'Renomear ' + list.name}
-                      onSelect={() => start('rename', list.id)}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        aria-hidden="true"
-                      >
-                        <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" />
-                      </svg>
-                    </DropdownMenuItem>
+                {isLoading && !lists.length ? (
+                  <div className="p-3 text-center">
+                    <AppLoader layout="inline" size="sm" label="Carregando listas…" />
                   </div>
-                ))}
+                ) : (
+                  lists.map((list) => (
+                    <div
+                      key={list.id}
+                      className="flex items-center gap-1"
+                      role="group"
+                      aria-label={list.name}
+                    >
+                      <DropdownMenuItem
+                        data-testid={`${screen}-list-select-${list.id}`}
+                        className="min-h-11 flex-1 justify-between"
+                        onSelect={() => list.id !== current && go(list.id)}
+                      >
+                        <span
+                          className={
+                            list.id === current ? 'truncate font-semibold text-primary' : 'truncate'
+                          }
+                        >
+                          {list.name}
+                        </span>
+                        <span aria-hidden="true">{list.id === current ? '✓' : ''}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        data-testid={`${screen}-list-rename-${list.id}`}
+                        className="size-11 justify-center"
+                        aria-label={'Renomear ' + list.name}
+                        title={'Renomear ' + list.name}
+                        onSelect={() => start('rename', list.id)}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          aria-hidden="true"
+                        >
+                          <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" />
+                        </svg>
+                      </DropdownMenuItem>
+                    </div>
+                  ))
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -167,7 +174,11 @@ export function ListPicker({
               aria-label={mode === 'create' ? 'Criar lista' : 'Salvar nome'}
               title={mode === 'create' ? 'Criar lista' : 'Salvar nome'}
             >
-              <span aria-hidden="true">✓</span>
+              {busy ? (
+                <AppLoader layout="inline" size={16} label="" />
+              ) : (
+                <span aria-hidden="true">✓</span>
+              )}
             </Button>
             <Button
               data-testid={`${screen}-list-cancel`}

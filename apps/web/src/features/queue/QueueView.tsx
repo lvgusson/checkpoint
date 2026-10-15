@@ -10,7 +10,7 @@ import { ImmediateButton } from '../immediate';
 import { ListPicker } from '../lists';
 import { MetadataBadge } from '../metadata';
 import { PlayingButton } from '../playing';
-import { SwordLoader } from '../loader/SwordLoader';
+import { AppLoader } from '../loader/AppLoader';
 import { GameDetailModal } from '../details';
 import { fold, PAGE_SIZE, displayDate, excludedReasons } from './queue-model';
 import { useQueue } from './useQueue';
@@ -148,6 +148,11 @@ export function QueueView({ listId }: { listId: string }) {
       {q.error && (
         <div className="error" role="alert">
           {q.error}
+          {!data && !q.isFetching && (
+            <button data-testid="queue-retry" type="button" onClick={() => void q.recalculate()}>
+              Tentar novamente
+            </button>
+          )}
         </div>
       )}
       {data ? (
@@ -392,7 +397,7 @@ export function QueueView({ listId }: { listId: string }) {
       ) : (
         q.isLoading && (
           <div className="empty flex flex-col items-center justify-center py-16">
-            <SwordLoader data-testid="loader-queue" size={64} label="Calculando seu roteiro…" />
+            <AppLoader data-testid="loader-queue" size={64} label="Calculando seu roteiro…" />
           </div>
         )
       )}
@@ -588,7 +593,7 @@ const QueueRow = memo(function QueueRow({
           <small>estimadas</small>
         </div>
         <div className="score">
-          {busy ? <span className="spinner" aria-hidden="true" /> : item.score}
+          {busy ? <AppLoader layout="inline" size={16} label="" /> : item.score}
           <small>pontos</small>
         </div>
         <span className="row-arrow">↗</span>

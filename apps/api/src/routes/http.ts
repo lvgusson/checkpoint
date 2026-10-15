@@ -30,6 +30,7 @@ export const ApiPath = {
   Config: '/api/v1/config',
   Version: '/api/v1/version',
   Telemetry: '/api/v1/telemetry',
+  Track: '/api/v1/track',
   Catalog: '/api/v1/catalog',
   GamesSearch: '/api/v1/games/search',
   Games: '/api/v1/games',

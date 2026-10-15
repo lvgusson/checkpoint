@@ -16,6 +16,7 @@ area: frontend
 - `<code>` means a lowercase game code. `<id>` means a list UUID or Steam application ID.
 - `<key>` means a contract key in kebab-case. `<value-key>` encodes a stored catalog key as hyphenated hexadecimal Unicode code points.
 - Braces list alternatives. For example, `login-{email,password}` means two separate IDs.
+- Status blocks with no action: `{queue,settings}-lists` (error), `{queue,settings}-lists-empty`, `wishlist-error`.
 - Tests skip destructive actions or restore their original state. Persisted writes also use `yes` below.
 
 ## Nav
@@ -68,6 +69,7 @@ area: frontend
 | `queue-{search,search-clear,notice-close,load-more,excluded-open}`         | Search, dismiss notices, load games, or show exclusions. | no           |
 | `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`    | Open game details.                                       | no           |
 | `queue-recalculate`                                                        | Recalculate recommendations.                             | no           |
+| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                   | Retry the queue or the lists request.                    | no           |
 | `queue-{playing,immediate,finish}-<code>`                                  | Change game status, priority, or open completion.        | yes          |
 | `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`            | Reorder games or remove a fixed position.                | yes          |
 | `queue-list-{trigger,actions}`, `queue-list-select-<id>`                   | Open list menus or select a list.                        | no           |
@@ -84,12 +86,14 @@ area: frontend
 | `wishlist-prices-refresh`                                                 | Refresh stored prices.                      | yes          |
 | `wishlist-steam-add-<id>`, `wishlist-manual-add`, `wishlist-steam-import` | Add games or import a wishlist.             | yes          |
 | `wishlist-purchase-<code>`                                                | Move a wishlist game into the library.      | yes          |
+| `wishlist-error-retry`                                                    | Retry the wishlist request.                 | no           |
 
 ## Settings
 
 | Test ID                                                                                                      | Action                                                        | Destructive? |
 | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------------ |
 | `settings-{retry,notice-close,open-queue}`, `settings-filter-tags`                                           | Retry, dismiss a notice, open the queue, or show tag filters. | no           |
+| `settings-lists-retry`, `settings-lists-reload`                                                              | Retry the lists request.                                      | no           |
 | `settings-weight-<key>`, `settings-rule-<key>`                                                               | Edit a weight or rule.                                        | no           |
 | `settings-filter-<key>-<value-key>`                                                                          | Toggle a catalog filter.                                      | no           |
 | `settings-filter-{min-hours,max-hours,exclude-unknown-hours,min-desire,coop-only}`, `settings-filters-clear` | Edit or clear content filters.                                | no           |
@@ -124,9 +128,11 @@ area: frontend
 
 ## Loader
 
-| Test ID                             | Action                                                    | Destructive? |
-| ----------------------------------- | --------------------------------------------------------- | ------------ |
-| `loader-{detail,queue,modal,sword}` | Read loading status. Loaders have no interactive actions. | no           |
+| Test ID                                                       | Action                                                    | Destructive? |
+| ------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
+| `loader-{detail,queue,modal,sword,catalog,route}`             | Read loading status. Loaders have no interactive actions. | no           |
+| `loader-library{-more,}`, `loader-prerequisite{-search,}`     | Read loading status. Loaders have no interactive actions. | no           |
+| `loader-{settings,wishlist}`, `loader-{queue,settings}-lists` | Read loading status. Loaders have no interactive actions. | no           |
 
 Date-time picker variants also expose `<picker>-{hour,minute,clear,done}` and `<picker>-{hour,minute}-<value>`.
 Native selects use their option values. Sortable handles use Space, arrows, Space, and Escape.
@@ -134,4 +140,5 @@ Native selects use their option values. Sortable handles use Space, arrows, Spac
 ## Related
 
 - [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
+- [[AI/frontend/loader]]: The reusable Loader, its props and how to add art.
 - [[AI/frontend/e2e-route-map]]: Route map table of steps, actions and request timings for end-to-end testing.

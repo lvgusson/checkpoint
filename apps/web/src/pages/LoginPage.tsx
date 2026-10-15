@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
 import { safeRedirect } from '../auth/safeRedirect';
 import type { AuthResult } from '../auth/session';
+import { AppLoader } from '../features/loader/AppLoader';
 import './login.css';
 
 type Mode = 'login' | 'signup' | 'forgot' | 'reset';
@@ -242,7 +243,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
               type="submit"
               disabled={loading}
             >
-              {loading ? 'Aguarde…' : SUBMIT[mode]}
+              {loading ? <AppLoader layout="inline" size="sm" label="Aguarde…" /> : SUBMIT[mode]}
             </button>
           </form>
         )}
@@ -269,7 +270,11 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
               disabled={loading}
               onClick={() => void github()}
             >
-              Continuar com GitHub
+              {loading ? (
+                <AppLoader layout="inline" size="sm" label="Aguarde…" />
+              ) : (
+                'Continuar com GitHub'
+              )}
             </button>
           </>
         )}

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { createBrowserRouter, Navigate, Outlet, useRouteError } from 'react-router';
 import { GuestOnly, RequireAuth } from '../auth/guards';
+import { AppLoader } from '../features/loader/AppLoader';
 import { Shell } from './Shell';
 
 const CHUNK_ERROR_RE =
@@ -102,13 +103,7 @@ export const router = createBrowserRouter([
     children: [
       {
         element: (
-          <Suspense
-            fallback={
-              <div className="page-loader">
-                <div className="spinner" />
-              </div>
-            }
-          >
+          <Suspense fallback={<AppLoader fill="screen" data-testid="loader-route" />}>
             <Outlet />
           </Suspense>
         ),

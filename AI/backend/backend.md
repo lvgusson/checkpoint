@@ -54,6 +54,7 @@ JSON drivers (`JsonGamesDriver` and other `Json*Driver` classes in `apps/api/src
 - Add a route, a service method, a repository, a permission or a log sink: [[AI/backend/extending-classes]]
 - Roles, permissions and the ownership rule: [[AI/backend/authorization]]
 - Logging, metrics and the pluggable sink: [[AI/backend/observability]]
+- User tracking and page metrics: [[AI/backend/tracking]]: Fire-and-forget user navigation and click tracking architecture.
 - Patterns used in this code: [[AI/patterns/design-patterns]]
 - Threat model, attack test suite, and validation: [[AI/backend/security]]
 

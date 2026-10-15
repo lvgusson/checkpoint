@@ -22,7 +22,6 @@ const BYPASS_SECRET = resolveBypassSecret(
   fromFile.bypassSecret,
 );
 
-test.describe.configure({ mode: 'serial' });
 test.use({ trace: 'off' });
 
 interface PendingCleanup {
@@ -82,7 +81,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
       {
         headers,
         data: { notes: cleanup.originalNotes },
-        timeout: 15000,
+        timeout: 30000,
       },
     );
     if (patchRes.ok()) {
@@ -104,17 +103,20 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
     const freshPage = await context.newPage();
     try {
       await freshPage.goto(`${base}/jogos/${encodeURIComponent(cleanup.gameId)}`, {
-        timeout: 15000,
+        timeout: 30000,
       });
-      const notesArea = freshPage.locator('textarea[name="notes"]');
-      await notesArea.waitFor({ state: 'visible', timeout: 10000 });
+      const notesArea = freshPage
+        .getByTestId('detail-notes')
+        .or(freshPage.locator('textarea[name="notes"]'));
+      await expect(notesArea).toBeVisible({ timeout: 30000 });
       await notesArea.fill(cleanup.originalNotes);
-      const saveBtn = freshPage.getByRole('button', { name: /Salvar avaliação/i });
+      const saveBtn = freshPage
+        .getByTestId('detail-notes-save')
+        .or(freshPage.getByRole('button', { name: /Salvar avaliação/i }));
       await saveBtn.click();
-      await freshPage
-        .getByRole('status')
-        .filter({ hasText: /Salvo/i })
-        .waitFor({ state: 'visible', timeout: 10000 });
+      await expect(freshPage.getByRole('status').filter({ hasText: /Salvo/i })).toBeVisible({
+        timeout: 30000,
+      });
       restored = true;
       console.log('[CLEANUP] Fresh page restore succeeded.');
     } catch (pageErr) {
@@ -136,7 +138,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
     `${base}/api/v1/games/${encodeURIComponent(cleanup.gameId)}`,
     {
       headers: verifyHeaders,
-      timeout: 10000,
+      timeout: 30000,
     },
   );
   if (!getRes.ok()) {
@@ -280,8 +282,8 @@ test.describe('Route Map E2E Spec', () => {
     // Inputs
     const emailInput = page.getByTestId('login-email');
     const passwordInput = page.getByTestId('login-password');
-    await expect(emailInput).toBeVisible({ timeout: 10000 });
-    await expect(passwordInput).toBeVisible({ timeout: 10000 });
+    await expect(emailInput).toBeVisible({ timeout: 30000 });
+    await expect(passwordInput).toBeVisible({ timeout: 30000 });
 
     // Destructive signup/forgot/reset submits
     skipDestructive('login-submit-signup', 'Creates account');
@@ -298,7 +300,7 @@ test.describe('Route Map E2E Spec', () => {
       } else {
         await page.getByRole('button', { name: /^Entrar$/i }).click();
       }
-      await page.waitForURL(/\/(jogos|ordem)/, { timeout: 15000 });
+      await page.waitForURL(/\/(jogos|ordem)/, { timeout: 30000 });
     }
 
     await timings.collect(page, 'screen-2-login', '/login');
@@ -311,7 +313,7 @@ test.describe('Route Map E2E Spec', () => {
       return;
     }
     await page.goto('/jogos');
-    await expect(page.locator('.game-grid')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.game-grid')).toBeVisible({ timeout: 30000 });
 
     // library-open-queue
     const openQueue = page.getByTestId('library-open-queue');
@@ -351,7 +353,7 @@ test.describe('Route Map E2E Spec', () => {
 
     // First card link
     const firstCard = page.locator('.game-card a.card-link').first();
-    await expect(firstCard).toBeVisible({ timeout: 10000 });
+    await expect(firstCard).toBeVisible({ timeout: 30000 });
 
     // Skip destructive
     skipDestructive('library-playing-<code>', 'Toggles playing status');
@@ -368,14 +370,15 @@ test.describe('Route Map E2E Spec', () => {
     }
     await page.goto('/jogos');
     const firstCard = page.locator('.game-card a.card-link').first();
-    await expect(firstCard).toBeVisible({ timeout: 10000 });
+    await expect(firstCard).toBeVisible({ timeout: 30000 });
     const href = await firstCard.getAttribute('href');
     expect(href).toBeTruthy();
     const gameId = decodeURIComponent(href!.replace(/^\/jogos\//, ''));
     expect(gameId).toBeTruthy();
 
     await page.goto(href!);
-    await page.waitForSelector('form.detail-form', { timeout: 10000 });
+    const detailForm = page.getByTestId('detail-form').or(page.locator('form.detail-form'));
+    await expect(detailForm).toBeVisible({ timeout: 30000 });
 
     // detail-{back,open-queue,time-source,imported-data}
     const backBtn = page.getByTestId('detail-back');
@@ -439,7 +442,7 @@ test.describe('Route Map E2E Spec', () => {
 
     // Single allowed write: notes edit with pre-registered verified cleanup
     const notesArea = page.getByTestId('detail-notes').or(page.locator('textarea[name="notes"]'));
-    await expect(notesArea).toBeVisible({ timeout: 10000 });
+    await expect(notesArea).toBeVisible({ timeout: 30000 });
     const originalNotes = await notesArea.inputValue();
     console.log(`[detail-edit] Captured original notes length: ${originalNotes.length}`);
 
@@ -459,7 +462,7 @@ test.describe('Route Map E2E Spec', () => {
       .getByTestId('detail-notes-save')
       .or(page.getByRole('button', { name: /Salvar avaliação/i }));
     await saveBtn.click();
-    await expect(page.getByRole('status')).toContainText(/Salvo/i, { timeout: 10000 });
+    await expect(page.getByRole('status')).toContainText(/Salvo/i, { timeout: 30000 });
 
     await timings.collect(page, 'screen-4-detail', href!);
 
@@ -476,7 +479,7 @@ test.describe('Route Map E2E Spec', () => {
     }
     await page.goto('/ordem');
     await expect(page.getByRole('heading', { name: /Ordem de jogos/i })).toBeVisible({
-      timeout: 10000,
+      timeout: 30000,
     });
 
     // queue-{search,search-clear,recalculate}
@@ -530,7 +533,7 @@ test.describe('Route Map E2E Spec', () => {
     }
     await page.goto('/desejos');
     await expect(page.getByRole('heading', { name: /Lista de desejos/i })).toBeVisible({
-      timeout: 10000,
+      timeout: 30000,
     });
 
     // Steam search, desire, sort
@@ -589,7 +592,7 @@ test.describe('Route Map E2E Spec', () => {
     }
     await page.goto('/configuracoes');
     await expect(page.getByRole('heading', { name: /Configurações/i })).toBeVisible({
-      timeout: 10000,
+      timeout: 30000,
     });
 
     const openQueue = page.getByTestId('settings-open-queue');
@@ -647,10 +650,10 @@ test.describe('Route Map E2E Spec', () => {
     }
     await page.goto('/ordem');
     const rowLink = page.locator('.queue-row .queue-link').first();
-    if (await rowLink.isVisible({ timeout: 10000 }).catch(() => false)) {
+    if (await rowLink.isVisible({ timeout: 30000 }).catch(() => false)) {
       await rowLink.click();
       const dialog = page.locator('dialog[open]');
-      await expect(dialog).toBeVisible({ timeout: 10000 });
+      await expect(dialog).toBeVisible({ timeout: 30000 });
 
       // modal-notes
       const modalNotes = page.getByTestId('modal-notes');

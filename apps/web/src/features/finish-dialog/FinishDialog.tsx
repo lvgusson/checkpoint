@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ScoredGame } from '../../../../../packages/core/src/models';
 import { isApiError } from '../../api/http';
 import { localToday } from '@/lib/utils';
+import { AppLoader } from '../loader/AppLoader';
 import { useGameWriter } from '../playing/gameWriter';
 import './finish-dialog.css';
 
@@ -250,7 +251,7 @@ export function FinishDialog({
             className="button primary"
             disabled={!canSave}
           >
-            {saving ? 'Salvando…' : 'Finalizar'}
+            {saving ? <AppLoader layout="inline" size="sm" label="Salvando…" /> : 'Finalizar'}
           </button>
         </div>
       </form>

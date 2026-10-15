@@ -1,0 +1,109 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scoring golden tests > computes identical base scores and timeFactor 1`] = `
+[
+  {
+    "affinity": 66.7,
+    "baseScore": 49.5,
+    "id": "g1",
+    "plannedHours": 100,
+  },
+  {
+    "affinity": 59.7,
+    "baseScore": 57.6,
+    "id": "g2",
+    "plannedHours": 30,
+  },
+  {
+    "affinity": 66.7,
+    "baseScore": 63,
+    "id": "g3",
+    "plannedHours": 10,
+  },
+  {
+    "affinity": 56.9,
+    "baseScore": 53.6,
+    "id": "g4",
+    "plannedHours": 50,
+  },
+  {
+    "affinity": 61.1,
+    "baseScore": 71.4,
+    "id": "g5",
+    "plannedHours": 115,
+  },
+  {
+    "affinity": 56.9,
+    "baseScore": 79.4,
+    "id": "g6",
+    "plannedHours": 44.7,
+  },
+  {
+    "affinity": 56.9,
+    "baseScore": 68.8,
+    "id": "g7",
+    "plannedHours": 31.9,
+  },
+  {
+    "affinity": 56.9,
+    "baseScore": 66,
+    "id": "g8",
+    "plannedHours": 51.1,
+  },
+]
+`;
+
+exports[`scoring golden tests > computes identical recommendations and queue entries 1`] = `
+[
+  {
+    "adjustments": [
+      {
+        "label": "Gênero repetido",
+        "points": -18,
+      },
+      {
+        "label": "Duas campanhas longas seguidas",
+        "points": -24,
+      },
+      {
+        "label": "Mesmo ritmo",
+        "points": -6,
+      },
+      {
+        "label": "Campanha longa após carga recente alta",
+        "points": -12,
+      },
+    ],
+    "id": "g6",
+    "score": 19.4,
+  },
+  {
+    "adjustments": [
+      {
+        "label": "Mesmo ritmo",
+        "points": -6,
+      },
+    ],
+    "id": "g7",
+    "score": 62.8,
+  },
+  {
+    "adjustments": [
+      {
+        "label": "Gênero repetido",
+        "points": -18,
+      },
+      {
+        "label": "Mesmo ritmo",
+        "points": -6,
+      },
+      {
+        "label": "Campanha longa após carga recente alta",
+        "points": -12,
+      },
+    ],
+    "id": "g8",
+    "score": 30,
+  },
+]
+`;

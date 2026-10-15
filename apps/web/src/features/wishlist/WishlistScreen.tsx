@@ -1,10 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { EmptyState } from '@checkpoint/ui-react';
+import { EmptyState, ErrorState } from '@checkpoint/ui-react';
 import type { Desire, SteamPrice } from '../../../../../packages/core/src/models';
 import { badgeColor } from '../metadata';
 import { formatPrice, useSteamSearch, useWishlist, useWishlistActions } from './wishlist';
 import { GameDetailModal } from '../details';
+import { AppLoader } from '../loader/AppLoader';
 import './wishlist.css';
 
 const DESIRES: Desire[] = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
@@ -38,11 +39,7 @@ export function WishlistScreen() {
     actions.importSteam.isPending ||
     actions.refreshPrices.isPending;
   const shownError =
-    error ||
-    (wishlist.isError && !wishlist.data
-      ? messageOf(wishlist.error, 'Não foi possível carregar a lista de desejos.')
-      : '') ||
-    (search.error ? messageOf(search.error, 'Busca na Steam indisponível.') : '');
+    error || (search.error ? messageOf(search.error, 'Busca na Steam indisponível.') : '');
 
   async function run(action: () => Promise<string>) {
     setError('');
@@ -237,7 +234,11 @@ export function WishlistScreen() {
         <span>
           {sorted.length} desejados
           {onSale > 0 && <span className="muted"> · {onSale} em promoção</span>}
-          {wishlist.isFetching && <span className="muted"> · carregando</span>}
+          {wishlist.isFetching && (
+            <span className="muted inline-flex items-center gap-1.5 ml-1">
+              · <AppLoader layout="inline" size="sm" label="carregando…" />
+            </span>
+          )}
         </span>
         <label>
           Ordenar
@@ -326,11 +327,22 @@ export function WishlistScreen() {
           </article>
         ))}
       </div>
-      {!sorted.length && !wishlist.isFetching && (
-        <EmptyState
-          title="Nenhum desejo ainda"
-          description="Busque um jogo na Steam ou importe sua lista de desejos."
+      {wishlist.isPending ? (
+        <AppLoader fill="block" label="Carregando desejos…" data-testid="loader-wishlist" />
+      ) : wishlist.isError && !wishlist.data ? (
+        <ErrorState
+          data-testid="wishlist-error"
+          message={messageOf(wishlist.error, 'Não foi possível carregar a lista de desejos.')}
+          retryLabel="Tentar novamente"
+          onRetry={() => void wishlist.refetch()}
         />
+      ) : (
+        !sorted.length && (
+          <EmptyState
+            title="Nenhum desejo ainda"
+            description="Busque um jogo na Steam ou importe sua lista de desejos."
+          />
+        )
       )}
       <GameDetailModal
         gameId={selectedGameId}

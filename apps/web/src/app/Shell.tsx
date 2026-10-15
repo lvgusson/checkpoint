@@ -5,6 +5,7 @@ import { useAppearance } from '../appearance/AppearanceProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { authSession } from '../auth/session';
 import { useUnhandledErrors } from '../query/errors';
+import { startTracking, useTrackPageViews } from '../track';
 import { Toaster } from '@/components/ui/sonner';
 import { Logo } from './Logo';
 
@@ -49,6 +50,8 @@ export function Shell() {
   const { resolved, update } = useAppearance();
   const bare = BARE.test(useLocation().pathname);
   useAuthNavigation();
+  useTrackPageViews();
+  useEffect(() => startTracking(), []);
   useUnhandledErrors(useCallback((message: string) => void toast.error(message), []));
 
   const links = (key: 'label' | 'short', icons: boolean) =>

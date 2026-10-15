@@ -87,7 +87,13 @@ Load skills in Workflow step 2 before reading or editing files (tool call or rea
 
 ## Git policy
 
-Beads agent profile: **conservative**. Do not commit, push, or run Dolt remote sync unless the user asks in this session.
+Flow: `feat/*` → pull request → `homologacao` → `main`. The owner reviews and merges every pull request.
+
+1. Work in a git worktree on branch `feat/<bd-id>-<slug>`, created from `origin/homologacao`.
+2. Commit and push only `feat/*` branches.
+3. Run `pnpm check` green, then open the pull request: `gh pr create --base homologacao` (body per the `pr` skill).
+4. Leave `homologacao` and `main` to the owner: no merge, no push, no force, no reset.
+5. Run Dolt remote sync only when the user asks in this session.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:46cd31e7 -->
 

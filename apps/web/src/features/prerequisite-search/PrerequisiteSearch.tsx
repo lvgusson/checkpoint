@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { ScoredGame } from '../../../../../packages/core/src/models';
 import { api } from '../../api/http';
 import { useQueryKeys } from '../../query/keys';
+import { AppLoader } from '../loader/AppLoader';
 
 const MIN_CHARS = 3;
 const DEBOUNCE_MS = 300;
@@ -108,10 +109,15 @@ export function PrerequisiteSearch({
                 {selected.data.name}
               </span>
             </>
+          ) : selected.isError ? (
+            <span className={nameClass}>Predecessor indisponível</span>
           ) : (
-            <span className={nameClass}>
-              {selected.isError ? 'Predecessor indisponível' : 'Carregando predecessor…'}
-            </span>
+            <AppLoader
+              layout="inline"
+              size="sm"
+              label="Carregando predecessor…"
+              data-testid="loader-prerequisite"
+            />
           )}
           {clearButton}
         </div>
@@ -131,11 +137,18 @@ export function PrerequisiteSearch({
         Opcional. Digite pelo menos 3 caracteres.
       </small>
       <div role="status" className="mt-1.5 block text-xs text-muted-foreground">
-        {waiting
-          ? 'Buscando jogos…'
-          : search.isError
-            ? 'Não foi possível buscar. Tente novamente.'
-            : query && search.isSuccess && !results.length && 'Nenhum jogo encontrado.'}
+        {waiting ? (
+          <AppLoader
+            layout="inline"
+            size="sm"
+            label="Buscando jogos…"
+            data-testid="loader-prerequisite-search"
+          />
+        ) : search.isError ? (
+          'Não foi possível buscar. Tente novamente.'
+        ) : (
+          query && search.isSuccess && !results.length && 'Nenhum jogo encontrado.'
+        )}
       </div>
       {results.length > 0 && (
         <ul

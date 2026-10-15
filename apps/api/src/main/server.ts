@@ -24,6 +24,8 @@ import { releaseStoreFromEnv } from './data.ts';
 import { ApiPath, ContentType, HttpMethod, type RouteResult } from '../routes/http.ts';
 import { configRoute } from '../routes/config.ts';
 import type { ConfigService } from '../services/config.ts';
+import type { TrackService } from '../services/track.ts';
+import { trackRoute } from '../routes/track.ts';
 import {
   clientLatencyMs,
   detailEnabled,
@@ -46,6 +48,7 @@ const SECURITY_HEADERS = {
 const need = (permission: Permission) => {
   if (!can(getContext()?.role, permission)) throw new AppError('Acesso negado', 403);
 };
+
 // auth: null desliga a autenticação (dev/testes sem SUPABASE_URL). Ver api/src/auth.ts.
 export function makeServer(
   service: GameService,
@@ -53,6 +56,7 @@ export function makeServer(
   wishlist: WishlistService | null = null,
   releases: ReleaseStore | null = releaseStoreFromEnv(),
   config: ConfigService | null = null,
+  track: TrackService | null = null,
 ) {
   const guardExpensive = createRequestGuard(60, 60_000, 10);
   return createServer((req, res) => {
@@ -181,11 +185,13 @@ export function makeServer(
           if (path.startsWith(ApiPath.Root)) {
             const read = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
             need(
-              !read && path.includes('/settings/')
-                ? Permission.SettingsUpdate
-                : read
-                  ? Permission.GamesRead
-                  : Permission.GamesUpdate,
+              path === ApiPath.Track
+                ? Permission.GamesRead
+                : !read && path.includes('/settings/')
+                  ? Permission.SettingsUpdate
+                  : read
+                    ? Permission.GamesRead
+                    : Permission.GamesUpdate,
             );
           }
           const isExpensive =
@@ -198,7 +204,8 @@ export function makeServer(
             (await gamesRoute(service, req, url, readJson)) ??
             (await listsRoute(service, req, url, readJson)) ??
             (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
-            (config ? await configRoute(config, req, url, readJson) : null);
+            (config ? await configRoute(config, req, url, readJson) : null) ??
+            (track ? await trackRoute(track, req.method, path, readJson) : null);
           const isGet = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
           const hit = await span('route', () =>
             isExpensive
@@ -231,12 +238,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const auth = authenticatorFromEnv();
   const host = process.env.HOST ?? '127.0.0.1';
   if (!auth) assertNoAuthAllowed(process.env, host);
-  const { service, storage, wishlist, config } = await createService({
+  const { service, storage, wishlist, config, track } = await createService({
     dataDir: resolve(root, 'data'),
     // Sem auth (dev), os dados do Postgres são os do dono do seed.
     devAppUserId: auth ? undefined : SEED_APP_USER_ID,
   });
-  const server = makeServer(service, auth, wishlist, releaseStoreFromEnv(), config);
+  const server = makeServer(service, auth, wishlist, releaseStoreFromEnv(), config, track);
   if (!auth)
     logger.warn('server.no_auth', {
       note: 'SUPABASE_URL is unset: running WITHOUT authentication (local dev only)',

@@ -3,11 +3,11 @@
 // library_entry.user_id = owner. Toda operação é UMA instrução SQL (atômica por si, sem
 // BEGIN/COMMIT): com `prepare: false` cada query parametrizada custa 2 round trips, e
 // transações explícitas somariam mais 2; por isso evitamos múltiplos statements.
-import type { Game } from '../../../../../../packages/core/src/models.ts';
+import type { Game, GameStatus } from '../../../../../../packages/core/src/models.ts';
 import type { MetadataCatalog } from '../../../../../../packages/core/src/metadata.ts';
 import { normalizeMetadata } from '../../../../../../packages/core/src/metadata.ts';
 import type { Sql } from '../../db.ts';
-import type { GamesDriver } from '../types.ts';
+import type { GamesDriver, GameBrowseQuery, GameBrowseResult } from '../types.ts';
 import {
   desireCode,
   gameFrom,
@@ -41,6 +41,56 @@ export class PgGamesDriver implements GamesDriver {
         FROM ${gameFrom(sql)}
        WHERE e.user_id = ${owner}`;
     return row.games.map(toGame);
+  }
+  async browse(owner: string, query: GameBrowseQuery): Promise<GameBrowseResult> {
+    const sql = this.sql;
+    const page = Math.max(1, query.page);
+    const pageSize = Math.max(1, query.pageSize);
+    const offset = (page - 1) * pageSize;
+
+    const qPattern = query.q ? '%' + query.q.replace(/[\\%_]/g, '\\$&') + '%' : null;
+    const dbStatus = query.status ? (statusCode[query.status as GameStatus] ?? query.status) : null;
+    const statusValid = dbStatus ? Object.values(statusCode).includes(dbStatus) : false;
+
+    const orderClause =
+      query.sort === 'desire'
+        ? sql`ORDER BY rd.sort_order, lower(g.name)`
+        : sql`ORDER BY lower(g.name), g.code`;
+
+    try {
+      const rows = await sql<{ game: RawGame; full_count: number }[]>`
+        SELECT ${gameJson(sql)} AS game,
+               count(*) OVER()::int AS full_count
+          FROM ${gameFrom(sql)}
+          LEFT JOIN ref_desire rd ON rd.code = e.desire
+         WHERE e.user_id = ${owner}
+           ${qPattern ? sql`AND norm_key(g.name || ' ' || array_to_string(g.tag_names, ' ')) LIKE norm_key(${qPattern}) ESCAPE '\\'` : sql``}
+           ${query.status ? (statusValid ? sql`AND e.status = ${dbStatus}::game_status` : sql`AND 1 = 0`) : sql``}
+           ${query.primaryGenre ? sql`AND ge.name = ${query.primaryGenre}` : sql``}
+           ${query.store ? sql`AND st.name = ${query.store}` : sql``}
+         ${orderClause}
+         LIMIT ${pageSize} OFFSET ${offset}`;
+
+      let total = rows[0]?.full_count ?? 0;
+      if (rows.length === 0 && offset > 0) {
+        const [c] = await sql<{ count: number }[]>`
+          SELECT count(*)::int AS count
+            FROM ${gameFrom(sql)}
+           WHERE e.user_id = ${owner}
+             ${qPattern ? sql`AND norm_key(g.name || ' ' || array_to_string(g.tag_names, ' ')) LIKE norm_key(${qPattern}) ESCAPE '\\'` : sql``}
+             ${query.status ? (statusValid ? sql`AND e.status = ${dbStatus}::game_status` : sql`AND 1 = 0`) : sql``}
+             ${query.primaryGenre ? sql`AND ge.name = ${query.primaryGenre}` : sql``}
+             ${query.store ? sql`AND st.name = ${query.store}` : sql``}`;
+        total = c?.count ?? 0;
+      }
+
+      return {
+        items: rows.map((r) => toGame(r.game)),
+        total,
+      };
+    } catch (e) {
+      pgError(e);
+    }
   }
   /** Search only the owner's library; treat wildcard characters literally. */
   async searchByName(owner: string, query: string, excludeId?: string): Promise<Game[]> {

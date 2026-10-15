@@ -26,7 +26,9 @@ React 19, Vite, TypeScript, react-router, TanStack Query, Ky, Zod, react-hook-fo
 - Colors, typography, spacing, themes: [[AI/frontend/visual-identity]]
 - Fetching, caching, optimistic updates, errors: [[AI/frontend/data-and-state]]
 - Reusable list, pagination, drag and drop pieces: [[AI/core/core]]
+- Loading states and the reusable loader: [[AI/frontend/loader]]
 - Infinite scroll pagination: [[AI/frontend/infinite-scroll]]
+- Browser event tracking: [[AI/backend/tracking]]: Fire-and-forget client tracking queue and listener.
 - Run or write Playwright browser tests: [[AI/frontend/e2e-testing]]
 - Route map and request timings for Playwright tests: [[AI/frontend/e2e-route-map]]
 

@@ -13,7 +13,8 @@ import type {
   ScoringSection,
 } from '../../../../../packages/core/src/models';
 import { errorMessage } from '../../query/errors';
-import { ListPicker, useRouteListId } from '../lists';
+import { ListPicker, RouteListState, useRouteListId } from '../lists';
+import { AppLoader } from '../loader/AppLoader';
 import { useResetScoringSettings, useSaveScoringSettings, useScoringSettings } from '../scoring';
 import { FormulaPanel } from './FormulaPanel';
 import {
@@ -32,23 +33,38 @@ type ListFilter = 'excludedGenres' | 'excludedTags' | 'stores' | 'paces';
 
 /** Per-list scoring configuration: weights, rules and content filters, saved as one config. */
 export function SettingsScreen() {
-  const listId = useRouteListId('/configuracoes');
+  const route = useRouteListId('/configuracoes');
+  const { listId } = route;
   const query = useScoringSettings(listId);
   const settings = query.data;
   if (!settings || !listId) {
     return (
       <div className="settings">
         <Heading />
-        {listId && <ListPicker base="/configuracoes" current={listId} />}
-        {query.isError ? (
-          <div className="error" role="alert">
-            Não foi possível carregar as configurações. Confira se a API está no ar.
-            <button data-testid="settings-retry" type="button" onClick={() => void query.refetch()}>
-              Tentar novamente
-            </button>
-          </div>
+        {listId ? (
+          <>
+            <ListPicker base="/configuracoes" current={listId} />
+            {query.isError ? (
+              <div className="error" role="alert">
+                Não foi possível carregar as configurações. Confira se a API está no ar.
+                <button
+                  data-testid="settings-retry"
+                  type="button"
+                  onClick={() => void query.refetch()}
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : (
+              <AppLoader
+                fill="block"
+                label="Carregando configurações…"
+                data-testid="loader-settings"
+              />
+            )}
+          </>
         ) : (
-          <div className="empty">Carregando configurações…</div>
+          <RouteListState route={route} prefix="settings" />
         )}
       </div>
     );
@@ -378,13 +394,15 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
 
       <div className="save-bar settings-actions">
         <span>
-          {saving
-            ? 'Salvando…'
-            : invalid
-              ? 'Corrija os valores destacados.'
-              : isDirty
-                ? 'Alterações não salvas.'
-                : `Versão ${settings.version} salva${settings.updatedAt ? ' em ' + formatDate(settings.updatedAt) : ' (padrão)'}.`}
+          {saving ? (
+            <AppLoader layout="inline" size="sm" label="Salvando…" />
+          ) : invalid ? (
+            'Corrija os valores destacados.'
+          ) : isDirty ? (
+            'Alterações não salvas.'
+          ) : (
+            `Versão ${settings.version} salva${settings.updatedAt ? ' em ' + formatDate(settings.updatedAt) : ' (padrão)'}.`
+          )}
         </span>
         <div className="actions">
           <button

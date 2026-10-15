@@ -7,3 +7,4 @@ export * from './queue.ts';
 export * from './settings.ts';
 export * from './wishlist.ts';
 export * from './telemetry.ts';
+export * from './track.ts';

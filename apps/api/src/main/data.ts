@@ -29,6 +29,7 @@ import { type WishlistStore } from '../data/ports.ts';
 import { ConfigRepositoryImpl } from '../data/repositories/config.ts';
 import { type ConfigRepository } from '../data/ports.ts';
 import { assertPrivateStores } from '../shared/request-guard.ts';
+import type { TrackDriver } from '../data/drivers/types.ts';
 
 type Env = Record<string, string | undefined>;
 type Kind = 'pg' | 'json';
@@ -60,6 +61,7 @@ export interface Data {
   config: ConfigRepository;
   queue: QueueInputsReader | null;
   releases: ReleaseStore | null;
+  track: TrackDriver | null;
   storage: 'postgres' | 'json' | 'mixed';
 }
 
@@ -148,6 +150,7 @@ export async function createData({
     config,
     queue: allPg ? new QueueInputsReaderImpl(new pg!.PgQueueInputsDriver(sql!), user) : null,
     releases: kind.RELEASES_STORE === 'pg' ? releaseStoreFromEnv(env) : null,
+    track: sql ? new pg!.PgTrackDriver(sql) : null,
     storage: used.size > 1 ? 'mixed' : used.has('pg') ? 'postgres' : 'json',
   };
 }

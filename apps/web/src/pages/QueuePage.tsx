@@ -1,9 +1,10 @@
 import { QueueView } from '../features/queue/QueueView';
-import { useRouteListId } from '../features/lists';
+import { RouteListState, useRouteListId } from '../features/lists';
 
 /** Route /ordem and /ordem/:listId. Without a valid list id the hook redirects to the default list. */
 export function QueuePage() {
-  const listId = useRouteListId('/ordem');
+  const route = useRouteListId('/ordem');
+  const { listId } = route;
   return (
     <>
       <div className="page-heading queue-heading">
@@ -18,7 +19,7 @@ export function QueuePage() {
       {listId ? (
         <QueueView key={listId} listId={listId} />
       ) : (
-        <div className="empty">Calculando seu roteiro…</div>
+        <RouteListState route={route} prefix="queue" />
       )}
     </>
   );

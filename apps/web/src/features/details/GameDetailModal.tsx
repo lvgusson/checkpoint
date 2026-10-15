@@ -5,7 +5,7 @@ import type { Catalog, ScoredGame } from '../../../../../packages/core/src/model
 import { api } from '../../api/http';
 import { useQueryKeys } from '../../query/keys';
 import { FinishDialog } from '../finish-dialog';
-import { SwordLoader } from '../loader/SwordLoader';
+import { AppLoader } from '../loader/AppLoader';
 import { MetadataBadge, MetadataSelect } from '../metadata';
 import { useGameWriter } from '../playing/gameWriter';
 
@@ -135,10 +135,11 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12" role="status">
-              <SwordLoader
+              <AppLoader
                 data-testid="loader-modal"
                 size={48}
                 label="Carregando detalhes do jogo…"
+                fill="block"
               />
             </div>
           ) : isError ? (
@@ -301,7 +302,11 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       disabled={savingNotes}
                       onClick={handleSaveNotes}
                     >
-                      {savingNotes ? 'Salvando…' : 'Salvar anotações'}
+                      {savingNotes ? (
+                        <AppLoader layout="inline" size="sm" label="Salvando…" />
+                      ) : (
+                        'Salvar anotações'
+                      )}
                     </button>
                   </div>
                 </div>

@@ -61,8 +61,8 @@ A pane that shows an approval prompt stops. Tell the owner. Never approve for th
 
 ## Release flow (staging first)
 
-1. Push to branch `homologacao`. Never push to `main` first.
-2. Read the Vercel preview URL of the push (`gh api repos/lvgusson/checkpoint/deployments`, then its statuses).
+1. Agents push `feat/*` and open a pull request to `homologacao`. The owner approves and merges it. Never push to `homologacao` or `main` directly.
+2. Read the Vercel preview URL of the merge to `homologacao` (`gh api repos/lvgusson/checkpoint/deployments`, then its statuses).
 3. Open the URL. Check that the pages and `/api/v1/health` answer. Report each status code.
 4. Merge to `main` only when the owner approves.
 

@@ -118,41 +118,50 @@ describe.skipIf(!process.env.SECURITY_TEST_DATABASE_URL)(
       const games = await ctx.service.all();
       const game = games[0];
       expect(game).toBeTruthy();
+      const originalNotes = game.notes;
 
-      for (const payload of SQLI_PAYLOADS) {
-        // PATCH jogo
-        const resPatch = await testFetch(
-          ctx.baseUrl,
-          `/api/v1/games/${encodeURIComponent(game.id)}`,
-          {
-            method: 'PATCH',
+      try {
+        for (const payload of SQLI_PAYLOADS) {
+          // PATCH jogo: testa injeção SQL no campo notes sem alterar a ordenação ou contagem de jogos
+          const resPatch = await testFetch(
+            ctx.baseUrl,
+            `/api/v1/games/${encodeURIComponent(game.id)}`,
+            {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notes: payload }),
+            },
+          );
+          expect(resPatch.status, `PATCH não deve gerar 500: ${payload}`).not.toBe(500);
+          const textPatch = await resPatch.text();
+          for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
+            expect(
+              !pattern.test(textPatch),
+              `PATCH não deve vazar erro SQL: ${payload}`,
+            ).toBeTruthy();
+          }
+
+          // POST list
+          const resList = await testFetch(ctx.baseUrl, '/api/v1/lists', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: payload }),
-          },
-        );
-        expect(resPatch.status, `PATCH não deve gerar 500: ${payload}`).not.toBe(500);
-        const textPatch = await resPatch.text();
-        for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          expect(
-            !pattern.test(textPatch),
-            `PATCH não deve vazar erro SQL: ${payload}`,
-          ).toBeTruthy();
+            body: JSON.stringify({ name: payload.slice(0, 50) }),
+          });
+          expect(resList.status).not.toBe(500);
+          const textList = await resList.text();
+          for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
+            expect(
+              !pattern.test(textList),
+              `POST list não deve vazar erro SQL: ${payload}`,
+            ).toBeTruthy();
+          }
         }
-
-        // POST list
-        const resList = await testFetch(ctx.baseUrl, '/api/v1/lists', {
-          method: 'POST',
+      } finally {
+        await testFetch(ctx.baseUrl, `/api/v1/games/${encodeURIComponent(game.id)}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: payload.slice(0, 50) }),
+          body: JSON.stringify({ notes: originalNotes }),
         });
-        expect(resList.status).not.toBe(500);
-        const textList = await resList.text();
-        for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          expect(
-            !pattern.test(textList),
-            `POST list não deve vazar erro SQL: ${payload}`,
-          ).toBeTruthy();
-        }
       }
     });
   },

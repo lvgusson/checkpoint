@@ -1,43 +1,17 @@
-import { cn } from '@/lib/utils';
-
-export interface SwordLoaderProps {
-  /** Size of the loader SVG in pixels or CSS unit. Defaults to 56. */
-  size?: number | string;
-  'data-testid'?: string;
-  /** Optional container class name. */
-  className?: string;
-  /** Accessible label and visible status text below the icon. */
-  label?: string;
-}
-
 /**
- * Animated bonfire sword loader.
- * The blade, flames, and crossguard glow and gain color in a continuous loop.
+ * Animated bonfire sword: the blade, flames and crossguard glow in a loop.
+ * Art only; `AppLoader` wraps it in the kit's `Loader`, which adds the status role and the label.
  */
-export function SwordLoader({
-  size = 56,
-  className,
-  label,
-  'data-testid': testId = 'loader-sword',
-}: SwordLoaderProps) {
-  const dimension = typeof size === 'number' ? `${size}px` : size;
-
+export function SwordArt() {
   return (
-    <div
-      data-testid={testId}
-      className={cn('inline-flex flex-col items-center justify-center gap-3', className)}
-      role="status"
-      aria-label={label ?? 'Carregando…'}
+    <svg
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="sword-loader-svg"
+      aria-hidden="true"
     >
-      <div className="sword-loader-wrap" style={{ width: dimension, height: dimension }}>
-        <svg
-          viewBox="0 0 64 64"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="sword-loader-svg"
-          aria-hidden="true"
-        >
-          <style>{`
+      <style>{`
             .sword-loader-svg {
               width: 100%;
               height: 100%;
@@ -151,32 +125,29 @@ export function SwordLoader({
               }
             }
           `}</style>
-          {/* Rounded tile background */}
-          <rect width="64" height="64" rx="14" fill="#1A1030" />
-          {/* Ash base */}
-          <path className="sword-loader-ash" d="M10 57c5-5 13-7 22-7s17 2 22 7z" />
-          {/* Outer fire flame */}
-          <path
-            className="sword-loader-fire"
-            d="M32 24c6 7 17 11 17 22 0 6-7 9-17 9s-17-3-17-9c0-7 4-10 7-16 1 5 3 7 6 8 0-6 1-10 4-14z"
-          />
-          {/* Inner core flame */}
-          <path
-            className="sword-loader-core"
-            d="M32 36c3.5 4.5 9 7 9 12.5 0 4.5-4.5 6.5-9 6.5s-9-2-9-6.5c0-5.5 5.5-8 9-12.5z"
-          />
-          {/* Sword blade */}
-          <path className="sword-loader-blade" d="M27.5 20h9v28l-4.5 6.5-4.5-6.5z" />
-          <path className="sword-loader-blade-shade" d="M32 20h4.5v28L32 54.5z" />
-          {/* Sword crossguard */}
-          <rect className="sword-loader-guard" x="16" y="16" width="32" height="6.5" rx="3.2" />
-          {/* Sword grip */}
-          <rect className="sword-loader-grip" x="29" y="9" width="6" height="8" />
-          {/* Sword pommel */}
-          <circle className="sword-loader-pommel" cx="32" cy="8" r="4.5" />
-        </svg>
-      </div>
-      {label && <span className="text-sm font-medium text-muted-foreground">{label}</span>}
-    </div>
+      {/* Rounded tile background */}
+      <rect width="64" height="64" rx="14" fill="#1A1030" />
+      {/* Ash base */}
+      <path className="sword-loader-ash" d="M10 57c5-5 13-7 22-7s17 2 22 7z" />
+      {/* Outer fire flame */}
+      <path
+        className="sword-loader-fire"
+        d="M32 24c6 7 17 11 17 22 0 6-7 9-17 9s-17-3-17-9c0-7 4-10 7-16 1 5 3 7 6 8 0-6 1-10 4-14z"
+      />
+      {/* Inner core flame */}
+      <path
+        className="sword-loader-core"
+        d="M32 36c3.5 4.5 9 7 9 12.5 0 4.5-4.5 6.5-9 6.5s-9-2-9-6.5c0-5.5 5.5-8 9-12.5z"
+      />
+      {/* Sword blade */}
+      <path className="sword-loader-blade" d="M27.5 20h9v28l-4.5 6.5-4.5-6.5z" />
+      <path className="sword-loader-blade-shade" d="M32 20h4.5v28L32 54.5z" />
+      {/* Sword crossguard */}
+      <rect className="sword-loader-guard" x="16" y="16" width="32" height="6.5" rx="3.2" />
+      {/* Sword grip */}
+      <rect className="sword-loader-grip" x="29" y="9" width="6" height="8" />
+      {/* Sword pommel */}
+      <circle className="sword-loader-pommel" cx="32" cy="8" r="4.5" />
+    </svg>
   );
 }

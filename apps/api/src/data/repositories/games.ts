@@ -1,5 +1,5 @@
 import type { Game } from '../../../../../packages/core/src/models.ts';
-import type { GameRepository } from '../ports.ts';
+import type { AppUserResolver, GameRepository } from '../ports.ts';
 import {
   metadataFields,
   normalizeMetadata,
@@ -7,8 +7,7 @@ import {
 } from '../../../../../packages/core/src/metadata.ts';
 import { can, Permission } from '../../../../../packages/core/src/authorization.ts';
 import { getContext } from '../../shared/context.ts';
-import type { AppUserResolver } from '../ports.ts';
-import type { GamesDriver } from '../drivers/types.ts';
+import type { GamesDriver, GameBrowseQuery, GameBrowseResult } from '../drivers/types.ts';
 import { defaultMetadata } from '../config-seed.ts';
 import type { ConfigRepository } from '../ports.ts';
 import { toAppError } from './errors.ts';
@@ -30,6 +29,9 @@ export class GameRepositoryImpl implements GameRepository {
   }
   async get(id: string) {
     return this.driver.get(await this.user(), id);
+  }
+  async browse(query: GameBrowseQuery): Promise<GameBrowseResult> {
+    return this.driver.browse(await this.user(), query);
   }
   /** The catalog kept by the store, or the built-in one extended with the values games use. */
   async metadataCatalog(): Promise<MetadataCatalog> {

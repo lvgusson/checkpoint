@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import type { Catalog, Desire, ScoredGame } from '../../../../packages/core/src/models';
 import { api } from '../api/http';
 import { GameCard, useInfiniteCatalog, type LibraryFilters } from '../features/catalog';
+import { AppLoader } from '../features/loader/AppLoader';
 import { useGameWriter } from '../features/playing';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useQueryKeys } from '../query/keys';
@@ -149,7 +150,11 @@ export function LibraryPage() {
       <div className="list-toolbar">
         <span>
           {total} jogos encontrados
-          {isFetching && <span className="muted"> · carregando</span>}
+          {isFetching && (
+            <span className="muted inline-flex items-center gap-1.5 ml-1">
+              · <AppLoader layout="inline" size="sm" label="carregando…" />
+            </span>
+          )}
         </span>
         <label>
           Ordenar
@@ -173,7 +178,9 @@ export function LibraryPage() {
           </button>
         </div>
       )}
-      {isInitialError && !hasData ? (
+      {isLoading && !hasData ? (
+        <AppLoader fill="block" label="Carregando jogos…" data-testid="loader-library" />
+      ) : isInitialError && !hasData ? (
         <ErrorState
           data-testid="library-error"
           message="Não foi possível carregar a biblioteca. Confira se a API está rodando."
@@ -200,13 +207,16 @@ export function LibraryPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.5rem',
                 padding: '1.5rem',
                 color: 'var(--muted)',
               }}
             >
-              <span className="spinner" aria-hidden="true" />
-              <span>Carregando mais jogos…</span>
+              <AppLoader
+                layout="inline"
+                size="sm"
+                label="Carregando mais jogos…"
+                data-testid="loader-library-more"
+              />
             </div>
           )}
           {nextPageError && (

@@ -5,7 +5,7 @@ import type { Catalog, ScoredGame } from '../../../../packages/core/src/models';
 import { api, isApiError } from '../api/http';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { FinishDialog } from '../features/finish-dialog';
-import { SwordLoader } from '../features/loader/SwordLoader';
+import { AppLoader } from '../features/loader/AppLoader';
 import { MetadataBadge, MetadataSelect } from '../features/metadata';
 import { useGameWriter } from '../features/playing';
 import { PrerequisiteSearch } from '../features/prerequisite-search';
@@ -419,7 +419,11 @@ export function DetailPage() {
                     type="submit"
                     disabled={saving}
                   >
-                    {saving ? 'Salvando…' : 'Salvar avaliação'}
+                    {saving ? (
+                      <AppLoader layout="inline" size="sm" label="Salvando…" />
+                    ) : (
+                      'Salvar avaliação'
+                    )}
                   </button>
                 </div>
               </div>
@@ -495,7 +499,7 @@ export function DetailPage() {
         </>
       ) : isLoading ? (
         <div className="empty" role="status">
-          <SwordLoader data-testid="loader-detail" size={48} label="Carregando jogo…" />
+          <AppLoader data-testid="loader-detail" size={48} label="Carregando jogo…" fill="block" />
         </div>
       ) : !error ? (
         <div className="empty">Jogo não encontrado.</div>

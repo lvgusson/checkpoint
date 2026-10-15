@@ -227,7 +227,8 @@ export class WishlistService {
     }
     const { id, created } = await this.store.create(game, app);
     if (app?.price) await this.store.savePrices(new Map([[app.appId, app.price]]));
-    const scored = (await this.games.all()).find((g) => g.id === id);
+    if (created) this.games.invalidateUserCache();
+    const scored = await this.games.game(id).catch(() => null);
     if (!scored) throw new AppError('Jogo não encontrado após o cadastro', 500);
     const [prices, descriptions] = await Promise.all([
       this.store.prices(scored.steamAppId ? [scored.steamAppId] : []),
@@ -264,23 +265,30 @@ export class WishlistService {
       failed: [],
     };
     const prices = new Map<number, SteamPrice>();
-    for (const appId of fresh) {
-      const app = byId.get(appId);
-      if (!app) {
-        result.failed.push({ appId, reason: 'Não encontrado na loja (removido ou oculto)' });
-        continue;
-      }
-      try {
-        const { created } = await this.store.create(gameFromSteamApp(app), app);
-        if (created) result.created++;
-        else result.existing++;
-        prices.set(appId, app.price ?? unavailable());
-      } catch (e) {
-        logger.warn('wishlist.import_item_failed', { appId, error: e });
-        result.failed.push({ appId, reason: 'Falha ao importar' });
-      }
+    const CONCURRENCY = 5;
+    for (let i = 0; i < fresh.length; i += CONCURRENCY) {
+      const chunk = fresh.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        chunk.map(async (appId) => {
+          const app = byId.get(appId);
+          if (!app) {
+            result.failed.push({ appId, reason: 'Não encontrado na loja (removido ou oculto)' });
+            return;
+          }
+          try {
+            const { created } = await this.store.create(gameFromSteamApp(app), app);
+            if (created) result.created++;
+            else result.existing++;
+            prices.set(appId, app.price ?? unavailable());
+          } catch (e) {
+            logger.warn('wishlist.import_item_failed', { appId, error: e });
+            result.failed.push({ appId, reason: 'Falha ao importar' });
+          }
+        }),
+      );
     }
     await this.store.savePrices(prices);
+    if (result.created > 0) this.games.invalidateUserCache();
     return result;
   }
 }
