@@ -1,7 +1,7 @@
 // Appearance (theme, accent, logo) per user in localStorage. Port of the Angular appearance.ts.
 // index.react.html applies LAST_KEY before first paint; this module keeps both keys in sync.
 export type ThemeChoice = 'system' | 'light' | 'dark';
-export type Accent = 'green' | 'blue' | 'violet' | 'orange' | 'rose';
+type Accent = 'green' | 'blue' | 'violet' | 'orange' | 'rose';
 export type LogoChoice = 'bonfire' | 'monogram' | 'flag' | 'ring' | 'pixel' | 'custom';
 
 export interface Appearance {
@@ -32,7 +32,7 @@ export const BAR = { light: '#f6f8f7', dark: '#0e1412' } as const;
 export const LAST_KEY = 'checkpoint:appearance:last';
 export const PREFIX = 'checkpoint:appearance:';
 /** Custom logo cap (the data URL lives in localStorage, ~5 MB per origin). */
-export const MAX_LOGO_BYTES = 200 * 1024;
+const MAX_LOGO_BYTES = 200 * 1024;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 export const DEFAULTS: Appearance = {

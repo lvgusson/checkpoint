@@ -55,8 +55,12 @@ async function list(sql, opts) {
 
 /** Append a patch release referencing the rollback target. */
 async function recordRollback(sql, target, gitSha, environment) {
-  const { PgReleaseStore, createRelease } = await import('../src/releases.ts');
-  const { release } = await createRelease(new PgReleaseStore(sql), {
+  const [{ createRelease }, { ReleaseRepository }, { PgReleaseDriver }] = await Promise.all([
+    import('../src/services/releases.ts'),
+    import('../src/data/repositories/releases.ts'),
+    import('../src/data/drivers/pg/releases.ts'),
+  ]);
+  const { release } = await createRelease(new ReleaseRepository(new PgReleaseDriver(sql)), {
     description: `Rollback para v${target.version} (${target.git_sha.slice(0, 7)})`,
     kind: 'rollback',
     name: null,

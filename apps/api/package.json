@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test:security": "node --test test/security/*.test.ts"
+  },
   "dependencies": {
     "@vercel/functions": "^3.9.11",
     "jose": "^6.2.12",

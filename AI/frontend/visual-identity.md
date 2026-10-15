@@ -1,4 +1,6 @@
 ---
+name: visual-identity
+description: Design tokens, themes, accents and styling rules.
 type: reference
 area: frontend
 ---
@@ -39,5 +41,5 @@ Calm, readable and green: a neutral off-white or deep green-black surface, one a
 
 ## Related
 
-- [[AI/frontend/frontend]]
-- [[AI/frontend/creating-a-component]]
+- [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
+- [[AI/frontend/creating-a-component]]: Where a new component, screen or feature lives and how to build it.

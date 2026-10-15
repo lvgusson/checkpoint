@@ -1,7 +1,22 @@
 /** 'Desejado' = lista de desejos (ainda não tem o jogo); nunca entra na fila. */
-export type GameStatus = 'Não iniciado' | 'Jogando' | 'Abandonado' | 'Finalizado' | 'Desejado';
+export const GameStatus = {
+  NotStarted: 'Não iniciado',
+  Playing: 'Jogando',
+  Abandoned: 'Abandonado',
+  Finished: 'Finalizado',
+  Wishlist: 'Desejado',
+} as const;
+export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 /** "Imediata" vai para o topo da fila por pontuação (ver recommendGames). */
-export type Desire = 'Imediata' | 'Muito Alta' | 'Alta' | 'Média' | 'Baixa' | 'Muito Baixa';
+export const Desire = {
+  Immediate: 'Imediata',
+  VeryHigh: 'Muito Alta',
+  High: 'Alta',
+  Medium: 'Média',
+  Low: 'Baixa',
+  VeryLow: 'Muito Baixa',
+} as const;
+export type Desire = (typeof Desire)[keyof typeof Desire];
 export interface Game {
   id: string;
   name: string;
@@ -14,6 +29,8 @@ export interface Game {
   pace: string;
   structure: string;
   actualHours: number | null;
+  /** First recorded purchase time. Absent in legacy local data. */
+  purchasedAt?: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   rating: number | null;
@@ -45,6 +62,7 @@ export interface ScoreWeights {
   desire: number;
   affinity: number;
   duration: number;
+  recentPurchase: number;
   inProgress: number;
   repeatGenre: number;
   repeatGenreTwoBack: number;

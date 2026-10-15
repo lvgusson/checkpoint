@@ -25,6 +25,7 @@ import {
   scoringSchema,
 } from './settingsForm';
 import './settings.css';
+import { CatalogSettings } from './CatalogSettings';
 
 type ListFilter = 'excludedGenres' | 'excludedTags' | 'stores' | 'paces';
 
@@ -192,6 +193,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
     // Any edit (bubbled change event, or setFilters) dismisses the success notice.
     <div className="settings" onChange={() => setSuccess('')}>
       <Heading />
+      <CatalogSettings />
       <ListPicker base="/configuracoes" current={listId} />
       {error && (
         <div className="error" role="alert">

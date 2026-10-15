@@ -1,16 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ScoredGame } from '../../../../../packages/core/src/models';
 import { isApiError } from '../../api/http';
+import { localToday } from '@/lib/utils';
 import { useGameWriter } from '../playing/gameWriter';
 import './finish-dialog.css';
 
 export type FinishGame = Pick<ScoredGame, 'id' | 'name' | 'actualHours' | 'rating' | 'notes'>;
-
-/** Return the local calendar date as YYYY-MM-DD. */
-export function localToday(d = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
 
 /** Ratings from 1 to 5 in half-point steps. */
 const STEPS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];

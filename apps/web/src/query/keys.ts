@@ -29,7 +29,7 @@ export const queryKeys = (userId: string) =>
     },
   }) as const;
 
-export type QueryKeys = ReturnType<typeof queryKeys>;
+type QueryKeys = ReturnType<typeof queryKeys>;
 
 /** Keys scoped to the signed-in user (call inside components/hooks only). */
 export function useQueryKeys(): QueryKeys {

@@ -1,7 +1,6 @@
 /** Serializable state of a data collection (list/grid of server-side items). */
 export type FilterValue = string | string[];
 export type Filters = Record<string, FilterValue>;
-export type ViewMode = 'list' | 'card';
 
 export interface CollectionState<F extends Filters = Filters> {
   filters: F;
@@ -11,21 +10,19 @@ export interface CollectionState<F extends Filters = Filters> {
   page: number;
   /** Opaque cursor for cursor-paginated endpoints; undefined for the first page. */
   cursor?: string;
-  view: ViewMode;
-  selection: string[];
 }
 
 export type CollectionDefaults<F extends Filters = Filters> = Omit<
   CollectionState<F>,
-  'page' | 'cursor' | 'selection'
+  'page' | 'cursor'
 > &
-  Partial<Pick<CollectionState<F>, 'page' | 'selection'>>;
+  Partial<Pick<CollectionState<F>, 'page'>>;
 
 /** Query-string names owned by the collection; filter names must not collide with these. */
-const RESERVED = ['q', 'sort', 'page', 'cursor', 'view', 'sel'];
+const RESERVED = ['q', 'sort', 'page', 'cursor'];
 
 export function initialState<F extends Filters>(d: CollectionDefaults<F>): CollectionState<F> {
-  return { page: 1, selection: [], ...d };
+  return { page: 1, ...d };
 }
 
 /** Writes only values that differ from the defaults, so default URLs stay clean. */
@@ -38,8 +35,6 @@ export function serializeState<F extends Filters>(
   if (state.sort !== d.sort) p.set('sort', state.sort);
   if (state.page > 1) p.set('page', String(state.page));
   if (state.cursor) p.set('cursor', state.cursor);
-  if (state.view !== d.view) p.set('view', state.view);
-  if (state.selection.length) p.set('sel', state.selection.map(encodeURIComponent).join(','));
   for (const [name, value] of Object.entries(state.filters)) {
     if (RESERVED.includes(name)) throw new Error(`Filter name "${name}" is reserved`);
     const values = Array.isArray(value) ? value : value === '' ? [] : [value];
@@ -55,7 +50,6 @@ export function parseState<F extends Filters>(
   d: CollectionDefaults<F>,
 ): CollectionState<F> {
   const page = Number(p.get('page'));
-  const view = p.get('view');
   const filters = { ...d.filters } as Filters;
   for (const name of Object.keys(d.filters)) {
     if (!p.has(name)) continue;
@@ -68,17 +62,7 @@ export function parseState<F extends Filters>(
     sort: p.get('sort') ?? d.sort,
     page: Number.isInteger(page) && page > 0 ? page : 1,
     cursor: p.get('cursor') ?? undefined,
-    view: view === 'list' || view === 'card' ? view : d.view,
-    selection: p.get('sel')?.split(',').filter(Boolean).map(safeDecode) ?? [],
   };
-}
-
-function safeDecode(value: string) {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
 }
 
 const toArray = (v: FilterValue | undefined) =>

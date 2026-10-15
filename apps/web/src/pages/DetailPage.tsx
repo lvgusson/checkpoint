@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import type { Catalog, ScoredGame } from '../../../../packages/core/src/models';
 import { api, isApiError } from '../api/http';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { FinishDialog } from '../features/finish-dialog';
 import { MetadataBadge, MetadataSelect } from '../features/metadata';
 import { useGameWriter } from '../features/playing';
@@ -228,20 +229,22 @@ export function DetailPage() {
                     </label>
                     <label>
                       Data de conclusão
-                      <input
-                        type="date"
-                        name="finish"
-                        value={form.finishedAt ?? ''}
-                        onChange={(e) => set('finishedAt', e.target.value)}
+                      <DateTimePicker
+                        id="game-finish"
+                        mode="date"
+                        placeholder="dd/mm/aaaa"
+                        value={form.finishedAt || null}
+                        onChange={(v) => set('finishedAt', v ?? '')}
                       />
                     </label>
                     <label>
                       Data de início
-                      <input
-                        type="date"
-                        name="start"
-                        value={form.startedAt ?? ''}
-                        onChange={(e) => set('startedAt', e.target.value)}
+                      <DateTimePicker
+                        id="game-start"
+                        mode="date"
+                        placeholder="dd/mm/aaaa"
+                        value={form.startedAt || null}
+                        onChange={(v) => set('startedAt', v ?? '')}
                       />
                     </label>
                   </div>

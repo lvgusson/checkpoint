@@ -4,7 +4,7 @@ import { ApiError, toApiError } from './errors';
 
 export { ApiError, isApiError } from './errors';
 
-export const API_BASE = '/api/v1';
+const API_BASE = '/api/v1';
 const TIMEOUT_MS = 20_000;
 
 /**
@@ -14,7 +14,7 @@ const TIMEOUT_MS = 20_000;
  */
 const client = ky.create({ prefix: API_BASE, retry: 0, timeout: TIMEOUT_MS });
 
-export type RequestOptions = Pick<Options, 'searchParams' | 'json' | 'signal' | 'timeout'>;
+type RequestOptions = Pick<Options, 'searchParams' | 'json' | 'signal' | 'timeout'>;
 
 /** Paths are relative to /api/v1; anything absolute could leak the token to another origin. */
 function assertRelative(path: string) {

@@ -5,7 +5,7 @@ import {
   type QueryKey,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   initialState,
   parseState,
@@ -13,7 +13,6 @@ import {
   type CollectionDefaults,
   type CollectionState,
   type Filters,
-  type ViewMode,
 } from './collectionState';
 import {
   defaultPrefetchPolicy,
@@ -51,7 +50,6 @@ export interface DataCollectionOptions<T, F extends Filters> {
   /** Must honor `signal` so superseded requests are aborted. */
   fetchPage(request: PageRequest<F>, signal: AbortSignal): Promise<PageResult<T>>;
   defaults: CollectionDefaults<F>;
-  getId(item: T): string;
   pageSize?: number;
   debounceMs?: number;
   url?: UrlBinding;
@@ -68,14 +66,6 @@ export interface DataCollection<T, F extends Filters> {
   setFilter(name: keyof F & string, value: F[keyof F]): void;
   setSort(sort: string): void;
   setPage(page: number, cursor?: string): void;
-  setView(view: ViewMode): void;
-  selection: {
-    ids: ReadonlySet<string>;
-    isSelected(item: T): boolean;
-    toggle(item: T): void;
-    set(items: T[]): void;
-    clear(): void;
-  };
   query: UseQueryResult<PageResult<T>>;
   items: T[];
   pageCount: number | undefined;
@@ -86,7 +76,7 @@ export interface DataCollection<T, F extends Filters> {
 export function useDataCollection<T, F extends Filters = Filters>(
   opts: DataCollectionOptions<T, F>,
 ): DataCollection<T, F> {
-  const { defaults, url, keyPrefix, fetchPage, getId } = opts;
+  const { defaults, url, keyPrefix, fetchPage } = opts;
   const pageSize = opts.pageSize ?? 24;
   const queryClient = useQueryClient();
   const [local, setLocal] = useState(() =>
@@ -128,7 +118,7 @@ export function useDataCollection<T, F extends Filters = Filters>(
       setSearchInput(text);
       clearTimeout(timer.current);
       timer.current = setTimeout(
-        () => commit({ search: text.trim(), page: 1, cursor: undefined, selection: [] }),
+        () => commit({ search: text.trim(), page: 1, cursor: undefined }),
         opts.debounceMs ?? 300,
       );
     },
@@ -201,8 +191,7 @@ export function useDataCollection<T, F extends Filters = Filters>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- request()/keyFor derive from the listed values
   }, [scopeKey, state.page, pageCount, nextCursor, query.data, query.isPlaceholderData]);
 
-  const selected = useMemo(() => new Set(state.selection), [state.selection]);
-  const resetPage = { page: 1, cursor: undefined, selection: [] as string[] };
+  const resetPage = { page: 1, cursor: undefined };
   return {
     state,
     searchInput,
@@ -211,21 +200,6 @@ export function useDataCollection<T, F extends Filters = Filters>(
       commit({ filters: { ...stateRef.current.filters, [name]: value }, ...resetPage }),
     setSort: (sort) => commit({ sort, page: 1, cursor: undefined }),
     setPage: (page, cursor) => commit({ page: Math.max(1, Math.floor(page)), cursor }),
-    setView: (view) => commit({ view }),
-    selection: {
-      ids: selected,
-      isSelected: (item) => selected.has(getId(item)),
-      toggle: (item) => {
-        const id = getId(item);
-        commit({
-          selection: selected.has(id)
-            ? state.selection.filter((s) => s !== id)
-            : [...state.selection, id],
-        });
-      },
-      set: (items) => commit({ selection: items.map(getId) }),
-      clear: () => commit({ selection: [] }),
-    },
     query,
     items: query.data?.items ?? [],
     pageCount,

@@ -10,10 +10,13 @@ async function main() {
   const info = releaseFromEnv(process.env);
   if (!info) return log('VERCEL_GIT_COMMIT_SHA ausente: release não gravado.');
 
-  const [{ default: postgres }, { PgReleaseStore, ensureRelease }] = await Promise.all([
-    import('postgres'),
-    import('../src/releases.ts'),
-  ]);
+  const [{ default: postgres }, { ensureRelease }, { ReleaseRepository }, { PgReleaseDriver }] =
+    await Promise.all([
+      import('postgres'),
+      import('../src/services/releases.ts'),
+      import('../src/data/repositories/releases.ts'),
+      import('../src/data/drivers/pg/releases.ts'),
+    ]);
   const sql = postgres(url, {
     prepare: false, // Transaction pooler.
     max: 1,
@@ -24,11 +27,15 @@ async function main() {
     onnotice: () => {},
   });
   try {
-    const [{ v }] = await sql`
-      SELECT CASE WHEN to_regclass('supabase_migrations.schema_migrations') IS NULL THEN NULL
-             ELSE (SELECT max(version) FROM supabase_migrations.schema_migrations) END AS v`;
+    const [{ exists }] = await sql`
+      SELECT to_regclass('supabase_migrations.schema_migrations') IS NOT NULL AS exists`;
+    let v = null;
+    if (exists) {
+      const [row] = await sql`SELECT max(version) AS v FROM supabase_migrations.schema_migrations`;
+      v = row?.v ?? null;
+    }
     const { release, created } = await ensureRelease(
-      new PgReleaseStore(sql),
+      new ReleaseRepository(new PgReleaseDriver(sql)),
       {
         gitSha: info.git_sha,
         gitRef: info.git_ref,

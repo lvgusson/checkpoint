@@ -8,7 +8,7 @@
     "node": ">=24.15.0"
   },
   "scripts": {
-    "start": "node --env-file-if-exists=.env apps/api/src/server.ts",
+    "start": "node --env-file-if-exists=.env apps/api/src/main/server.ts",
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @checkpoint/web build",
     "vercel-build": "pnpm --filter @checkpoint/web build && node apps/api/scripts/record-release.mjs",
@@ -17,9 +17,9 @@
     "release:note": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/scripts/release-note.mjs",
     "release:rollback": "node --env-file-if-exists=.env apps/api/scripts/rollback.mjs rollback",
     "release:tag": "node --env-file-if-exists=.env apps/api/scripts/rollback.mjs tag",
-    "wishlist:import": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/wishlist-cli.ts",
-    "wishlist:export": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/wishlist-cli.ts --export",
-    "wishlist:seed": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/wishlist-cli.ts --from",
+    "wishlist:import": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/main/wishlist-cli.ts",
+    "wishlist:export": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/main/wishlist-cli.ts --export",
+    "wishlist:seed": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/main/wishlist-cli.ts --from",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm build",
     "typecheck": "tsc -p apps/api/tsconfig.json",
     "lint": "eslint .",

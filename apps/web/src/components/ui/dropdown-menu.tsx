@@ -1,12 +1,9 @@
-import { CheckIcon } from 'lucide-react';
 import { DropdownMenu as MenuPrimitive } from 'radix-ui';
 import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
 export const DropdownMenu = MenuPrimitive.Root;
 export const DropdownMenuTrigger = MenuPrimitive.Trigger;
-export const DropdownMenuGroup = MenuPrimitive.Group;
-export const DropdownMenuRadioGroup = MenuPrimitive.RadioGroup;
 
 export const DropdownMenuContent = ({
   className,
@@ -46,27 +43,6 @@ export const DropdownMenuItem = ({
   />
 );
 
-export const DropdownMenuCheckboxItem = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof MenuPrimitive.CheckboxItem>) => (
-  <MenuPrimitive.CheckboxItem className={cn(ITEM, 'pl-8', className)} {...props}>
-    <span className="absolute left-2 flex size-3.5 items-center justify-center">
-      <MenuPrimitive.ItemIndicator>
-        <CheckIcon />
-      </MenuPrimitive.ItemIndicator>
-    </span>
-    {children}
-  </MenuPrimitive.CheckboxItem>
-);
-
-export const DropdownMenuLabel = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof MenuPrimitive.Label>) => (
-  <MenuPrimitive.Label className={cn('px-2 py-1.5 text-xs font-semibold', className)} {...props} />
-);
 export const DropdownMenuSeparator = ({
   className,
   ...props

@@ -130,18 +130,3 @@ export function ConfirmDialog({
     </dialog>
   );
 }
-
-/** Renders children only when `can(permission)` holds. The check is a UX hint; the server enforces access. */
-export function PermissionGate<P extends string = string>({
-  can,
-  permission,
-  fallback = null,
-  children,
-}: {
-  can(permission: P): boolean;
-  permission: P;
-  fallback?: ReactNode;
-  children: ReactNode;
-}) {
-  return <>{can(permission) ? children : fallback}</>;
-}

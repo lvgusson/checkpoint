@@ -14,7 +14,7 @@ export function MetadataBadge({
   const { color, icon } = metadataPresentation(kind, value);
   return (
     <span
-      className={`badge metadata-badge inline-flex items-center gap-[5px] ${className}`}
+      className={`badge metadata-badge inline-flex max-w-full items-center gap-[5px] ${className}`}
       style={{ '--metadata-color': color } as CSSProperties}
     >
       <svg
@@ -24,7 +24,7 @@ export function MetadataBadge({
       >
         <path d={icon} />
       </svg>
-      {value}
+      <span className="min-w-0 break-words">{value}</span>
     </span>
   );
 }

@@ -1,1 +1,1 @@
-export { FinishDialog, localToday, type FinishGame } from './FinishDialog';
+export { FinishDialog, type FinishGame } from './FinishDialog';

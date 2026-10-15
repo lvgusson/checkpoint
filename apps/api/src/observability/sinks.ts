@@ -107,15 +107,13 @@ const MAX_ATTEMPTS = 3;
 /**
  * Makes any sink safe for the request path: write() never throws or waits; events go through a
  * bounded queue (oldest dropped first, counted in `dropped`) and a failing sink is retried with
- * exponential backoff (100 ms doubling up to 30 s, 3 attempts per event).
+ * exponential backoff (100 ms, then 200 ms, 3 attempts per event).
  */
 export class SafeSink implements LogSink {
   dropped = 0;
   private queue: { event: LogEvent; attempts: number }[] = [];
-  private failures = 0;
-  private retryAt = 0;
+  private flushing = false;
   private draining: Promise<void> | undefined;
-  private timer: NodeJS.Timeout | undefined;
   private inner: LogSink;
   private maxQueue: number;
   constructor(inner: LogSink, maxQueue = 1000) {
@@ -131,39 +129,38 @@ export class SafeSink implements LogSink {
     void this.drain();
   }
   private drain(): Promise<void> {
-    return (this.draining ??= (async () => {
+    return (this.draining ??= Promise.resolve().then(async () => {
       try {
         while (this.queue.length) {
-          const wait = this.retryAt - Date.now();
-          if (wait > 0) {
-            this.timer ??= setTimeout(() => {
-              this.timer = undefined;
-              void this.drain();
-            }, wait).unref();
-            return;
-          }
-          const item = this.queue[0];
-          try {
-            await this.inner.write(item.event);
-            this.queue.shift();
-            this.failures = 0;
-          } catch {
-            this.retryAt = Date.now() + Math.min(30_000, 100 * 2 ** this.failures++);
-            if (++item.attempts >= MAX_ATTEMPTS) {
-              this.queue.shift();
-              this.dropped++;
+          // The active event is outside the waiting queue, so overflow cannot remove it.
+          const item = this.queue.shift()!;
+          for (;;) {
+            try {
+              await this.inner.write(item.event);
+              break;
+            } catch {
+              if (++item.attempts >= MAX_ATTEMPTS) {
+                this.dropped++;
+                break;
+              }
+              if (!this.flushing)
+                await new Promise((resolve) => setTimeout(resolve, 100 * 2 ** (item.attempts - 1)));
             }
           }
         }
       } finally {
         this.draining = undefined;
       }
-    })());
+    }));
   }
   async flush() {
-    this.retryAt = 0;
-    await this.drain();
-    await this.inner.flush?.();
+    this.flushing = true;
+    try {
+      await this.drain();
+      await this.inner.flush?.();
+    } finally {
+      this.flushing = false;
+    }
   }
   async close() {
     await this.flush();

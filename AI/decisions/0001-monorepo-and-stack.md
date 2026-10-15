@@ -1,4 +1,6 @@
 ---
+name: 0001-monorepo-and-stack
+description: Why the repo is a pnpm monorepo with this stack.
 type: decision
 area: root
 status: accepted
@@ -25,5 +27,5 @@ Contracts and the UI kit are shared by path, not published. Hosting stays on Ver
 
 ## Related
 
-- [[AI/index]]
-- [[AI/core/core]]
+- [[AI/index]]: Entry point: pick the area you change and follow one link.
+- [[AI/core/core]]: Contracts in packages/core and the packages/ui-react kit, with their dependency rules.

@@ -17,17 +17,17 @@ import 'postgres';
 import '@vercel/functions';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { makeServer } from './src/server.ts';
-import { createService } from './src/setup.ts';
-import { authenticatorFromEnv } from './src/auth.ts';
+import { makeServer } from './src/main/server.ts';
+import { createService } from './src/main/setup.ts';
+import { authenticatorFromEnv } from './src/auth/auth.ts';
 
 const auth = authenticatorFromEnv();
-const { service, wishlist } = await createService({
+const { service, wishlist, config } = await createService({
   dataDir: process.env.DATA_DIR ?? join(tmpdir(), 'checkpoint'),
 });
 
 // makeServer devolve um http.Server; reaproveitamos o listener dele sem listen().
-const server = makeServer(service, auth, wishlist);
+const server = makeServer(service, auth, wishlist, null, config);
 
 export default function handler(req, res) {
   server.emit('request', req, res);

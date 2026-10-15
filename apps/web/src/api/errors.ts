@@ -27,7 +27,7 @@ const text = (value: unknown) => (typeof value === 'string' && value ? value : u
  * Parses an error body. Supports RFC 9457 Problem Details
  * (`{type,title,status,detail,code?}`) and the legacy `{error:{message,code?}}` shape.
  */
-export function parseErrorBody(body: unknown): { message?: string; code?: string } {
+function parseErrorBody(body: unknown): { message?: string; code?: string } {
   if (!body || typeof body !== 'object') return {};
   const root = body as Body;
   const legacy = root?.['error'];

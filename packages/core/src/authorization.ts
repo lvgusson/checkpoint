@@ -1,23 +1,25 @@
 // Declarative role-based access policy. Roles come from the verified JWT `app_metadata.role`;
 // the Supabase `authenticated` claim is a database role and is never a product role.
-export const roles = ['admin', 'user'] as const;
-export type Role = (typeof roles)[number];
+export const Role = { Admin: 'admin', User: 'user' } as const;
+export type Role = (typeof Role)[keyof typeof Role];
+export const roles = Object.values(Role);
 
-export const permissions = [
-  'games:read',
-  'games:update',
-  'catalog:update',
-  'settings:update',
-  'users:manage',
-] as const;
-export type Permission = (typeof permissions)[number];
+export const Permission = {
+  GamesRead: 'games:read',
+  GamesUpdate: 'games:update',
+  CatalogUpdate: 'catalog:update',
+  SettingsUpdate: 'settings:update',
+  UsersManage: 'users:manage',
+} as const;
+export type Permission = (typeof Permission)[keyof typeof Permission];
+export const permissions = Object.values(Permission);
 
 const policy: Record<Role, readonly Permission[]> = {
-  admin: permissions,
-  user: ['games:read', 'games:update', 'settings:update'],
+  [Role.Admin]: permissions,
+  [Role.User]: [Permission.GamesRead, Permission.GamesUpdate, Permission.SettingsUpdate],
 };
 
-export const defaultRole: Role = 'user';
+export const defaultRole: Role = Role.User;
 
 /** Reads `app_metadata.role`; anything unknown falls back to the least-privileged role. */
 export function roleFromAppMetadata(appMetadata: unknown): Role {

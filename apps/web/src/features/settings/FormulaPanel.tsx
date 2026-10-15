@@ -26,7 +26,8 @@ export function FormulaPanel({ d, context }: { d: ScoringConfig; context: Scorin
           +{' '}
           <span className={off(d.rules.duration)}>
             <b>{num(w.duration)}</b>·<var>T</var>
-          </span>
+          </span>{' '}
+          + <b>{num(w.recentPurchase)}</b>·<var>C</var>
         </p>
         <p className={'eq ' + (off(d.rules.affinity) ?? '')}>
           <var>A</var> = (A<sub>gênero</sub> + A<sub>ritmo</sub> + A<sub>mecânica</sub>) ÷ 3, &nbsp;
@@ -82,6 +83,9 @@ export function FormulaPanel({ d, context }: { d: ScoringConfig; context: Scorin
         </p>
       </div>
       <ul className="legend">
+        <li>
+          <var>C</var> - compra recente: 1 na compra. Diminui até zero em 30 dias.
+        </li>
         <li>
           <var>D</var> - vontade de jogar: Imediata e Muito Alta 100, Alta 75, Média 50, Baixa 25,
           Muito Baixa 0. Jogos com vontade Imediata vão para o topo da fila, entre si pelo score.

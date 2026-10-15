@@ -1,4 +1,6 @@
 ---
+name: extending-classes
+description: Steps to add a repository, service method, route, permission or log sink.
 type: how-to
 area: backend
 ---
@@ -9,15 +11,15 @@ Extend by adding an implementation behind an existing interface. Change a call s
 
 ## Add a persistence implementation
 
-1. Implement the interface in `apps/api/src/repository.ts` (`GameRepository`, or the list, settings and wishlist equivalents).
+1. Implement the interface in `apps/api/src/data/ports.ts` (`GameRepository`, or the list, settings and wishlist equivalents).
 2. Scope every query by the owner id. A missing owner returns nothing.
-3. Select it in `createService` (`apps/api/src/setup.ts`) from an environment condition.
+3. Select it in `createService` (`apps/api/src/main/setup.ts`) from an environment condition.
 4. Check: run the API with the new mode and call `GET /api/v1/games`.
 
 ## Add a route
 
-1. Add the method to the service (`service.ts`, `wishlist.ts`). Keep HTTP out of services.
-2. Wire the route in `server.ts` (or a `*-routes.ts` file), check the permission first, and throw `AppError` for expected failures.
+1. Add the method to the service in `apps/api/src/services/`. Keep HTTP out of services.
+2. Wire the route in `apps/api/src/routes/`, check the permission first, and throw `AppError` for expected failures.
 3. Document it in `apps/api/openapi.json`.
 4. Check: call it with a valid and an invalid body; the error must be problem+json.
 
@@ -31,11 +33,11 @@ Follow `apps/api/src/observability/README.md`, summarized in [[AI/backend/observ
 
 ## Rules for new classes
 
-- Depend on an interface, receive collaborators through the constructor or factory, and keep construction in `setup.ts`.
+- Depend on an interface, receive collaborators through the constructor or factory, and keep construction in `apps/api/src/main/setup.ts`.
 - Vendor imports live in one adapter file.
 - Reach shared types through `packages/core/src`, never from `apps/web`.
 
 ## Related
 
-- [[AI/backend/backend]]
-- [[AI/patterns/design-patterns]]
+- [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
+- [[AI/patterns/design-patterns]]: Design patterns in use, where they live, and how to expand a class.

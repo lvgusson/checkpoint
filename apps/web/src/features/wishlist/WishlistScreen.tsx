@@ -1,35 +1,17 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { EmptyState } from '@checkpoint/ui-react';
-import type { Desire, SteamPrice, WishlistItem } from '../../../../../packages/core/src/models';
+import type { Desire, SteamPrice } from '../../../../../packages/core/src/models';
+import { badgeColor } from '../metadata';
 import { formatPrice, useSteamSearch, useWishlist, useWishlistActions } from './wishlist';
 import './wishlist.css';
 
 const DESIRES: Desire[] = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
-type Sort = 'name' | 'discount' | 'price';
+import { compareWishlistItems, type WishlistSort } from '../../../../../packages/core/src/wishlist';
 
-/** Badge color per value (same mapping as the Angular `color` helper). */
-const badgeColor = (v: string) => {
-  if (v === 'Imediata' || v === 'Desejado') return 'rose';
-  if (v === 'Finalizado' || v === 'Muito Alta') return 'green';
-  if (v === 'Jogando' || v === 'Alta') return 'blue';
-  if (v === 'Abandonado' || v === 'Muito Baixa') return 'gray';
-  if (v === 'Média') return 'amber';
-  const n = [...v].reduce((a, c) => a + c.charCodeAt(0), 0);
-  return ['violet', 'blue', 'amber', 'rose', 'green'][n % 5];
-};
 const original = (p: SteamPrice) => formatPrice({ ...p, finalCents: p.initialCents });
 const messageOf = (e: unknown, fallback: string) =>
   e instanceof Error && e.message ? e.message : fallback;
-
-function sortItems(items: WishlistItem[], sort: Sort) {
-  const cents = (i: WishlistItem) => i.price?.finalCents ?? Number.MAX_SAFE_INTEGER;
-  const copy = [...items];
-  if (sort === 'discount')
-    copy.sort((a, b) => (b.price?.discountPercent ?? 0) - (a.price?.discountPercent ?? 0));
-  else if (sort === 'price') copy.sort((a, b) => cents(a) - cents(b));
-  return copy;
-}
 
 export function WishlistScreen() {
   const { wishlist, genres } = useWishlist();
@@ -37,17 +19,22 @@ export function WishlistScreen() {
   const [q, setQ] = useState('');
   const [desire, setDesire] = useState<Desire>('Média');
   const [profile, setProfile] = useState('');
-  const [sort, setSort] = useState<Sort>('name');
+  const [sort, setSort] = useState<WishlistSort>('name');
   const [manual, setManual] = useState({ name: '', primaryGenre: '', mainHours: '' });
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const search = useSteamSearch(q);
 
-  const sorted = useMemo(() => sortItems(wishlist.data ?? [], sort), [wishlist.data, sort]);
-  const items = sorted;
-  const onSale = items.filter((i) => i.price?.discountPercent).length;
+  const sorted = useMemo(
+    () => [...(wishlist.data ?? [])].sort(compareWishlistItems(sort)),
+    [wishlist.data, sort],
+  );
+  const onSale = sorted.filter((i) => i.price?.discountPercent).length;
   const busy =
-    actions.add.isPending || actions.importSteam.isPending || actions.refreshPrices.isPending;
+    actions.add.isPending ||
+    actions.purchase.isPending ||
+    actions.importSteam.isPending ||
+    actions.refreshPrices.isPending;
   const shownError =
     error ||
     (wishlist.isError && !wishlist.data
@@ -222,7 +209,7 @@ export function WishlistScreen() {
 
       <div className="list-toolbar">
         <span>
-          {items.length} desejados
+          {sorted.length} desejados
           {onSale > 0 && <span className="muted"> · {onSale} em promoção</span>}
           {wishlist.isFetching && <span className="muted"> · carregando</span>}
         </span>
@@ -231,65 +218,80 @@ export function WishlistScreen() {
           <select
             aria-label="Ordenação"
             value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
+            onChange={(e) => setSort(e.target.value as WishlistSort)}
           >
             <option value="name">Nome A–Z</option>
             <option value="discount">Maior desconto</option>
             <option value="price">Menor preço</option>
+            <option value="recommendation">Recomendação</option>
           </select>
         </label>
       </div>
       <div className="game-grid">
         {sorted.map((i) => (
-          <Link
-            className="game-card"
-            to={`/jogos/${encodeURIComponent(i.game.id)}`}
-            key={i.game.id}
-          >
-            <div className="cover" data-genre={i.game.primaryGenre}>
-              {i.game.coverUrl && (
-                <img
-                  src={i.game.coverUrl}
-                  alt=""
-                  loading="lazy"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
-              <span className="cover-fallback">{i.game.name.slice(0, 1)}</span>
-              {!!i.price?.discountPercent && (
-                <span className="badge cover-status green">-{i.price.discountPercent}%</span>
-              )}
-            </div>
-            <div className="card-body">
-              <div className="card-store">{i.game.store || 'Sem loja'}</div>
-              <h2>{i.game.name}</h2>
-              {i.description && <p className="description">{i.description}</p>}
-              <div className="tags">
-                {i.game.primaryGenre && (
-                  <span className={'badge ' + badgeColor(i.game.primaryGenre)}>
-                    {i.game.primaryGenre}
-                  </span>
+          <article className="game-card" key={i.game.id}>
+            <Link
+              to={`/jogos/${encodeURIComponent(i.game.id)}`}
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              <div className="cover" data-genre={i.game.primaryGenre}>
+                {i.game.coverUrl && (
+                  <img
+                    src={i.game.coverUrl}
+                    alt=""
+                    loading="lazy"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
                 )}
-                {i.game.secondaryTags.slice(0, 2).map((t) => (
-                  <span key={t} className={'badge ' + badgeColor(t)}>
-                    {t}
-                  </span>
-                ))}
+                <span className="cover-fallback">{i.game.name.slice(0, 1)}</span>
+                {!!i.price?.discountPercent && (
+                  <span className="badge cover-status green">-{i.price.discountPercent}%</span>
+                )}
               </div>
-              <div className="card-bottom">
-                <span className="price">
-                  {!!i.price?.discountPercent && !!i.price.initialCents && (
-                    <s>{original(i.price)}</s>
+              <div className="card-body">
+                <div className="card-store">{i.game.store || 'Sem loja'}</div>
+                <h2>{i.game.name}</h2>
+                {i.description && <p className="description">{i.description}</p>}
+                <div className="tags">
+                  {i.game.primaryGenre && (
+                    <span className={'badge ' + badgeColor(i.game.primaryGenre)}>
+                      {i.game.primaryGenre}
+                    </span>
                   )}
-                  <strong>{formatPrice(i.price)}</strong>
-                </span>
-                <span className={'badge ' + badgeColor(i.game.desire)}>{i.game.desire}</span>
+                  {i.game.secondaryTags.slice(0, 2).map((t) => (
+                    <span key={t} className={'badge ' + badgeColor(t)}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+                <div className="card-bottom">
+                  <span className="price">
+                    {!!i.price?.discountPercent && !!i.price.initialCents && (
+                      <s>{original(i.price)}</s>
+                    )}
+                    <strong>{formatPrice(i.price)}</strong>
+                  </span>
+                  <span className={'badge ' + badgeColor(i.game.desire)}>{i.game.desire}</span>
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+            <button
+              type="button"
+              className="button"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await actions.purchase.mutateAsync(i.game.id);
+                  return `${i.game.name} entrou na biblioteca.`;
+                })
+              }
+            >
+              Comprei
+            </button>
+          </article>
         ))}
       </div>
-      {!items.length && !wishlist.isFetching && (
+      {!sorted.length && !wishlist.isFetching && (
         <EmptyState
           title="Nenhum desejo ainda"
           description="Busque um jogo na Steam ou importe sua lista de desejos."

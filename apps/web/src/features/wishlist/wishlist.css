@@ -43,6 +43,16 @@
     object-fit: cover;
     border-radius: 4px;
   }
+  .results .name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .results .muted,
+  .plus {
+    white-space: nowrap;
+  }
   .plus {
     font-weight: 600;
   }

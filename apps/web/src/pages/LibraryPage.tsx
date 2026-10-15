@@ -5,25 +5,14 @@ import { Link, useSearchParams } from 'react-router';
 import type { Catalog, Desire, GamePage, ScoredGame } from '../../../../packages/core/src/models';
 import { api } from '../api/http';
 import { ImmediateButton } from '../features/immediate';
+import { badgeColor } from '../features/metadata';
 import { PlayingButton, useGameWriter } from '../features/playing';
 import { useQueryKeys } from '../query/keys';
-
-/** Badge color family by value (same mapping as the Angular `color()` helper). */
-function badgeColor(v: string) {
-  if (v === 'Imediata' || v === 'Desejado') return 'rose';
-  if (v === 'Finalizado' || v === 'Muito Alta') return 'green';
-  if (v === 'Jogando' || v === 'Alta') return 'blue';
-  if (v === 'Abandonado' || v === 'Muito Baixa') return 'gray';
-  if (v === 'Média') return 'amber';
-  const n = [...v].reduce((a, c) => a + c.charCodeAt(0), 0);
-  return ['violet', 'blue', 'amber', 'rose', 'green'][n % 5];
-}
 
 const DEFAULTS = {
   filters: { status: '', primaryGenre: '', store: '' },
   search: '',
   sort: 'name',
-  view: 'card',
 } as const;
 type LibraryFilters = { status: string; primaryGenre: string; store: string };
 
@@ -122,7 +111,6 @@ export function LibraryPage() {
     keyPrefix: k.games(),
     fetchPage,
     defaults: DEFAULTS,
-    getId: (g) => g.id,
     pageSize: 24,
     debounceMs: 250,
     url,

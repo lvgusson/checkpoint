@@ -1,4 +1,6 @@
 ---
+name: frontend
+description: Folder map of apps/web and the map of frontend notes.
 type: hub
 area: frontend
 ---
@@ -13,7 +15,7 @@ React 19, Vite, TypeScript, react-router, TanStack Query, Ky, Zod, react-hook-fo
 | ------------------------- | ------------------------------------------------------------------- |
 | `pages/`                  | One thin route component per page; it renders a feature screen      |
 | `features/`               | One folder per capability: screen, hooks, model, styles, `index.ts` |
-| `components/ui/`          | shadcn primitives (button, dialog, select, ...)                     |
+| `components/ui/`          | shadcn primitives in use (button, select, popover, calendar, ...)   |
 | `app/`                    | Shell, navigation, route table                                      |
 | `api/`, `auth/`, `query/` | HTTP client, session, query keys and client                         |
 | `appearance/`             | Theme and accent state                                              |
@@ -24,8 +26,9 @@ React 19, Vite, TypeScript, react-router, TanStack Query, Ky, Zod, react-hook-fo
 - Colors, typography, spacing, themes: [[AI/frontend/visual-identity]]
 - Fetching, caching, optimistic updates, errors: [[AI/frontend/data-and-state]]
 - Reusable list, pagination, drag and drop pieces: [[AI/core/core]]
+- Run or write Playwright browser tests: [[AI/frontend/e2e-testing]]
 
 ## Related
 
-- [[AI/index]]
-- [[AI/patterns/design-patterns]]
+- [[AI/index]]: Entry point: pick the area you change and follow one link.
+- [[AI/patterns/design-patterns]]: Design patterns in use, where they live, and how to expand a class.

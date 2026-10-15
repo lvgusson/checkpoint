@@ -14,7 +14,7 @@ try {
 }
 
 /** Same freshness window as the Angular DataCache (FRESH_MS). */
-export const FRESH_MS = 60_000;
+const FRESH_MS = 60_000;
 
 /**
  * Single retry owner for reads: up to 2 retries with backoff, only for transient failures.

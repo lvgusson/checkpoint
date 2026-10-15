@@ -1,75 +1,116 @@
-# Checkpoint — biblioteca de jogos
+# Checkpoint - game collection
 
-Aplicação local com API Node e React, sem login, com **481 jogos reais importados da sua planilha**. Três telas: lista de jogos, ordem recomendada e detalhes/avaliação. O visual usa componentes próprios inspirados no shadcn, com tags coloridas e layout responsivo.
+Checkpoint is a web application with a Node API and a React frontend.
+It includes 481 games imported from a spreadsheet.
+The interface provides three screens: game list, recommended queue, and details.
+The visual design uses components inspired by shadcn, colored badges, and a responsive layout.
 
-## Abrir o app
+## Run the application
 
-Instale **Node 24.15 ou mais recente**. Compile o front uma vez e inicie a API, que serve o build em `apps/web/dist`:
+Prerequisite: install Node.js 24.15 or newer.
 
-```bash
-pnpm install
-pnpm build
-pnpm start
-```
+1. Install dependencies: `pnpm install`.
+2. Build the packages and web app: `pnpm build`.
+3. Start the API server: `pnpm start`.
+4. Open `http://localhost:3000` in your browser.
 
-Abra **http://localhost:3000**. Mantenha o terminal aberto durante o uso.
+Keep the terminal open while you use the application.
 
-## Desenvolvimento
+## Development
 
-```bash
-pnpm install
-pnpm dev
-```
+1. Install dependencies: `pnpm install`.
+2. Start development servers: `pnpm dev`.
 
-Front (Vite): http://localhost:5173; API: http://localhost:3000. Para validar e recompilar:
+The frontend runs at `http://localhost:5173`.
+The API runs at `http://localhost:3000`.
+`pnpm dev` reloads the API on file changes and runs Vite with HMR for the frontend.
 
-```bash
-pnpm check
-```
+Run quality gates with `pnpm check`.
+Format code with `pnpm format`.
+Lint code with `pnpm lint`.
 
-`pnpm dev` recarrega a API com `node --watch` e o front com o dev server do Vite (HMR). Qualidade: `pnpm lint` / `lint:fix` (ESLint), `pnpm format` / `format:check` (Prettier).
+## Authentication (Supabase Auth)
 
-## Autenticação (Supabase Auth)
+The API reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from `.env`.
+The frontend requests public configuration from `GET /api/v1/config` on startup.
+It creates a Supabase client that manages session tokens.
 
-A API lê `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` do `.env` (`--env-file-if-exists`). O front busca essas duas informações públicas em `GET /api/v1/config` ao iniciar e cria o client `supabase-js`, que persiste a sessão e renova o token sozinho. Todas as rotas `/api/*` exigem `Authorization: Bearer <access_token>`, exceto `health`, `openapi.json` e `config`; a API valida o JWT localmente com o JWKS do projeto (`jose`, com cache). Sem `SUPABASE_URL`, a API roda sem autenticação em desenvolvimento e responde 503 em produção. `AUTH_GITHUB_ENABLED=true` mostra o botão "Continuar com GitHub". O usuário da requisição fica disponível em `getContext()` (`apps/api/src/context.ts`).
+All `/api/*` routes require `Authorization: Bearer <access_token>`, except `health`, `openapi.json`, and `config`.
+The API validates JWT signatures locally using project JWKS keys (`apps/api/src/auth/auth.ts`).
+Without `SUPABASE_URL`, the API runs without authentication in development only.
+In production, missing authentication causes the API to return HTTP 503.
+Set `AUTH_GITHUB_ENABLED=true` to enable GitHub authentication.
+The request context provides current user data through `getContext()` in `apps/api/src/shared/context.ts`.
 
-## Dados e persistência
+## Data and persistence
 
-`apps/api/src/seed.ts` contém todos os jogos e os campos da aba Jogos, incluindo Steam App ID, horas Steam, notas, comentários, classificações e valores originais das fórmulas. Valores calculados atuais vêm do algoritmo; os anteriores ficam em `imported`. Células vazias viram `null` ou texto vazio, e a antiga nota zero significa ausência de avaliação. Datas são ISO. O snapshot foi lido em 10/10/2026; não há sincronização automática com a planilha ou lojas.
+The seed dataset in `apps/api/src/data/seed.ts` contains initial game records.
+Records include Steam App IDs, hours played, ratings, comments, and formula scores.
+The algorithm calculates current values dynamically; previous imported scores remain in `imported`.
+Empty cells become `null` or empty strings.
+A rating of zero indicates an unrated game.
+All dates use ISO 8601 formatting.
 
-Ao salvar, o adaptador grava `apps/api/data/games.json`, que é carregado no próximo início. Copie esse arquivo para fazer backup das alterações. Excluí-lo restaura o snapshot original. `DATA_FILE`, `PORT` e `HOST` podem configurar caminho, porta e interface. Por padrão o servidor usa 127.0.0.1. A aplicação não contém suas chaves de API nem suas credenciais.
+In local file mode, the API persists records to JSON files in `DATA_DIR`.
+In database mode, the API persists records to PostgreSQL through Supabase.
+Set `DATA_DIR`, `PORT`, and `HOST` through environment variables.
+The server listens on `127.0.0.1` by default.
 
-Capas vêm do CDN da Steam quando há App ID. Jogos sem esse identificador usam uma capa gráfica com inicial; não foram inventados identificadores. As capas e fontes externas precisam de internet, mas o app funciona sem elas.
+Game covers load from the Steam CDN when a Steam App ID exists.
+Games without an App ID display a generated placeholder cover.
+The application operates without internet connectivity, but remote images require network access.
 
-## API first e troca para SQL
+## API and routes
 
-Contrato OpenAPI: `apps/api/openapi.json`, também servido em `/api/v1/openapi.json`. Modelos compartilhados em `packages/core/src/models.ts`. Rotas principais:
+The OpenAPI contract lives in `apps/api/openapi.json` and serves at `/api/v1/openapi.json`.
+Shared models live in `packages/core/src/models.ts`.
 
-- `GET /api/v1/games`: pesquisa, filtros, ordenação e paginação.
-- `GET /api/v1/games/{id}`: todos os metadados e pontuação.
-- `PATCH /api/v1/games/{id}`: edição parcial validada.
-- `GET /api/v1/catalog`: opções de filtros e contagens.
-- `GET /api/v1/recommendations`: fila completa, fatores e motivos.
-- `POST /api/v1/queue/reorder` `{ gameId, toPosition }`: valida e responde 200 na hora (`{ accepted: true, … }`); o jogo é fixado em `toPosition` e a gravação segue em background.
-- `GET /api/v1/queue/adjustments`: posições fixas e histórico de movimentos.
-- `DELETE /api/v1/queue/adjustments/{gameId}`: solta a posição fixa do jogo.
+Key routes:
 
-### Posições fixas na fila
+- `GET /api/v1/games`: Search, filter, sort, and paginate games.
+- `GET /api/v1/games/{id}`: Retrieve game metadata and scores.
+- `PATCH /api/v1/games/{id}`: Update game properties with validation.
+- `GET /api/v1/catalog`: Retrieve filter options and counts.
+- `GET /api/v1/recommendations`: Retrieve the recommended queue with explanations.
+- `POST /api/v1/queue/reorder`: Validate and pin a game to a fixed position.
+- `GET /api/v1/queue/adjustments`: List pinned positions and movement history.
+- `DELETE /api/v1/queue/adjustments/{gameId}`: Unpin a game.
 
-Na tela **Ordem de jogos**, arraste um jogo pelo puxador ⠿ (mouse, toque com long-press na linha, ou teclado: espaço pega, setas movem, espaço solta, Esc cancela). O front deixa o jogo onde foi solto sem esperar e envia os movimentos em sequência; a API só valida e responde 200, e o recálculo e a gravação continuam depois da resposta (`waitUntil` na Vercel), com até 5 tentativas e espera exponencial de 200, 400, 800 e 1600 ms (`apps/api/src/retry.ts`).
+### Fixed queue positions
 
-A fila exibida é calculada na leitura, em memória, juntando dois modelos: (a) a fila por pontuação, sem os jogos fixados (eles saem do cálculo, inclusive do contexto dos vizinhos), e (b) as posições fixas, inseridas em X crescente, empurrando o resto para baixo. Empate na mesma X: o movimento mais recente fica em X. X além do fim vai para o fim. Fixos que o arraste deslocou na tela têm o X reindexado, então a fila fica exatamente igual à tela. Pré-requisito não bloqueia: o item aparece com aviso ⚠ (`pinnedBeforePrerequisite`). Finalizar um jogo remove a posição fixa dele. Jogos com vontade **Imediata** vão para o topo da fila por pontuação, entre si pelo score; os fixos entram depois. Os pins ficam separados do registro importado (`ManualAdjustmentRepository`, arquivo `apps/api/data/manual-adjustments.json`, configurável por `MANUAL_FILE`) e podem ser soltos no × do chip “Fixado”.
+Users can drag game items on the queue screen to pin positions.
+Supported controls include mouse, touch long-press, and keyboard shortcuts (Space to grab, arrows to move, Space to drop, Esc to cancel).
 
-`GameService` recebe a interface `GameRepository` (`list`, `get`, `save`). Para migrar, implemente um `SqlGameRepository`, mantendo o ID estável, e injete-o no lugar de `LocalGameRepository` em `server.ts`. Nenhuma tela precisa mudar. O adaptador atual grava atomicamente e serializa as gravações.
+The frontend updates the interface immediately and sends move requests sequentially.
+The API validates the request, returns HTTP 200, and recalculates positions in the background.
+Background persistence uses exponential backoff retry logic in `apps/api/src/shared/retry.ts`.
 
-## Pontuação e ordem
+The server calculates the displayed queue in memory on read requests.
+It combines the score-ranked list with manually pinned positions.
+Completed games lose their pinned position automatically.
+Games with immediate interest rank at the top of the score queue.
 
-A base combina **50% vontade, 35% afinidade e 15% duração**. Vontade: Muito Alta 100, Alta 75, Média 50, Baixa 25, Muito Baixa 0. Afinidade usa notas de 1–5 transformadas em 0–100, por gênero principal, mecânica e ritmo, com dois votos neutros para evitar exageros em poucos dados. O tempo usa campanha + extras, depois campanha principal, depois estimativa anterior; sem dado, permanece desconhecido. O fator pessoal de duração aprende com a mediana das razões entre horas reais e estimadas dos finalizados, suavizada e limitada a 0,5–2.
+`GameService` consumes `GameRepository` defined in `apps/api/src/data/ports.ts`.
+`apps/api/src/main/setup.ts` injects the configured repository driver.
 
-A fila é construída posição a posição. Penalidades: mesmo gênero −18; gênero há duas posições −8; mesma mecânica −10; subgêneros até −8 e até −4 há duas posições, proporcionalmente à sobreposição. Campanhas de 40h ou mais seguidas recebem −24; carga de 90h nos últimos três jogos dá −12 a outro longo. Mesmo ritmo −6. Bônus: contraste calmo/frenético +8; até 12h após longo +6; em andamento +8. Os últimos três finalizados com data iniciam o contexto. Pesos ficam em `apps/api/src/scoring.ts`.
+## Scoring and ordering
 
-Predecessores cadastrados vêm antes das continuações, mas **não há obrigação de jogá-las todas seguidas**. ID ausente não bloqueia; ciclos aparecem no diagnóstico. Finalizados, abandonados e títulos com estrutura “Sem fim definido” ficam fora. Pontuações contextuais podem ultrapassar 100: são prioridades, não notas de qualidade.
+The base score formula combines three factors: interest (50%), affinity (35%), and duration (15%).
 
-Uma nova nota pode finalizar o jogo automaticamente; desmarque a opção se estiver avaliando antecipadamente. Só alterar vontade ou horas preserva o status. Notas já existentes no snapshot não finalizam retroativamente. A ordem é calculada de novo em cada leitura, usando os dados salvos, sem cron ou recarga manual de banco. Navegar de volta à fila busca a versão atual.
+- **Interest**: Very High (100), High (75), Medium (50), Low (25), Very Low (0).
+- **Affinity**: Converts ratings (1 to 5) into scores (0 to 100) by primary genre, mechanics, and pace.
+- **Duration**: Prefers main story plus extra content, then main story, then previous estimates.
+- A personal duration multiplier adjusts estimates based on historical play times (bounded between 0.5 and 2.0).
 
-Não há cadastro/exclusão de jogos nesta primeira versão de três telas, nem importações de lojas em tempo real. O conjunto inicial pode ser ampliado pelo seed ou por um adaptador futuro.
+The queue builds position by position and applies contextual penalties and bonuses.
+Scoring weights live in `apps/api/src/domain/scoring.ts`.
+
+- **Penalties**: Same genre (-18), recent genre (-8), same mechanic (-10), consecutive long games (-24).
+- **Bonuses**: Calm to intense pace contrast (+8), short game after a long game (+6), in-progress game (+8).
+
+Prerequisites appear before sequels in the recommendation queue.
+Finished, abandoned, and endless titles stay out of the recommended queue.
+Scores represent recommendation priority, not quality ratings.
+
+The API recalculates recommendations on every read request from saved data.
+It requires no background cron job or manual database sync.

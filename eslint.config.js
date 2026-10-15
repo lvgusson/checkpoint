@@ -13,7 +13,7 @@ export default defineConfig(
       '**/dist/',
       'node_modules/',
       'apps/api/infra/',
-      'apps/api/src/seed.ts', // snapshot gerado
+      'apps/api/src/data/seed.ts', // snapshot gerado
     ],
   },
   // Scripts JS (config, scripts/, api/index.mjs): Node
@@ -29,9 +29,86 @@ export default defineConfig(
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: { globals: globals.node },
   },
+  // Inward-only dependency rules for apps/api/src
+  {
+    files: ['apps/api/src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/data/**',
+                '**/services/**',
+                '**/routes/**',
+                '**/main/**',
+                '**/integrations/**',
+              ],
+              message:
+                'Domain layer must not depend on outer layers (data, services, routes, main, integrations).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/data/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/services/**', '**/routes/**', '**/main/**'],
+              message: 'Data layer must not depend on services, routes, or main.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/services/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/routes/**', '**/main/**'],
+              message: 'Services layer must not depend on routes or main.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/routes/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/main/**'],
+              message: 'Routes layer must not depend on main.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // React app and UI kit
   {
-    files: ['apps/web/src/**/*.{ts,tsx}', 'apps/web/*.ts', 'packages/ui-react/**/*.{ts,tsx}'],
+    files: [
+      'apps/web/src/**/*.{ts,tsx}',
+      'apps/web/*.ts',
+      'apps/web/e2e/**/*.ts',
+      'packages/ui-react/**/*.{ts,tsx}',
+    ],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
@@ -41,6 +118,7 @@ export default defineConfig(
   },
   {
     files: ['**/*.{ts,tsx}'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',

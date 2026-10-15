@@ -3,6 +3,7 @@ import type {
   Recommendations,
   ScoredGame,
 } from '../../../../../packages/core/src/models';
+import { localToday } from '@/lib/utils';
 
 export interface PlayingEvent {
   game: ScoredGame;
@@ -35,10 +36,7 @@ export class PlayingUpdates {
   toggle(game: ScoredGame): Promise<void> {
     let state = this.states.get(game.id);
     const current = state?.desired ?? game;
-    const today = new Date();
-    const startedAt =
-      current.startedAt ??
-      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const startedAt = current.startedAt ?? localToday();
     const desired: ScoredGame = {
       ...current,
       status: current.status === 'Jogando' ? 'Não iniciado' : 'Jogando',

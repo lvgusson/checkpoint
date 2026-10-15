@@ -6,3 +6,12 @@ apps/api/infra/data/
 .vercel
 # Generated snapshot (570 KB): formatting only produces noisy diffs
 apps/api/src/seed.ts
+
+# Generated output, not source
+.beads/backup
+apps/web/playwright-report
+apps/web/test-results
+
+# Vendored skill files (must match upstream byte-for-byte)
+.agents/skills/
+skills/

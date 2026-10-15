@@ -105,3 +105,14 @@ export function metadataPresentation(
             : '#64748b';
   return { color, icon: icons[icon] };
 }
+
+/** Badge color family by value (same mapping as the Angular `color()` helper). */
+export function badgeColor(v: string) {
+  if (v === 'Imediata' || v === 'Desejado') return 'rose';
+  if (v === 'Finalizado' || v === 'Muito Alta') return 'green';
+  if (v === 'Jogando' || v === 'Alta') return 'blue';
+  if (v === 'Abandonado' || v === 'Muito Baixa') return 'gray';
+  if (v === 'Média') return 'amber';
+  const n = [...v].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return ['violet', 'blue', 'amber', 'rose', 'green'][n % 5];
+}

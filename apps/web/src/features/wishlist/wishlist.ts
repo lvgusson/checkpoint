@@ -4,6 +4,7 @@ import { api } from '../../api/http';
 import { useQueryKeys } from '../../query/keys';
 import type {
   Catalog,
+  ScoredGame,
   SteamPrice,
   SteamSearchItem,
   WishlistImportResult,
@@ -71,6 +72,12 @@ export function useWishlistActions() {
     add: useMutation({
       mutationFn: (json: Record<string, unknown>) =>
         api.post<WishlistItem & { created: boolean }>('wishlist', { json }),
+      onSuccess: changed,
+      onError: () => {},
+    }),
+    purchase: useMutation({
+      mutationFn: (id: string) =>
+        api.post<ScoredGame>(`games/${encodeURIComponent(id)}/purchase`, { json: {} }),
       onSuccess: changed,
       onError: () => {},
     }),

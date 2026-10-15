@@ -46,10 +46,14 @@ let release, created;
 if (opts.db) {
   const url = process.env.DATABASE_URL_SESSION || process.env.DATABASE_URL;
   if (!url) throw new Error('Defina DATABASE_URL_SESSION ou DATABASE_URL para --db.');
-  const [{ default: postgres }, lib] = await Promise.all([
-    import('postgres'),
-    import('../src/releases.ts'),
-  ]);
+  const [{ default: postgres }, domain, service, { ReleaseRepository }, { PgReleaseDriver }] =
+    await Promise.all([
+      import('postgres'),
+      import('../src/domain/releases.ts'),
+      import('../src/services/releases.ts'),
+      import('../src/data/repositories/releases.ts'),
+      import('../src/data/drivers/pg/releases.ts'),
+    ]);
   const sql = postgres(url, {
     prepare: false,
     max: 1,
@@ -57,8 +61,11 @@ if (opts.db) {
     onnotice: () => {},
   });
   try {
-    const input = { ...lib.parseReleaseInput(body), createdBy: 'release:note' };
-    ({ release, created } = await lib.createRelease(new lib.PgReleaseStore(sql), input));
+    const input = { ...domain.parseReleaseInput(body), createdBy: 'release:note' };
+    ({ release, created } = await service.createRelease(
+      new ReleaseRepository(new PgReleaseDriver(sql)),
+      input,
+    ));
   } finally {
     await sql.end({ timeout: 5 });
   }

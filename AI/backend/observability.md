@@ -1,4 +1,6 @@
 ---
+name: observability
+description: Why logging uses a pluggable sink, and how redaction and safety work.
 type: explanation
 area: backend
 ---
@@ -9,11 +11,12 @@ Call sites use one facade, `log.info('event.name', fields)`. The destination is 
 
 Why a strategy: the log vendor is undecided and may change. Every sink is wrapped so a failing destination never reaches a request. Redaction runs before any sink sees an event.
 
-The commands, variables and the five steps to add a sink live in `apps/api/src/observability/README.md`; keep that file as the single source and link to it here.
+The commands, variables, and sink steps live in `apps/api/src/observability/README.md`.
+Keep that file as the single source and link to it here.
 
 Contracts (`Logger`, `LogSink`, `ErrorReporter`, `MetricsRecorder`, `Tracer`) are in `packages/core/src/observability.ts`. Browser events arrive at `POST /api/v1/telemetry`.
 
 ## Related
 
-- [[AI/backend/backend]]
-- [[AI/patterns/design-patterns]]
+- [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
+- [[AI/patterns/design-patterns]]: Design patterns in use, where they live, and how to expand a class.
