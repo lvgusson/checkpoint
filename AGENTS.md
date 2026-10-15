@@ -25,6 +25,8 @@ ASD-STE100 ([asd-ste100.org](https://asd-ste100.org/about_STE.html)) applies to 
 
 ```bash
 pnpm install                        # after pulling or changing any package.json
+pnpm test                           # all Vitest tests; DB tests skip until pnpm db:up
+pnpm db:up                          # throwaway Postgres in Docker (db:down stops it): AI/backend/testing
 pnpm check                          # required gate: run before you report a task done
 pnpm --filter <package> <script>    # run one package's script, e.g. pnpm --filter web test
 ```

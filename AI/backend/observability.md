@@ -52,7 +52,7 @@ The server uses `process.hrtime.bigint()` (ns) and prints ms with 3 decimals. On
 
 Limits: `.execute()`, `.values()` and cursors are not timed (none is used). Error logs that `DatabaseSink` writes during a request count in `db`. Queries in parallel add up, so `db` can exceed `route`. `recv` and `networkMs` include clock skew between browser and server.
 Overhead: about 3 to 4 microseconds per request (3 spans, 3 queries, detail header) in a micro-benchmark.
-Tests: `node --test apps/api/test/timing.test.ts`. Code: [[AI/frontend/data-and-state]].
+Tests: `pnpm test apps/api/test/timing.test.ts`. Code: [[AI/frontend/data-and-state]].
 
 ## Related
 

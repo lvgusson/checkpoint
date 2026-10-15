@@ -1,7 +1,7 @@
 import { SortableList } from '@checkpoint/ui-react';
-import { useState, type MouseEvent } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
-import type { QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
+import type { Desire, QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ import { MetadataBadge } from '../metadata';
 import { PlayingButton } from '../playing';
 import { SwordLoader } from '../loader/SwordLoader';
 import { GameDetailModal } from '../details';
-import { fold, PAGE_SIZE, displayDate, excludedReasons, shownRows } from './queue-model';
+import { fold, PAGE_SIZE, displayDate, excludedReasons } from './queue-model';
 import { useQueue } from './useQueue';
 import './queue.css';
 
@@ -54,44 +54,82 @@ function FinishIcon({ withFlagDetail }: { withFlagDetail?: boolean }) {
 /** The queue of one list: playing games, summary, search, sortable rows. Remount with `key={listId}`. */
 export function QueueView({ listId }: { listId: string }) {
   const q = useQueue(listId);
+  const qRef = useRef(q);
+  useEffect(() => {
+    qRef.current = q;
+  });
   const { data, busyId } = q;
   const [search, setSearch] = useState('');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [finishing, setFinishing] = useState<ScoredGame | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const searching = !!fold(search).trim();
-  const rows = shownRows(data, search, visible);
+
+  const haystacks = useMemo(() => {
+    const cache = new Map<string, string>();
+    for (const item of data?.items ?? []) {
+      const g = item.game;
+      cache.set(
+        g.id,
+        fold([g.name, g.primaryGenre, ...g.secondaryTags, g.mechanic, g.pace].join(' ')),
+      );
+    }
+    return cache;
+  }, [data]);
+
+  const rows = useMemo(() => {
+    const items = data?.items ?? [];
+    const q = fold(search).trim();
+    if (!q) {
+      return items.slice(0, visible).map((item, index) => ({ item, index }));
+    }
+    const words = q.split(/\s+/);
+    const result: { item: QueueEntry; index: number }[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
+      const hay = haystacks.get(item.game.id) ?? '';
+      if (words.every((w) => hay.includes(w))) {
+        result.push({ item, index: i });
+        if (result.length >= 100) break;
+      }
+    }
+    return result;
+  }, [data, search, visible, haystacks]);
+
   const firstGameId = !searching ? data?.items[0]?.game.id : undefined;
 
-  function finish(game: ScoredGame, e: MouseEvent) {
+  const handleFinish = useCallback((game: ScoredGame, e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setFinishing(game);
-  }
-  const rowActions = (game: ScoredGame) => (
-    <>
-      <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
-      <ImmediateButton
-        data-testid={`queue-immediate-${game.id.toLowerCase()}`}
-        game={game}
-        onChanged={(desire) => q.setDesire(game.id, desire)}
-        onSaved={q.desireSaved}
-        onFailed={(message) => {
-          q.setError(message);
-          q.desireSaved();
-        }}
-      />
-      <button
-        data-testid={`queue-finish-${game.id.toLowerCase()}`}
-        type="button"
-        className="icon-button finish-btn"
-        aria-label={`Finalizar ${game.name}`}
-        title="Finalizar: nota, horas e avaliação"
-        onClick={(e) => finish(game, e)}
-      >
-        <FinishIcon withFlagDetail />
-      </button>
-    </>
+  }, []);
+
+  const handleSetDesire = useCallback((id: string, desire: Desire) => {
+    qRef.current.setDesire(id, desire);
+  }, []);
+
+  const handleDesireSaved = useCallback(() => {
+    qRef.current.desireSaved();
+  }, []);
+
+  const handleDesireFailed = useCallback((message: string) => {
+    qRef.current.setError(message);
+    qRef.current.desireSaved();
+  }, []);
+
+  const handleResetManual = useCallback((id: string) => {
+    void qRef.current.resetManual(id);
+  }, []);
+
+  const handleOpenDetails = useCallback((id: string) => {
+    setSelectedGameId(id);
+  }, []);
+
+  const handleMoveIntent = useCallback(
+    ({ id, fromIndex, toIndex }: { id: string; fromIndex: number; toIndex: number }) => {
+      qRef.current.move(id, fromIndex, toIndex);
+    },
+    [],
   );
 
   return (
@@ -159,7 +197,29 @@ export function QueueView({ listId }: { listId: string }) {
                         </p>
                       </div>
                     </Link>
-                    <div className="playing-actions">{rowActions(game)}</div>
+                    <div className="playing-actions">
+                      <PlayingButton
+                        data-testid={`queue-playing-${game.id.toLowerCase()}`}
+                        game={game}
+                      />
+                      <ImmediateButton
+                        data-testid={`queue-immediate-${game.id.toLowerCase()}`}
+                        game={game}
+                        onChanged={(desire) => handleSetDesire(game.id, desire)}
+                        onSaved={handleDesireSaved}
+                        onFailed={handleDesireFailed}
+                      />
+                      <button
+                        data-testid={`queue-finish-${game.id.toLowerCase()}`}
+                        type="button"
+                        className="icon-button finish-btn"
+                        aria-label={`Finalizar ${game.name}`}
+                        title="Finalizar: nota, horas e avaliação"
+                        onClick={(e) => handleFinish(game, e)}
+                      >
+                        <FinishIcon withFlagDetail />
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -194,7 +254,7 @@ export function QueueView({ listId }: { listId: string }) {
               </strong>
             </div>
           </div>
-          {data.items[0] && <NextGame entry={data.items[0]} onOpenDetails={setSelectedGameId} />}
+          {data.items[0] && <NextGame entry={data.items[0]} onOpenDetails={handleOpenDetails} />}
           <section className="filters queue-search" role="search">
             <label className="search">
               <span aria-hidden="true">⌕</span>
@@ -264,7 +324,7 @@ export function QueueView({ listId }: { listId: string }) {
               getId={(row) => row.item.game.id}
               disabled={searching || busyId !== null}
               aria-label="Fila de jogos"
-              onMoveIntent={({ id, fromIndex, toIndex }) => q.move(id, fromIndex, toIndex)}
+              onMoveIntent={handleMoveIntent}
               renderItem={({ item, index: i }, { isDragging, handleProps }) => {
                 // The row is the pointer/touch target; only the invisible handle takes keyboard drags.
                 const {
@@ -286,9 +346,12 @@ export function QueueView({ listId }: { listId: string }) {
                     isDragging={isDragging}
                     pointerProps={{ onPointerDown, onTouchStart }}
                     handleProps={{ ...aria, onKeyDown }}
-                    onResetManual={() => void q.resetManual(item.game.id)}
-                    onOpenDetails={setSelectedGameId}
-                    actions={rowActions(item.game)}
+                    onResetManual={handleResetManual}
+                    onOpenDetails={handleOpenDetails}
+                    onFinish={handleFinish}
+                    onSetDesire={handleSetDesire}
+                    onDesireSaved={handleDesireSaved}
+                    onDesireFailed={handleDesireFailed}
                   />
                 );
               }}
@@ -405,12 +468,34 @@ interface RowProps {
   isDragging: boolean;
   pointerProps: React.HTMLAttributes<HTMLElement>;
   handleProps: React.HTMLAttributes<HTMLElement>;
-  onResetManual(): void;
+  onResetManual(id: string): void;
   onOpenDetails?: (id: string) => void;
-  actions: React.ReactNode;
+  onFinish(game: ScoredGame, e: MouseEvent): void;
+  onSetDesire(id: string, desire: Desire): void;
+  onDesireSaved(): void;
+  onDesireFailed(message: string): void;
 }
 
-function QueueRow({
+function areRowPropsEqual(prev: RowProps, next: RowProps): boolean {
+  return (
+    prev.entry === next.entry &&
+    prev.index === next.index &&
+    prev.isNextGame === next.isNextGame &&
+    prev.searching === next.searching &&
+    prev.busy === next.busy &&
+    prev.anyBusy === next.anyBusy &&
+    prev.flash === next.flash &&
+    prev.isDragging === next.isDragging &&
+    prev.onResetManual === next.onResetManual &&
+    prev.onOpenDetails === next.onOpenDetails &&
+    prev.onFinish === next.onFinish &&
+    prev.onSetDesire === next.onSetDesire &&
+    prev.onDesireSaved === next.onDesireSaved &&
+    prev.onDesireFailed === next.onDesireFailed
+  );
+}
+
+const QueueRow = memo(function QueueRow({
   entry: item,
   index: i,
   isNextGame = false,
@@ -423,13 +508,16 @@ function QueueRow({
   handleProps,
   onResetManual,
   onOpenDetails,
-  actions,
+  onFinish,
+  onSetDesire,
+  onDesireSaved,
+  onDesireFailed,
 }: RowProps) {
   const { game } = item;
   const release = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onResetManual();
+    onResetManual(game.id);
   };
   return (
     <div
@@ -535,8 +623,25 @@ function QueueRow({
             </span>
           )
         )}
-        {actions}
+        <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
+        <ImmediateButton
+          data-testid={`queue-immediate-${game.id.toLowerCase()}`}
+          game={game}
+          onChanged={(desire) => onSetDesire(game.id, desire)}
+          onSaved={onDesireSaved}
+          onFailed={onDesireFailed}
+        />
+        <button
+          data-testid={`queue-finish-${game.id.toLowerCase()}`}
+          type="button"
+          className="icon-button finish-btn"
+          aria-label={`Finalizar ${game.name}`}
+          title="Finalizar: nota, horas e avaliação"
+          onClick={(e) => onFinish(game, e)}
+        >
+          <FinishIcon withFlagDetail />
+        </button>
       </div>
     </div>
   );
-}
+}, areRowPropsEqual);

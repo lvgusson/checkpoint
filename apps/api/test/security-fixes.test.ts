@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, it } from 'vitest';
 import { createRateLimiter } from '../src/auth/rate-limit.ts';
 import { SteamClient, parseSteamProfile } from '../src/integrations/steam/client.ts';
 import { redact } from '../src/observability/logger.ts';
@@ -13,20 +12,20 @@ const event = (name: string): LogEvent => ({
   fields: {},
 });
 
-test('rate limiter rejects new identities at capacity and recovers expired windows', () => {
+it('rate limiter rejects new identities at capacity and recovers expired windows', () => {
   const allow = createRateLimiter(2, 100, 2);
-  assert.equal(allow('a', 0), true);
-  assert.equal(allow('b', 0), true);
-  assert.equal(allow('c', 0), false);
-  assert.equal(allow('a', 0), true);
-  assert.equal(allow('a', 0), false);
-  assert.equal(allow('c', 100), true);
+  expect(allow('a', 0)).toBe(true);
+  expect(allow('b', 0)).toBe(true);
+  expect(allow('c', 0)).toBe(false);
+  expect(allow('a', 0)).toBe(true);
+  expect(allow('a', 0)).toBe(false);
+  expect(allow('c', 100)).toBe(true);
 });
 
-test('Steam profile rejects query injection and malformed profile IDs', async () => {
-  assert.equal(parseSteamProfile('https://steamcommunity.com/profiles/123&other=value'), null);
-  assert.equal(parseSteamProfile('https://steamcommunity.com/profiles/123'), null);
-  assert.deepEqual(parseSteamProfile('https://steamcommunity.com/profiles/76561198000000000'), {
+it('Steam profile rejects query injection and malformed profile IDs', async () => {
+  expect(parseSteamProfile('https://steamcommunity.com/profiles/123&other=value')).toBe(null);
+  expect(parseSteamProfile('https://steamcommunity.com/profiles/123')).toBe(null);
+  expect(parseSteamProfile('https://steamcommunity.com/profiles/76561198000000000')).toStrictEqual({
     steamId: '76561198000000000',
   });
   let calls = 0;
@@ -36,19 +35,18 @@ test('Steam profile rejects query injection and malformed profile IDs', async ()
       return Response.json({});
     },
   });
-  await assert.rejects(client.wishlist('123&key=secret'), /inválido/);
-  assert.equal(calls, 0);
+  await expect(client.wishlist('123&key=secret')).rejects.toThrow(/inválido/);
+  expect(calls).toBe(0);
 });
 
-test('log redaction masks Steam query keys in messages and errors', () => {
-  assert.equal(redact('https://steam/x?key=secret&x=1'), 'https://steam/x?key=[redacted]&x=1');
-  assert.equal(
-    (redact(new Error('request ?KEY=secret')) as { message: string }).message,
+it('log redaction masks Steam query keys in messages and errors', () => {
+  expect(redact('https://steam/x?key=secret&x=1')).toBe('https://steam/x?key=[redacted]&x=1');
+  expect((redact(new Error('request ?KEY=secret')) as { message: string }).message).toBe(
     'request ?KEY=[redacted]',
   );
 });
 
-test('SafeSink resumes after an empty flush', async () => {
+it('SafeSink resumes after an empty flush', async () => {
   const seen: string[] = [];
   const sink = new SafeSink({
     write(e) {
@@ -58,10 +56,10 @@ test('SafeSink resumes after an empty flush', async () => {
   await sink.flush();
   sink.write(event('later'));
   await sink.flush();
-  assert.deepEqual(seen, ['later']);
+  expect(seen).toStrictEqual(['later']);
 });
 
-test('SafeSink drops the oldest waiting event without dropping the next event on completion', async () => {
+it('SafeSink drops the oldest waiting event without dropping the next event on completion', async () => {
   const seen: string[] = [];
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -83,48 +81,44 @@ test('SafeSink drops the oldest waiting event without dropping the next event on
   sink.write(event('d'));
   release();
   await sink.flush();
-  assert.deepEqual(seen, ['a', 'c', 'd']);
-  assert.equal(sink.dropped, 1);
+  expect(seen).toStrictEqual(['a', 'c', 'd']);
+  expect(sink.dropped).toBe(1);
 });
 
 const { assertPrivateStores, createRequestGuard } = await import('../src/shared/request-guard.ts');
 
-test('authenticated startup refuses every private JSON override and mixed identities', () => {
+it('authenticated startup refuses every private JSON override and mixed identities', () => {
   const names = ['GAMES_STORE', 'LISTS_STORE', 'PINS_STORE', 'SCORING_STORE', 'APP_USERS_STORE'];
   const pg = Object.fromEntries(names.map((name) => [name, 'pg' as const]));
-  assert.doesNotThrow(() => assertPrivateStores(pg, true));
+  expect(() => assertPrivateStores(pg, true)).not.toThrow();
   for (const name of names)
-    assert.throws(() => assertPrivateStores({ ...pg, [name]: 'json' }, true));
+    expect(() => assertPrivateStores({ ...pg, [name]: 'json' }, true)).toThrow();
   const json = Object.fromEntries(names.map((name) => [name, 'json' as const]));
-  assert.throws(() => assertPrivateStores(json, true));
-  assert.doesNotThrow(() => assertPrivateStores(json, false));
-  assert.throws(() => assertPrivateStores({ ...pg, LISTS_STORE: 'json' }, false));
+  expect(() => assertPrivateStores(json, true)).toThrow();
+  expect(() => assertPrivateStores(json, false)).not.toThrow();
+  expect(() => assertPrivateStores({ ...pg, LISTS_STORE: 'json' }, false)).toThrow();
 });
 
-test('expensive operations reject overlapping calls and release failed work', async () => {
+it('expensive operations reject overlapping calls and release failed work', async () => {
   const run = createRequestGuard(10, 60_000);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
   const first = run('a', () => gate);
-  await assert.rejects(
-    run('a', async () => 1),
-    { code: 429 },
-  );
-  assert.equal(await run('b', async () => 2), 2);
+  await expect(run('a', async () => 1)).rejects.toMatchObject({ code: 429 });
+  expect(await run('b', async () => 2)).toBe(2);
   release();
   await first;
-  await assert.rejects(
+  await expect(
     run('a', async () => {
       throw new Error('work failed');
     }),
-    /work failed/,
-  );
-  assert.equal(await run('a', async () => 3), 3);
+  ).rejects.toThrow(/work failed/);
+  expect(await run('a', async () => 3)).toBe(3);
 });
 
-test('expensive operations coalesce concurrent GET calls for identical key', async () => {
+it('expensive operations coalesce concurrent GET calls for identical key', async () => {
   const run = createRequestGuard(10, 60_000, 1);
   let calls = 0;
   let release!: () => void;
@@ -142,9 +136,9 @@ test('expensive operations coalesce concurrent GET calls for identical key', asy
 
   release();
   const [res1, res2] = await Promise.all([first, second]);
-  assert.equal(res1, 'result');
-  assert.equal(res2, 'result');
-  assert.equal(calls, 1);
+  expect(res1).toBe('result');
+  expect(res2).toBe('result');
+  expect(calls).toBe(1);
 
   const third = await run(
     'k',
@@ -154,11 +148,11 @@ test('expensive operations coalesce concurrent GET calls for identical key', asy
     },
     true,
   );
-  assert.equal(third, 'fresh');
-  assert.equal(calls, 2);
+  expect(third).toBe('fresh');
+  expect(calls).toBe(2);
 });
 
-test('coalesced in-flight promises propagate errors to all callers and clean up', async () => {
+it('coalesced in-flight promises propagate errors to all callers and clean up', async () => {
   const run = createRequestGuard(10, 60_000, 1);
   let release!: (err: Error) => void;
   const gate = new Promise<void>((_, reject) => {
@@ -167,13 +161,13 @@ test('coalesced in-flight promises propagate errors to all callers and clean up'
   const first = run('err-key', () => gate, true);
   const second = run('err-key', () => gate, true);
   release(new Error('boom'));
-  await assert.rejects(first, /boom/);
-  await assert.rejects(second, /boom/);
+  await expect(first).rejects.toThrow(/boom/);
+  await expect(second).rejects.toThrow(/boom/);
 
-  assert.equal(await run('err-key', async () => 'ok', true), 'ok');
+  expect(await run('err-key', async () => 'ok', true)).toBe('ok');
 });
 
-test('request admission releases only once and counts requests after completion', async () => {
+it('request admission releases only once and counts requests after completion', async () => {
   const { createRequestAdmission } = await import('../src/shared/request-guard.ts');
   const acquire = createRequestAdmission(2, 60_000);
   const release = acquire('user');
@@ -181,10 +175,10 @@ test('request admission releases only once and counts requests after completion'
   release();
   const second = acquire('user');
   second();
-  assert.throws(() => acquire('user'), { code: 429 });
+  expect(() => acquire('user')).toThrow(expect.objectContaining({ code: 429 }));
 });
 
-test('SafeSink retries failed writes and bounds final failure attempts', async () => {
+it('SafeSink retries failed writes and bounds final failure attempts', async () => {
   let attempts = 0;
   const sink = new SafeSink({
     write() {
@@ -194,22 +188,21 @@ test('SafeSink retries failed writes and bounds final failure attempts', async (
   });
   sink.write(event('failed'));
   await sink.flush();
-  assert.equal(attempts, 3);
-  assert.equal(sink.dropped, 1);
+  expect(attempts).toBe(3);
+  expect(sink.dropped).toBe(1);
 });
 
-test('createData applies the private-store guard before opening storage', async () => {
+it('createData applies the private-store guard before opening storage', async () => {
   const { createData } = await import('../src/main/data.ts');
   const { closeDb } = await import('../src/data/db.ts');
   const names = ['GAMES_STORE', 'LISTS_STORE', 'PINS_STORE', 'SCORING_STORE', 'APP_USERS_STORE'];
   const auth = { SUPABASE_URL: 'https://auth.example.test' };
   try {
-    await assert.rejects(
+    await expect(
       createData({ dataDir: '/unavailable-security-test-path', env: auth }),
-      /PostgreSQL/,
-    );
+    ).rejects.toThrow(/PostgreSQL/);
     for (const name of names)
-      await assert.rejects(
+      await expect(
         createData({
           dataDir: '/unavailable-security-test-path',
           env: {
@@ -218,8 +211,7 @@ test('createData applies the private-store guard before opening storage', async 
             [name]: 'json',
           },
         }),
-        /Private stores|PostgreSQL/,
-      );
+      ).rejects.toThrow(/Private stores|PostgreSQL/);
   } finally {
     await closeDb();
   }

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 
 /**
@@ -5,7 +6,7 @@ import { useAuth } from '../auth/AuthProvider';
  * and `qc.invalidateQueries({ queryKey: k.games() })` matches every games page of that user.
  * Mirrors the keys of the Angular DataCache.
  */
-export const queryKeys = (userId: string) =>
+const createQueryKeys = (userId: string) =>
   ({
     all: [userId] as const,
     catalog: () => [userId, 'catalog'] as const,
@@ -30,9 +31,21 @@ export const queryKeys = (userId: string) =>
     },
   }) as const;
 
-type QueryKeys = ReturnType<typeof queryKeys>;
+export type QueryKeys = ReturnType<typeof createQueryKeys>;
+
+const keysCache = new Map<string, QueryKeys>();
+
+export const queryKeys = (userId: string): QueryKeys => {
+  let cached = keysCache.get(userId);
+  if (!cached) {
+    cached = createQueryKeys(userId);
+    keysCache.set(userId, cached);
+  }
+  return cached;
+};
 
 /** Keys scoped to the signed-in user (call inside components/hooks only). */
 export function useQueryKeys(): QueryKeys {
-  return queryKeys(useAuth().userId);
+  const { userId } = useAuth();
+  return useMemo(() => queryKeys(userId), [userId]);
 }

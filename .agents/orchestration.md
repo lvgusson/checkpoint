@@ -65,3 +65,15 @@ A pane that shows an approval prompt stops. Tell the owner. Never approve for th
 2. Read the Vercel preview URL of the push (`gh api repos/lvgusson/checkpoint/deployments`, then its statuses).
 3. Open the URL. Check that the pages and `/api/v1/health` answer. Report each status code.
 4. Merge to `main` only when the owner approves.
+
+## Delegate first (owner order)
+
+The orchestrator is the most expensive model. It routes and verifies. It does not do bulk work.
+
+1. Send implementation, tests, migrations and refactors to pane 1 (`codex`) or pane 3 (`agy`). Do not start them yourself unless the owner asks.
+2. In the task, tell the lead to use subagents and name the model and reasoning for each. Cheap model and low reasoning for mechanical work. Strong model and high reasoning for risky logic. Ask the lead to report the choice.
+3. Codex models: `gpt-6.1-sol` (default workhorse), `gpt-6-astra` (frontier, hard problems), `gpt-6-luna` (fast, simple). Reasoning: low, medium, high, extra high.
+4. Do these yourself only: a one-line fix, a decision, a secret, a push, and the final check.
+5. A subagent owns files no other agent edits. Name them in the task.
+6. Run `pnpm check` only when no agent is editing. Formatting warnings during work belong to the agent that is editing.
+7. Staging URL: the preview needs the Vercel login. Use `vercel curl <path> --deployment <url>` for checks. A Playwright run needs the project bypass secret from the owner.

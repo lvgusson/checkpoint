@@ -3,6 +3,77 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 
+export interface FileCredentials {
+  email?: string;
+  password?: string;
+  bypassSecret?: string;
+}
+
+/**
+ * Reads credentials safely from the git-ignored playwrite-credentials.json file.
+ * Returns empty object if missing or unparseable.
+ */
+export function readFileCredentials(): FileCredentials {
+  try {
+    return JSON.parse(
+      fs.readFileSync(new URL('../../../playwrite-credentials.json', import.meta.url), 'utf8'),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Resolves the bypass secret with priority:
+ * 1. Environment variable VERCEL_AUTOMATION_BYPASS_SECRET
+ * 2. File credential bypassSecret
+ */
+export function resolveBypassSecret(envSecret?: string, fileSecret?: string): string | undefined {
+  const fromEnv = envSecret?.trim();
+  if (fromEnv) return fromEnv;
+  const fromFile = fileSecret?.trim();
+  if (fromFile) return fromFile;
+  return undefined;
+}
+
+/**
+ * Checks whether the given URL points to a local environment.
+ */
+export function isLocalhost(urlStr?: string): boolean {
+  if (!urlStr) return true;
+  try {
+    const parsed = new URL(urlStr);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host === '[::1]'
+    );
+  } catch {
+    const lower = urlStr.toLowerCase();
+    return lower.includes('localhost') || lower.includes('127.0.0.1');
+  }
+}
+
+/**
+ * Returns Vercel protection bypass headers if BASE_URL is not localhost
+ * and a bypass secret exists. Otherwise returns undefined.
+ */
+export function getBypassHeaders(
+  baseURL?: string,
+  bypassSecret?: string,
+): Record<string, string> | undefined {
+  if (!baseURL || isLocalhost(baseURL) || !bypassSecret) {
+    return undefined;
+  }
+  return {
+    'x-vercel-protection-bypass': bypassSecret,
+    'x-vercel-set-bypass-cookie': 'true',
+  };
+}
+
 export interface RequestTiming {
   requestId: string;
   method: string;
@@ -85,6 +156,38 @@ export class TimingCollector {
 
     fs.writeFileSync(dest, JSON.stringify(this.records, null, 2), 'utf8');
     console.log(`\nSaved ${this.records.length} step timing records to ${dest}`);
+  }
+
+  /**
+   * Reads window.__timingSummary() from the page, logs summary table,
+   * and writes the summary to a JSON file in test-results/.
+   */
+  async collectSummary(page: Page, targetPath?: string): Promise<Record<string, unknown> | null> {
+    let summary: Record<string, unknown> | null;
+    try {
+      summary = await page.evaluate(() => {
+        const win = window as unknown as { __timingSummary?: () => Record<string, unknown> };
+        return win.__timingSummary ? win.__timingSummary() : null;
+      });
+    } catch {
+      summary = null;
+    }
+
+    if (summary) {
+      console.log('\n=== [TIMING SUMMARY] window.__timingSummary() ===');
+      console.table(summary);
+
+      const dest =
+        targetPath ||
+        fileURLToPath(new URL('../test-results/route-map-summary.json', import.meta.url));
+      const dir = path.dirname(dest);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(dest, JSON.stringify(summary, null, 2), 'utf8');
+      console.log(`Saved timing summary to ${dest}`);
+    }
+    return summary;
   }
 
   getRecords(): StepTimingRecord[] {

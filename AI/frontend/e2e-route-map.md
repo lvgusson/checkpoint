@@ -32,7 +32,28 @@ Each step reads request timings from `window.__timings` and writes them to `apps
 - `BASE_URL`: Base URL of the web server. Default: `http://localhost:5173`.
 - `E2E_EMAIL`: Account email for authenticated tests. If unset, the runner skips authenticated steps.
 - `E2E_PASSWORD`: Account password for authenticated tests. If unset, the runner skips authenticated steps.
-- Fallback: when the variables are unset, the runner reads `{ email, password }` from `playwrite-credentials.json` at the repo root. The file is git-ignored. Never print or commit it.
+- `VERCEL_AUTOMATION_BYPASS_SECRET`: Secret token for Vercel deployment protection bypass.
+- Fallback: when variables are unset, the runner reads `{ email, password, bypassSecret }` from `playwrite-credentials.json` at the repo root. The file is git-ignored. Never print, open, or commit it.
+
+## Running against preview deployments
+
+Run the route map against a protected Vercel preview deployment:
+
+```bash
+BASE_URL=<preview url> pnpm --filter @checkpoint/web exec playwright test route-map.spec.ts
+```
+
+When `BASE_URL` is set to a non-local URL and a bypass secret exists (from `VERCEL_AUTOMATION_BYPASS_SECRET` or the `bypassSecret` field in `playwrite-credentials.json`), the context sends:
+
+- `x-vercel-protection-bypass: <secret>`
+- `x-vercel-set-bypass-cookie: true`
+
+Rules:
+
+- Never send bypass headers when `BASE_URL` is localhost.
+- Never log the secret or include it in URLs, traces, or reports.
+- Agents must NOT run authenticated steps against preview or production; the orchestrator runs them.
+- Agents run only `playwright test --list` and `pnpm check`.
 
 ## Data safety rule
 

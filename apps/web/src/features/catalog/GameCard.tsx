@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 import type { Desire, ScoredGame } from '../../../../../packages/core/src/models';
 import { ImmediateButton } from '../immediate';
@@ -11,9 +11,16 @@ export interface GameCardProps {
   onError(message: string): void;
 }
 
-export function GameCard({ game, onDesire, onError }: GameCardProps) {
+export const GameCard = memo(function GameCard({ game, onDesire, onError }: GameCardProps) {
   const [coverBroken, setCoverBroken] = useState(false);
   const g = game;
+
+  const handleDesireChanged = useCallback(
+    (d: Desire) => {
+      onDesire(g.id, d);
+    },
+    [g.id, onDesire],
+  );
 
   return (
     <article className="game-card">
@@ -55,7 +62,7 @@ export function GameCard({ game, onDesire, onError }: GameCardProps) {
             <ImmediateButton
               data-testid={`library-immediate-${g.id.toLowerCase()}`}
               game={g}
-              onChanged={(d) => onDesire(g.id, d)}
+              onChanged={handleDesireChanged}
               onFailed={onError}
             />
           </span>
@@ -63,4 +70,4 @@ export function GameCard({ game, onDesire, onError }: GameCardProps) {
       )}
     </article>
   );
-}
+});

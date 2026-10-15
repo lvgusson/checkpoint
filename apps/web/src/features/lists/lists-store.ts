@@ -47,8 +47,8 @@ export function useListMutations() {
 const lastOpened = new Map<string, string>();
 
 /**
- * `listId` of the route (`/ordem/:listId`, `/configuracoes/:listId`). Without an id in the URL, or
- * with an unknown one, it redirects to the last used list, else the first.
+ * `listId` of the route (`/ordem/:listId`, `/configuracoes/:listId`). Returns `current` immediately
+ * when present in the URL to eliminate query waterfalls. Redirects when `current` is null or invalid.
  */
 export function useRouteListId(base: string) {
   const current = useParams().listId ?? null;
@@ -64,6 +64,11 @@ export function useRouteListId(base: string) {
     const target = lists.find((l) => l.id === lastOpened.get(userId)) ?? lists[0]!;
     void navigate(`${base}/${target.id}`, { replace: true });
   }, [lists, current, base, userId, navigate]);
-  // Unknown ids are not exposed, so callers never request a queue for a list that does not exist.
-  return lists?.some((l) => l.id === current) ? current : null;
+
+  if (current !== null) {
+    if (!lists) return current;
+    return lists.some((l) => l.id === current) ? current : null;
+  }
+  const target = lists?.find((l) => l.id === lastOpened.get(userId)) ?? lists?.[0];
+  return target?.id ?? null;
 }

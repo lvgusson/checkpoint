@@ -78,14 +78,17 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
   });
   const { register, control, setValue, reset: resetForm, formState } = form;
   const { isDirty, errors } = formState;
-  const d = useWatch({ control }) as ScoringConfig;
+  const weights = useWatch({ control, name: 'weights' }) ?? settings.config.weights;
+  const filters = useWatch({ control, name: 'filters' }) ?? settings.config.filters;
+  const rules = useWatch({ control, name: 'rules' }) ?? settings.config.rules;
+  const d = useMemo(() => ({ weights, filters, rules }), [weights, filters, rules]);
 
   const invalid = Object.keys(errors).length > 0;
   const o = settings.filterOptions;
   const rows = (section: ScoringSection) =>
     settings.factors.filter((f) => f.section === section && f.id !== 'inProgress');
   const hoursInvalid = !!errors.filters;
-  const activeFilters = JSON.stringify(d.filters) !== JSON.stringify(settings.defaults.filters);
+  const activeFilters = JSON.stringify(filters) !== JSON.stringify(settings.defaults.filters);
   const setFilters = (patch: Partial<QueueFilters>) => {
     setSuccess('');
     return (
@@ -99,11 +102,11 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
   };
   const toggleIn = (key: ListFilter, value: string) =>
     setFilters({
-      [key]: hasValue(d.filters[key], value)
-        ? d.filters[key].filter(
+      [key]: hasValue(filters[key], value)
+        ? filters[key].filter(
             (x) => x.toLocaleLowerCase('pt-BR') !== value.toLocaleLowerCase('pt-BR'),
           )
-        : [...d.filters[key], value],
+        : [...filters[key], value],
     });
   const pick = (key: ListFilter, option: { value: string; count: number }, cls = '') => (
     <button
@@ -111,7 +114,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
       key={option.value}
       type="button"
       className={'pick ' + cls}
-      aria-pressed={hasValue(d.filters[key], option.value)}
+      aria-pressed={hasValue(filters[key], option.value)}
       disabled={saving}
       onClick={() => toggleIn(key, option.value)}
     >
@@ -242,7 +245,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             </thead>
             <tbody>
               {rows(s.id).map((f) => (
-                <tr key={f.id} className={f.rule && !d.rules[f.rule] ? 'off' : undefined}>
+                <tr key={f.id} className={f.rule && !rules[f.rule] ? 'off' : undefined}>
                   <th scope="row">{f.label}</th>
                   <td className="desc">{f.description}</td>
                   <td className="weight">
@@ -365,9 +368,9 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
           </label>
         </fieldset>
 
-        <details className="filter-group" open={d.filters.excludedTags.length > 0 || undefined}>
+        <details className="filter-group" open={filters.excludedTags.length > 0 || undefined}>
           <summary data-testid="settings-filter-tags">
-            Excluir subgêneros/tags ({d.filters.excludedTags.length})
+            Excluir subgêneros/tags ({filters.excludedTags.length})
           </summary>
           <div className="chips">{o.tags.map((t) => pick('excludedTags', t, 'exclude'))}</div>
         </details>

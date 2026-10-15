@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState, ErrorState } from '@checkpoint/ui-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { Catalog, Desire, ScoredGame } from '../../../../packages/core/src/models';
 import { api } from '../api/http';
@@ -58,14 +58,21 @@ export function LibraryPage() {
   );
 
   /** Optimistic desire on the card (the button already calls the API). */
-  const setDesire = async (id: string, desire: Desire) => {
-    await qc.cancelQueries({ queryKey: k.games() });
-    qc.setQueriesData<{ items: ScoredGame[] }>(
-      { queryKey: k.games() },
-      (page) =>
-        page && { ...page, items: page.items.map((g) => (g.id === id ? { ...g, desire } : g)) },
-    );
-  };
+  const setDesire = useCallback(
+    async (id: string, desire: Desire) => {
+      await qc.cancelQueries({ queryKey: k.games() });
+      qc.setQueriesData<{ items: ScoredGame[] }>(
+        { queryKey: k.games() },
+        (page) =>
+          page && { ...page, items: page.items.map((g) => (g.id === id ? { ...g, desire } : g)) },
+      );
+    },
+    [qc, k],
+  );
+
+  const handleError = useCallback((message: string) => {
+    setError(message);
+  }, []);
 
   const counts = catalog.data?.counts;
   const select = (
@@ -176,7 +183,7 @@ export function LibraryPage() {
         <>
           <div className="game-grid">
             {items.map((g) => (
-              <GameCard key={g.id} game={g} onDesire={setDesire} onError={setError} />
+              <GameCard key={g.id} game={g} onDesire={setDesire} onError={handleError} />
             ))}
           </div>
           <div

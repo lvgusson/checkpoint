@@ -46,6 +46,8 @@ JSON drivers (`JsonGamesDriver` and other `Json*Driver` classes in `apps/api/src
 
 ## Where to go
 
+- Unit tests and local database checks: [[AI/backend/testing]]
+
 - New database tables: [[AI/backend/database-checklist]]: Steps to create a database table with indexes, audit columns, and access controls.
 
 - Hosting, storage modes, environment variables, scripts: [[AI/backend/infrastructure]]

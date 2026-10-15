@@ -1,16 +1,11 @@
 // Testes de segurança: controle de acesso e IDOR entre múltiplos usuários (User A vs User B).
 // Asserta o comportamento SEGURO: User B não pode acessar, modificar nem listar recursos de User A (deve receber 404).
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { Role } from '../../../../packages/core/src/authorization.ts';
 import { startTestServer, testFetch, type TestServerContext } from './helper.ts';
 
-describe(
+describe.skipIf(!process.env.SECURITY_TEST_DATABASE_URL)(
   'Security: IDOR & Multi-User Ownership Isolation',
-  {
-    skip:
-      !process.env.SECURITY_TEST_DATABASE_URL && 'Requires an isolated SECURITY_TEST_DATABASE_URL',
-  },
   () => {
     let ctx: TestServerContext;
     const userAHeaders = {
@@ -22,7 +17,7 @@ describe(
       'Content-Type': 'application/json',
     };
 
-    before(async () => {
+    beforeAll(async () => {
       ctx = await startTestServer({
         initialUsers: {
           'token-user-a': { id: '00000000-0000-4000-a000-000000000001', role: Role.User },
@@ -31,18 +26,18 @@ describe(
       });
     });
 
-    after(async () => {
+    afterAll(async () => {
       await ctx?.close();
     });
 
     it('exige autenticação em rotas protegidas quando auth está ativo (401)', async () => {
       const res = await testFetch(ctx.baseUrl, '/api/v1/lists');
-      assert.equal(res.status, 401, 'Requisição sem token deve retornar 401');
+      expect(res.status, 'Requisição sem token deve retornar 401').toBe(401);
 
       const resBad = await testFetch(ctx.baseUrl, '/api/v1/lists', {
         headers: { Authorization: 'Bearer token-invalido' },
       });
-      assert.equal(resBad.status, 401, 'Requisição com token desconhecido deve retornar 401');
+      expect(resBad.status, 'Requisição com token desconhecido deve retornar 401').toBe(401);
     });
 
     it('User B deve receber 404 ao tentar acessar ou excluir lista criada por User A', async () => {
@@ -52,9 +47,9 @@ describe(
         headers: userAHeaders,
         body: JSON.stringify({ name: 'Lista Secreta do User A' }),
       });
-      assert.equal(createRes.status, 201, 'User A deve conseguir criar sua lista');
+      expect(createRes.status, 'User A deve conseguir criar sua lista').toBe(201);
       const listA = await createRes.json();
-      assert.ok(listA.id, 'Lista criada deve conter ID');
+      expect(listA.id, 'Lista criada deve conter ID').toBeTruthy();
 
       // User B tenta renomear a lista de User A -> deve responder 404 (não revelar existência)
       const patchRes = await testFetch(ctx.baseUrl, `/api/v1/lists/${listA.id}`, {
@@ -62,22 +57,20 @@ describe(
         headers: userBHeaders,
         body: JSON.stringify({ name: 'Hacked List' }),
       });
-      assert.equal(
+      expect(
         patchRes.status,
-        404,
         `User B não deve conseguir alterar a lista de User A (esperado 404, recebido ${patchRes.status})`,
-      );
+      ).toBe(404);
 
       // User B tenta apagar a lista de User A -> deve responder 404
       const deleteRes = await testFetch(ctx.baseUrl, `/api/v1/lists/${listA.id}`, {
         method: 'DELETE',
         headers: userBHeaders,
       });
-      assert.equal(
+      expect(
         deleteRes.status,
-        404,
         `User B não deve conseguir apagar a lista de User A (esperado 404, recebido ${deleteRes.status})`,
-      );
+      ).toBe(404);
     });
 
     it('User B deve receber 404 ao acessar recomendações/fila de lista de User A', async () => {
@@ -91,11 +84,10 @@ describe(
       const recRes = await testFetch(ctx.baseUrl, `/api/v1/lists/${listA.id}/recommendations`, {
         headers: userBHeaders,
       });
-      assert.equal(
+      expect(
         recRes.status,
-        404,
         `User B não deve ver a fila da lista de User A (esperado 404, recebido ${recRes.status})`,
-      );
+      ).toBe(404);
     });
 
     it('User B deve receber 404 ao acessar ou alterar configurações de pontuação de lista de User A', async () => {
@@ -110,11 +102,10 @@ describe(
       const getRes = await testFetch(ctx.baseUrl, `/api/v1/lists/${listA.id}/settings/scoring`, {
         headers: userBHeaders,
       });
-      assert.equal(
+      expect(
         getRes.status,
-        404,
         `User B não deve ler settings de User A (esperado 404, recebido ${getRes.status})`,
-      );
+      ).toBe(404);
 
       // Reset das configurações
       const resetRes = await testFetch(
@@ -125,11 +116,10 @@ describe(
           headers: userBHeaders,
         },
       );
-      assert.equal(
+      expect(
         resetRes.status,
-        404,
         `User B não deve resetar settings de User A (esperado 404, recebido ${resetRes.status})`,
-      );
+      ).toBe(404);
     });
 
     it('User B não deve ver listas de User A no endpoint GET /api/v1/lists', async () => {
@@ -145,13 +135,11 @@ describe(
       const listRes = await testFetch(ctx.baseUrl, '/api/v1/lists', {
         headers: userBHeaders,
       });
-      assert.equal(listRes.status, 200);
+      expect(listRes.status).toBe(200);
       const userBLists: { name: string }[] = await listRes.json();
       const leaked = userBLists.some((l) => l.name === uniqueName);
-      assert.equal(
-        leaked,
+      expect(leaked, 'GET /api/v1/lists de User B não deve conter listas criadas por User A').toBe(
         false,
-        'GET /api/v1/lists de User B não deve conter listas criadas por User A',
       );
     });
     it('hides foreign games, edits, prerequisites, and queue pins', async () => {
@@ -161,15 +149,15 @@ describe(
           headers,
           body: JSON.stringify({ name, notes: 'private notes' }),
         });
-        assert.equal(response.status, 201);
+        expect(response.status).toBe(201);
         const data = await response.json();
         return data.game ?? data;
       };
       const a = await create(userAHeaders, 'Private game A');
       const b = await create(userBHeaders, 'Private game B');
       const foreign = `/api/v1/games/${encodeURIComponent(a.id)}`;
-      assert.equal((await testFetch(ctx.baseUrl, foreign, { headers: userBHeaders })).status, 404);
-      assert.equal(
+      expect((await testFetch(ctx.baseUrl, foreign, { headers: userBHeaders })).status).toBe(404);
+      expect(
         (
           await testFetch(ctx.baseUrl, foreign, {
             method: 'PATCH',
@@ -177,9 +165,8 @@ describe(
             body: JSON.stringify({ notes: 'stolen' }),
           })
         ).status,
-        404,
-      );
-      assert.equal(
+      ).toBe(404);
+      expect(
         (
           await testFetch(ctx.baseUrl, `/api/v1/games/${encodeURIComponent(b.id)}`, {
             method: 'PATCH',
@@ -187,9 +174,8 @@ describe(
             body: JSON.stringify({ prerequisiteId: a.id }),
           })
         ).status,
-        404,
-      );
-      assert.equal(
+      ).toBe(404);
+      expect(
         (
           await testFetch(ctx.baseUrl, '/api/v1/queue/reorder', {
             method: 'POST',
@@ -197,16 +183,15 @@ describe(
             body: JSON.stringify({ gameId: a.id, toPosition: 1 }),
           })
         ).status,
-        404,
-      );
+      ).toBe(404);
       const own = await testFetch(ctx.baseUrl, foreign, { headers: userAHeaders });
-      assert.equal(own.status, 200);
-      assert.equal((await own.json()).notes, 'private notes');
+      expect(own.status).toBe(200);
+      expect((await own.json()).notes).toBe('private notes');
       const search = await testFetch(ctx.baseUrl, '/api/v1/games/search?q=Private%20game%20A', {
         headers: userBHeaders,
       });
-      assert.equal(search.status, 200);
-      assert.deepEqual(await search.json(), []);
+      expect(search.status).toBe(200);
+      expect(await search.json()).toEqual([]);
     });
   },
 );

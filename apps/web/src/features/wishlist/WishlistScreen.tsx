@@ -31,7 +31,7 @@ export function WishlistScreen() {
     () => [...(wishlist.data ?? [])].sort(compareWishlistItems(sort)),
     [wishlist.data, sort],
   );
-  const onSale = sorted.filter((i) => i.price?.discountPercent).length;
+  const onSale = useMemo(() => sorted.filter((i) => i.price?.discountPercent).length, [sorted]);
   const busy =
     actions.add.isPending ||
     actions.purchase.isPending ||

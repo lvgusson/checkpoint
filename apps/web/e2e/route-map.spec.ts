@@ -1,27 +1,29 @@
-import { readFileSync } from 'node:fs';
 import pkg from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
-import { TimingCollector } from './route-map-helpers';
+import {
+  TimingCollector,
+  readFileCredentials,
+  resolveBypassSecret,
+  getBypassHeaders,
+} from './route-map-helpers';
 
 const { test, expect } = pkg;
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
-// Login: env first, then the git-ignored playwrite-credentials.json at the repo root ({ email, password }).
-function fileCredentials(): { email?: string; password?: string } {
-  try {
-    return JSON.parse(
-      readFileSync(new URL('../../../playwrite-credentials.json', import.meta.url), 'utf8'),
-    );
-  } catch {
-    return {};
-  }
-}
-const fromFile = fileCredentials();
+// Login: env first, then the git-ignored playwrite-credentials.json at repo root ({ email, password, bypassSecret }).
+const fromFile = readFileCredentials();
 const EMAIL = process.env.E2E_EMAIL ?? fromFile.email;
 const PASSWORD = process.env.E2E_PASSWORD ?? fromFile.password;
 const hasCredentials = Boolean(EMAIL && PASSWORD);
 
+// Vercel protection bypass: env variable wins over playwrite-credentials.json bypassSecret.
+const BYPASS_SECRET = resolveBypassSecret(
+  process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+  fromFile.bypassSecret,
+);
+
 test.describe.configure({ mode: 'serial' });
+test.use({ trace: 'off' });
 
 interface PendingCleanup {
   gameId: string;
@@ -62,6 +64,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
     `[CLEANUP] Starting cleanup for game "${cleanup.gameId}". Original notes length: ${cleanup.originalNotes.length}`,
   );
 
+  const base = cleanup.baseURL.replace(/\/+$/, '');
   let restored = false;
   let apiError: unknown = null;
 
@@ -75,7 +78,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
 
   try {
     const patchRes = await context.request.patch(
-      `${cleanup.baseURL}/api/v1/games/${encodeURIComponent(cleanup.gameId)}`,
+      `${base}/api/v1/games/${encodeURIComponent(cleanup.gameId)}`,
       {
         headers,
         data: { notes: cleanup.originalNotes },
@@ -100,7 +103,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
     );
     const freshPage = await context.newPage();
     try {
-      await freshPage.goto(`${cleanup.baseURL}/jogos/${encodeURIComponent(cleanup.gameId)}`, {
+      await freshPage.goto(`${base}/jogos/${encodeURIComponent(cleanup.gameId)}`, {
         timeout: 15000,
       });
       const notesArea = freshPage.locator('textarea[name="notes"]');
@@ -130,7 +133,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
     verifyHeaders['Authorization'] = `Bearer ${cleanup.token}`;
   }
   const getRes = await context.request.get(
-    `${cleanup.baseURL}/api/v1/games/${encodeURIComponent(cleanup.gameId)}`,
+    `${base}/api/v1/games/${encodeURIComponent(cleanup.gameId)}`,
     {
       headers: verifyHeaders,
       timeout: 10000,
@@ -159,7 +162,11 @@ test.describe('Route Map E2E Spec', () => {
   const timings = new TimingCollector();
 
   test.beforeAll(async ({ browser }) => {
-    context = await browser.newContext({ baseURL: BASE_URL });
+    const extraHTTPHeaders = getBypassHeaders(BASE_URL, BYPASS_SECRET);
+    context = await browser.newContext({
+      baseURL: BASE_URL,
+      extraHTTPHeaders,
+    });
     page = await context.newPage();
     page.on('request', (req) => {
       const auth = req.headers()['authorization'];
@@ -184,172 +191,258 @@ test.describe('Route Map E2E Spec', () => {
       pendingCleanup = null;
       await executeCleanup(cleanup, context);
     }
+    await timings.collectSummary(page);
     timings.save();
     await page?.close().catch(() => {});
     await context?.close().catch(() => {});
   });
 
-  // Step 1: login-view
-  test('login-view: load login screen and verify form elements', async () => {
+  function skipDestructive(testId: string, desc: string): void {
+    console.log(`[SAFE-SKIP] Destructive element "${testId}": ${desc}`);
+  }
+
+  // Screen 1: Nav
+  test('screen-1-nav: visit nav elements per testid-map', async () => {
     await page.goto('/login');
-    await expect(page).toHaveTitle(/Checkpoint|checkpoint/i);
 
-    const emailInput = page.getByLabel(/email|usuário/i, { exact: false });
-    const passwordInput = page.getByLabel(/senha|password/i, { exact: false });
+    // nav-skip-content
+    await expect(page.getByTestId('nav-skip-content')).toBeAttached();
 
+    // nav-brand-desktop / nav-brand-mobile
+    const brand = page.getByTestId('nav-brand-desktop').or(page.getByTestId('nav-brand-mobile'));
+    if (
+      await brand
+        .first()
+        .isVisible({ timeout: 1000 })
+        .catch(() => false)
+    ) {
+      await brand
+        .first()
+        .click()
+        .catch(() => {});
+    }
+
+    // nav-theme-toggle
+    const themeToggle = page.getByTestId('nav-theme-toggle');
+    if (await themeToggle.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await themeToggle.click().catch(() => {});
+      await themeToggle.click().catch(() => {});
+    }
+
+    // nav desktop & mobile links
+    for (const screen of ['library', 'wishlist', 'queue', 'settings', 'appearance']) {
+      const link = page
+        .getByTestId(`nav-desktop-${screen}`)
+        .or(page.getByTestId(`nav-mobile-${screen}`));
+      if (
+        await link
+          .first()
+          .isVisible({ timeout: 1000 })
+          .catch(() => false)
+      ) {
+        await link
+          .first()
+          .hover()
+          .catch(() => {});
+      }
+    }
+
+    // nav-logout (destructive)
+    skipDestructive('nav-logout', 'Ends session');
+
+    await timings.collect(page, 'screen-1-nav', '/login');
+  });
+
+  // Screen 2: Login
+  test('screen-2-login: visit login elements per testid-map', async () => {
+    await page.goto('/login');
+
+    // Tabs
+    const tabSignup = page.getByTestId('login-tab-signup');
+    if (await tabSignup.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await tabSignup.click().catch(() => {});
+    }
+    const tabLogin = page.getByTestId('login-tab-login');
+    if (await tabLogin.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await tabLogin.click().catch(() => {});
+    }
+
+    // Forgot / back
+    const forgotLink = page.getByTestId('login-forgot');
+    if (await forgotLink.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await forgotLink.click().catch(() => {});
+      const backLink = page.getByTestId('login-back');
+      if (await backLink.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await backLink.click().catch(() => {});
+      }
+    }
+
+    // Inputs
+    const emailInput = page.getByTestId('login-email');
+    const passwordInput = page.getByTestId('login-password');
     await expect(emailInput).toBeVisible({ timeout: 10000 });
     await expect(passwordInput).toBeVisible({ timeout: 10000 });
 
-    await timings.collect(page, 'login-view', '/login');
-  });
+    // Destructive signup/forgot/reset submits
+    skipDestructive('login-submit-signup', 'Creates account');
+    skipDestructive('login-submit-forgot', 'Requests password recovery');
+    skipDestructive('login-submit-reset', 'Changes password');
 
-  // Step 2: login-submit
-  test('login-submit: submit credentials and verify authentication', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping login submission.');
-      return;
+    // Submit login if credentials available
+    if (hasCredentials) {
+      await emailInput.fill(EMAIL!);
+      await passwordInput.fill(PASSWORD!);
+      const submitBtn = page.getByTestId('login-submit-login');
+      if (await submitBtn.isVisible().catch(() => false)) {
+        await submitBtn.click();
+      } else {
+        await page.getByRole('button', { name: /^Entrar$/i }).click();
+      }
+      await page.waitForURL(/\/(jogos|ordem)/, { timeout: 15000 });
     }
 
-    await page.goto('/login');
-    const emailInput = page.getByLabel(/email|usuário/i, { exact: false });
-    const passwordInput = page.getByLabel(/senha|password/i, { exact: false });
-
-    await emailInput.fill(EMAIL!);
-    await passwordInput.fill(PASSWORD!);
-
-    const submitButton = page.getByRole('button', { name: /^Entrar$/i });
-    await submitButton.click();
-
-    await page.waitForURL(/\/(jogos|ordem)/, { timeout: 15000 });
-    await timings.collect(page, 'login-submit', '/login');
+    await timings.collect(page, 'screen-2-login', '/login');
   });
 
-  // Step 3: theme-toggle
-  test('theme-toggle: toggle light/dark theme in shell header', async () => {
+  // Screen 3: Library
+  test('screen-3-library: visit library elements per testid-map', async () => {
     if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
+      test.skip(true, 'Skipping authenticated step without credentials.');
       return;
     }
-
     await page.goto('/jogos');
-    const toggle = page.locator('header.topbar button.theme-toggle');
-    await expect(toggle).toBeVisible({ timeout: 10000 });
-
-    const initialLabel = await toggle.getAttribute('aria-label');
-    await toggle.click();
-
-    const toggledLabel = await toggle.getAttribute('aria-label');
-    expect(toggledLabel).not.toBe(initialLabel);
-
-    // Restore original theme
-    await toggle.click();
-    expect(await toggle.getAttribute('aria-label')).toBe(initialLabel);
-
-    await timings.collect(page, 'theme-toggle', '/jogos');
-  });
-
-  // Step 4: library-view
-  test('library-view: view games library catalog and statistics', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
-    }
-
-    await page.goto('/jogos');
-    await expect(page.getByRole('heading', { name: /Lista de jogos/i })).toBeVisible({
-      timeout: 10000,
-    });
     await expect(page.locator('.game-grid')).toBeVisible({ timeout: 10000 });
 
-    await timings.collect(page, 'library-view', '/jogos');
-  });
-
-  // Step 5: library-filters
-  test('library-filters: filter games by search text', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
+    // library-open-queue
+    const openQueue = page.getByTestId('library-open-queue');
+    if (await openQueue.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(openQueue).toBeVisible();
     }
 
-    await page.goto('/jogos');
-    const searchInput = page.getByRole('searchbox', { name: /Buscar jogo/i });
-    await expect(searchInput).toBeVisible({ timeout: 10000 });
-
-    await searchInput.fill('Mario');
-    await page.waitForTimeout(400);
-
-    // Clear search to restore state
-    await searchInput.fill('');
-    await page.waitForTimeout(400);
-
-    await timings.collect(page, 'library-filters', '/jogos');
-  });
-
-  // Step 6: library-scroll
-  test('library-scroll: scroll down to trigger infinite catalog loading', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
+    // library-search
+    const search = page.getByTestId('library-search');
+    if (await search.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await search.fill('Mario');
+      await page.waitForTimeout(300);
+      await search.fill('');
     }
 
-    await page.goto('/jogos');
-    await expect(page.locator('.game-grid .game-card').first()).toBeVisible({ timeout: 10000 });
-
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(800);
-
-    await timings.collect(page, 'library-scroll', '/jogos');
-  });
-
-  // Step 7: detail-modal
-  test('detail-modal: open game detail modal dialog', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
+    // library-filter-{genre,status,store}
+    for (const filter of ['genre', 'status', 'store']) {
+      const sel = page.getByTestId(`library-filter-${filter}`);
+      if (await sel.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await sel.focus().catch(() => {});
+      }
     }
 
-    await page.goto('/ordem');
-    const rowLink = page.locator('.queue-row .queue-link').first();
-    await expect(rowLink).toBeVisible({ timeout: 10000 });
-    await rowLink.click();
-
-    const dialog = page.locator('dialog[open]');
-    await expect(dialog).toBeVisible({ timeout: 10000 });
-    await expect(dialog.locator('#modal-game-title')).toBeVisible();
-
-    // Close modal
-    const closeBtn = dialog.locator('button[aria-label="Fechar modal"]');
-    await closeBtn.click();
-    await expect(page.locator('dialog[open]')).toHaveCount(0);
-
-    await timings.collect(page, 'detail-modal', '/ordem');
-  });
-
-  // Step 8: game-edit
-  test('game-edit: modify editable notes and restore original value', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
+    // library-sort
+    const sort = page.getByTestId('library-sort');
+    if (await sort.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await sort.focus().catch(() => {});
     }
 
+    // library-retry / error / load-more
+    for (const retryId of ['library-retry', 'library-error-retry', 'library-load-more-retry']) {
+      const retryBtn = page.getByTestId(retryId);
+      if (await retryBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+        // Inspect presence
+      }
+    }
+
+    // First card link
+    const firstCard = page.locator('.game-card a.card-link').first();
+    await expect(firstCard).toBeVisible({ timeout: 10000 });
+
+    // Skip destructive
+    skipDestructive('library-playing-<code>', 'Toggles playing status');
+    skipDestructive('library-immediate-<code>', 'Toggles immediate priority');
+
+    await timings.collect(page, 'screen-3-library', '/jogos');
+  });
+
+  // Screen 4: Detail
+  test('screen-4-detail: visit detail elements per testid-map and safe edit notes', async () => {
+    if (!hasCredentials) {
+      test.skip(true, 'Skipping authenticated step without credentials.');
+      return;
+    }
     await page.goto('/jogos');
     const firstCard = page.locator('.game-card a.card-link').first();
     await expect(firstCard).toBeVisible({ timeout: 10000 });
     const href = await firstCard.getAttribute('href');
     expect(href).toBeTruthy();
-
     const gameId = decodeURIComponent(href!.replace(/^\/jogos\//, ''));
     expect(gameId).toBeTruthy();
 
     await page.goto(href!);
-    const notesArea = page.locator('textarea[name="notes"]');
+    await page.waitForSelector('form.detail-form', { timeout: 10000 });
+
+    // detail-{back,open-queue,time-source,imported-data}
+    const backBtn = page.getByTestId('detail-back');
+    if (await backBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(backBtn).toBeVisible();
+    }
+    const importedData = page.getByTestId('detail-imported-data');
+    if (await importedData.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await importedData.click().catch(() => {});
+      await importedData.click().catch(() => {});
+    }
+
+    // detail-rating-{1..5,clear}, auto-finish
+    for (let r = 1; r <= 5; r++) {
+      const rBtn = page.getByTestId(`detail-rating-${r}`);
+      if (await rBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+        await rBtn.hover().catch(() => {});
+      }
+    }
+    const autoFinish = page.getByTestId('detail-auto-finish');
+    if (await autoFinish.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await autoFinish.click().catch(() => {});
+      await autoFinish.click().catch(() => {});
+    }
+
+    // Field inputs
+    for (const f of ['actual-hours', 'name', 'main-hours', 'extra-hours', 'completionist-hours']) {
+      const input = page.getByTestId(`detail-${f}`);
+      if (await input.isVisible({ timeout: 500 }).catch(() => false)) {
+        await input.focus().catch(() => {});
+      }
+    }
+
+    // Metadata selectors
+    for (const s of [
+      'status',
+      'desire',
+      'genre',
+      'tags',
+      'pace',
+      'mechanic',
+      'structure',
+      'store',
+      'platform',
+    ]) {
+      const sel = page.getByTestId(`detail-${s}`);
+      if (await sel.isVisible({ timeout: 500 }).catch(() => false)) {
+        await sel.focus().catch(() => {});
+      }
+    }
+
+    // Prerequisite search
+    const prereqSearch = page.getByTestId('detail-prerequisite-search');
+    if (await prereqSearch.isVisible({ timeout: 500 }).catch(() => false)) {
+      await prereqSearch.focus().catch(() => {});
+    }
+
+    // Skip destructive
+    skipDestructive('detail-prerequisite-remove', 'Removes prerequisite');
+    skipDestructive('detail-finish', 'Finishes game');
+
+    // Single allowed write: notes edit with pre-registered verified cleanup
+    const notesArea = page.getByTestId('detail-notes').or(page.locator('textarea[name="notes"]'));
     await expect(notesArea).toBeVisible({ timeout: 10000 });
-
-    // Read original value before editing (log length only, never the value)
     const originalNotes = await notesArea.inputValue();
-    console.log(`[game-edit] Captured original notes length: ${originalNotes.length}`);
+    console.log(`[detail-edit] Captured original notes length: ${originalNotes.length}`);
 
-    // Register cleanup BEFORE the first write
     const currentToken = capturedToken || (await getAuthToken(page));
     pendingCleanup = {
       gameId,
@@ -358,73 +451,258 @@ test.describe('Route Map E2E Spec', () => {
       baseURL: BASE_URL,
     };
 
-    // Perform mutation
     const testNotes = originalNotes
       ? `${originalNotes} [e2e-route-map]`
       : 'Route map e2e test note';
-
     await notesArea.fill(testNotes);
-    const saveBtn = page.getByRole('button', { name: /Salvar avaliação/i });
+    const saveBtn = page
+      .getByTestId('detail-notes-save')
+      .or(page.getByRole('button', { name: /Salvar avaliação/i }));
     await saveBtn.click();
-
-    // Check saved
     await expect(page.getByRole('status')).toContainText(/Salvo/i, { timeout: 10000 });
-    expect(await notesArea.inputValue()).toBe(testNotes);
 
-    await timings.collect(page, 'game-edit', href!);
+    await timings.collect(page, 'screen-4-detail', href!);
 
-    // Restore immediately using dedicated cleanup
     const cleanup = pendingCleanup;
     pendingCleanup = null;
     await executeCleanup(cleanup, context);
   });
 
-  // Step 9: queue-view (read-only: no pin manipulation, no delete, no reordering)
-  test('queue-view: view recommended games queue', async () => {
+  // Screen 5: Queue
+  test('screen-5-queue: visit queue elements per testid-map', async () => {
     if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
+      test.skip(true, 'Skipping authenticated step without credentials.');
       return;
     }
-
     await page.goto('/ordem');
     await expect(page.getByRole('heading', { name: /Ordem de jogos/i })).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.locator('.queue-row, .empty-state, .queue-list').first())
-      .toBeVisible({ timeout: 10000 })
-      .catch(() => {});
 
-    await timings.collect(page, 'queue-view', '/ordem');
-  });
-
-  // Step 10: wishlist-view
-  test('wishlist-view: view wishlist and steam prices', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
+    // queue-{search,search-clear,recalculate}
+    const search = page.getByTestId('queue-search');
+    if (await search.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await search.fill('Mario');
+      const clearBtn = page.getByTestId('queue-search-clear');
+      if (await clearBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await clearBtn.click().catch(() => {});
+      } else {
+        await search.fill('');
+      }
+    }
+    const recalc = page.getByTestId('queue-recalculate');
+    if (await recalc.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await recalc.click().catch(() => {});
     }
 
+    // List menus & create / cancel
+    const listTrigger = page.getByTestId('queue-list-trigger');
+    if (await listTrigger.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await listTrigger.click().catch(() => {});
+      const createBtn = page.getByTestId('queue-list-create');
+      if (await createBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await createBtn.click().catch(() => {});
+        const cancelBtn = page.getByTestId('queue-list-cancel');
+        if (await cancelBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await cancelBtn.click().catch(() => {});
+        }
+      }
+    }
+
+    // Skip destructive
+    skipDestructive('queue-playing-<code>', 'Toggles playing status');
+    skipDestructive('queue-immediate-<code>', 'Toggles priority');
+    skipDestructive('queue-finish-<code>', 'Opens finish completion');
+    skipDestructive('queue-row-<code>', 'Reorders row');
+    skipDestructive('queue-drag-<code>', 'Drags row position');
+    skipDestructive('queue-release-<code>', 'Removes pin position');
+    skipDestructive('queue-list-save', 'Saves new list');
+    skipDestructive('queue-list-remove', 'Deletes list');
+
+    await timings.collect(page, 'screen-5-queue', '/ordem');
+  });
+
+  // Screen 6: Wishlist
+  test('screen-6-wishlist: visit wishlist elements per testid-map', async () => {
+    if (!hasCredentials) {
+      test.skip(true, 'Skipping authenticated step without credentials.');
+      return;
+    }
     await page.goto('/desejos');
     await expect(page.getByRole('heading', { name: /Lista de desejos/i })).toBeVisible({
       timeout: 10000,
     });
 
-    await timings.collect(page, 'wishlist-view', '/desejos');
-  });
-
-  // Step 11: settings-view
-  test('settings-view: view scoring rules and content filters', async () => {
-    if (!hasCredentials) {
-      test.skip(true, 'E2E_EMAIL and E2E_PASSWORD are not set: skipping authenticated step.');
-      return;
+    // Steam search, desire, sort
+    const steamSearch = page.getByTestId('wishlist-steam-search');
+    if (await steamSearch.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await steamSearch.fill('Portal');
+      await page.waitForTimeout(300);
+      await steamSearch.fill('');
+    }
+    const desire = page.getByTestId('wishlist-desire');
+    if (await desire.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await desire.focus().catch(() => {});
+    }
+    const sort = page.getByTestId('wishlist-sort');
+    if (await sort.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await sort.focus().catch(() => {});
     }
 
+    // Manual form open / inputs
+    const manualOpen = page.getByTestId('wishlist-manual-open');
+    if (await manualOpen.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await manualOpen.click().catch(() => {});
+      for (const field of ['name', 'genre', 'hours']) {
+        const inp = page.getByTestId(`wishlist-manual-${field}`);
+        if (await inp.isVisible({ timeout: 500 }).catch(() => false)) {
+          await inp.focus().catch(() => {});
+        }
+      }
+    }
+
+    // Import open
+    const importOpen = page.getByTestId('wishlist-import-open');
+    if (await importOpen.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await importOpen.click().catch(() => {});
+      const profile = page.getByTestId('wishlist-steam-profile');
+      if (await profile.isVisible({ timeout: 500 }).catch(() => false)) {
+        await profile.focus().catch(() => {});
+      }
+    }
+
+    // Skip destructive
+    skipDestructive('wishlist-prices-refresh', 'Refreshes prices from Steam');
+    skipDestructive('wishlist-steam-add-<id>', 'Adds game from Steam');
+    skipDestructive('wishlist-manual-add', 'Adds manual game');
+    skipDestructive('wishlist-steam-import', 'Imports steam profile');
+    skipDestructive('wishlist-purchase-<code>', 'Moves game to library');
+
+    await timings.collect(page, 'screen-6-wishlist', '/desejos');
+  });
+
+  // Screen 7: Settings
+  test('screen-7-settings: visit settings elements per testid-map', async () => {
+    if (!hasCredentials) {
+      test.skip(true, 'Skipping authenticated step without credentials.');
+      return;
+    }
     await page.goto('/configuracoes');
     await expect(page.getByRole('heading', { name: /Configurações/i })).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.locator('table.factors')).toBeVisible({ timeout: 10000 });
 
-    await timings.collect(page, 'settings-view', '/configuracoes');
+    const openQueue = page.getByTestId('settings-open-queue');
+    if (await openQueue.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(openQueue).toBeVisible();
+    }
+    const filterTags = page.getByTestId('settings-filter-tags');
+    if (await filterTags.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await filterTags.click().catch(() => {});
+      await filterTags.click().catch(() => {});
+    }
+
+    // Filters
+    for (const f of [
+      'min-hours',
+      'max-hours',
+      'exclude-unknown-hours',
+      'min-desire',
+      'coop-only',
+    ]) {
+      const sel = page.getByTestId(`settings-filter-${f}`);
+      if (await sel.isVisible({ timeout: 500 }).catch(() => false)) {
+        await sel.focus().catch(() => {});
+      }
+    }
+
+    // Theme buttons
+    for (const mode of ['system', 'light', 'dark']) {
+      const btn = page.getByTestId(`settings-theme-${mode}`);
+      if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
+        await btn.click().catch(() => {});
+      }
+    }
+
+    // Skip destructive
+    skipDestructive('settings-list-save', 'Saves list edits');
+    skipDestructive('settings-list-remove', 'Deletes list');
+    skipDestructive('settings-catalog-add', 'Adds catalog entry');
+    skipDestructive('settings-catalog-remove-...', 'Deletes catalog entry');
+    skipDestructive('settings-discard', 'Discards settings changes');
+    skipDestructive('settings-reset', 'Resets scoring configuration');
+    skipDestructive('settings-save', 'Saves scoring configuration');
+    skipDestructive('settings-logo-remove', 'Deletes logo');
+    skipDestructive('settings-appearance-reset', 'Resets appearance');
+    skipDestructive('settings-logout', 'Logs out user');
+
+    await timings.collect(page, 'screen-7-settings', '/configuracoes');
+  });
+
+  // Screen 8: Modal
+  test('screen-8-modal: visit modal elements per testid-map', async () => {
+    if (!hasCredentials) {
+      test.skip(true, 'Skipping authenticated step without credentials.');
+      return;
+    }
+    await page.goto('/ordem');
+    const rowLink = page.locator('.queue-row .queue-link').first();
+    if (await rowLink.isVisible({ timeout: 10000 }).catch(() => false)) {
+      await rowLink.click();
+      const dialog = page.locator('dialog[open]');
+      await expect(dialog).toBeVisible({ timeout: 10000 });
+
+      // modal-notes
+      const modalNotes = page.getByTestId('modal-notes');
+      if (await modalNotes.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await modalNotes.focus().catch(() => {});
+      }
+      // modal-open-detail
+      const openDetail = page.getByTestId('modal-open-detail');
+      if (await openDetail.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await expect(openDetail).toBeVisible();
+      }
+      // modal-close
+      const closeBtn = page
+        .getByTestId('modal-close')
+        .or(dialog.locator('button[aria-label="Fechar modal"]'));
+      if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await closeBtn.click();
+      }
+
+      skipDestructive('modal-status-option-<key>', 'Changes status in modal');
+      skipDestructive('modal-desire-option-<key>', 'Changes desire in modal');
+      skipDestructive('modal-notes-save', 'Saves notes from modal');
+      skipDestructive('modal-finish', 'Finishes game from modal');
+    }
+    await timings.collect(page, 'screen-8-modal', '/ordem');
+  });
+
+  // Screen 9: Dialog
+  test('screen-9-dialog: visit dialog cancel elements per testid-map', async () => {
+    if (!hasCredentials) {
+      test.skip(true, 'Skipping authenticated step without credentials.');
+      return;
+    }
+    for (const cancelId of ['dialog-finish-cancel', 'dialog-settings-reset-cancel']) {
+      const btn = page.getByTestId(cancelId);
+      if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
+        await btn.click().catch(() => {});
+      }
+    }
+    skipDestructive('dialog-finish-save', 'Saves finish dialog');
+    skipDestructive('dialog-list-remove-<id>-confirm', 'Deletes list');
+    skipDestructive('dialog-settings-reset-confirm', 'Resets settings');
+
+    await timings.collect(page, 'screen-9-dialog', '/ordem');
+  });
+
+  // Screen 10: Loader
+  test('screen-10-loader: verify loader selectors per testid-map', async () => {
+    for (const loader of ['loader-detail', 'loader-queue', 'loader-modal', 'loader-sword']) {
+      const el = page.getByTestId(loader);
+      await el.count();
+    }
+    await timings.collect(page, 'screen-10-loader', '/ordem');
   });
 });

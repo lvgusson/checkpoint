@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   Desire,
   ManualResetResult,
@@ -26,7 +26,7 @@ export function useQueue(listId: string) {
   const k = useQueryKeys();
   const writer = useGameWriter();
   const syncVersion = useSyncScoringVersion();
-  const key = k.queue(listId);
+  const key = useMemo(() => k.queue(listId), [k, listId]);
   const query = useQuery({
     queryKey: key,
     queryFn: ({ signal }) =>
@@ -46,25 +46,42 @@ export function useQueue(listId: string) {
 
   const nameOf = (id: string) => data?.items.find((i) => i.game.id === id)?.game.name ?? 'Jogo';
   const refetchNow = useCallback(() => void qc.invalidateQueries({ queryKey: key }), [qc, key]);
+  const refetchNowRef = useRef(refetchNow);
+  refetchNowRef.current = refetchNow;
   // Moves still in flight own the order: refetching now would undo the drag, so wait and retry.
   const reconcile = useCallback(
     function run() {
       if (pendingMoves.current > 0) {
-        if (settleTimer.current) clearTimeout(settleTimer.current);
+        if (settleTimer.current) {
+          clearTimeout(settleTimer.current);
+          settleTimer.current = null;
+        }
         settleTimer.current = setTimeout(() => {
           settleTimer.current = null;
           run();
         }, SETTLE_MS);
         return;
       }
+      if (settleTimer.current) {
+        clearTimeout(settleTimer.current);
+        settleTimer.current = null;
+      }
       refetchNow();
     },
     [refetchNow],
   );
   const showFlash = (id: string | null) => {
-    if (flashTimer.current) clearTimeout(flashTimer.current);
+    if (flashTimer.current) {
+      clearTimeout(flashTimer.current);
+      flashTimer.current = null;
+    }
     setFlash(id);
-    if (id) flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
+    if (id) {
+      flashTimer.current = setTimeout(() => {
+        flashTimer.current = null;
+        setFlash(null);
+      }, FLASH_MS);
+    }
   };
 
   // The configuration cached for this list must match the version that produced the queue.
@@ -91,14 +108,18 @@ export function useQueue(listId: string) {
 
   useEffect(
     () => () => {
-      if (flashTimer.current) clearTimeout(flashTimer.current);
+      if (flashTimer.current) {
+        clearTimeout(flashTimer.current);
+        flashTimer.current = null;
+      }
       // A pending quiet refresh must not be lost when leaving the page.
       if (settleTimer.current) {
         clearTimeout(settleTimer.current);
-        refetchNow();
+        settleTimer.current = null;
+        refetchNowRef.current();
       }
     },
-    [refetchNow],
+    [],
   );
 
   const reorder = useMutation({
@@ -121,6 +142,10 @@ export function useQueue(listId: string) {
         reconcile();
       } else {
         // Gives the server time to finish persisting before re-reading scores and reasons.
+        if (settleTimer.current) {
+          clearTimeout(settleTimer.current);
+          settleTimer.current = null;
+        }
         settleTimer.current = setTimeout(() => {
           settleTimer.current = null;
           reconcile();
@@ -170,7 +195,10 @@ export function useQueue(listId: string) {
       showFlash(id);
       setActionError('');
       say(`${nameOf(id)} fixado na posição ${toIndex + 1}.`);
-      if (settleTimer.current) clearTimeout(settleTimer.current);
+      if (settleTimer.current) {
+        clearTimeout(settleTimer.current);
+        settleTimer.current = null;
+      }
       pendingMoves.current++;
       reorder.mutate({ id, toPosition: toIndex + 1 });
     },

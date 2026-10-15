@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import type { Catalog, ScoredGame } from '../../../../packages/core/src/models';
 import { api, isApiError } from '../api/http';
@@ -130,6 +130,7 @@ export function DetailPage() {
   }
 
   const g = game;
+  const formattedJson = useMemo(() => (g ? JSON.stringify(g, null, 2) : ''), [g]);
   return (
     <div className="detail-page">
       <Link data-testid="detail-back" className="back-link" to={back}>
@@ -473,7 +474,7 @@ export function DetailPage() {
                   <p className="small">{g.reviewNotes}</p>
                   <details>
                     <summary data-testid="detail-imported-data">Todos os dados importados</summary>
-                    <pre>{JSON.stringify(g, null, 2)}</pre>
+                    <pre>{formattedJson}</pre>
                   </details>
                 </section>
               </aside>

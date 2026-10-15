@@ -36,7 +36,7 @@ Migration `20261015000000_app_user_identity.sql` limits direct account updates t
 Run the focused regressions:
 
 ```bash
-LOG_SINK=noop node --test apps/api/test/security-fixes.test.ts
+LOG_SINK=noop pnpm test apps/api/test/security-fixes.test.ts
 ```
 
 Run the HTTP attack suites:
@@ -46,7 +46,7 @@ pnpm --filter @checkpoint/api run test:security
 ```
 
 The test helper creates temporary JSON files for local HTTP tests. It does not inherit storage paths or credentials.
-Ownership and SQL suites require `SECURITY_TEST_DATABASE_URL`. They skip explicitly when this variable is absent.
+Ownership and SQL suites require `SECURITY_TEST_DATABASE_URL`. They fail when this variable is absent.
 The URL must select a local database whose name starts with `checkpoint_security_`.
 Never supply a production database. The orchestrator prepares the isolated database with migrations and seed data.
 
@@ -55,6 +55,8 @@ SQL tests exercise attack examples against PostgreSQL. They cannot prove that ev
 Review every query change for parameters and fixed identifiers.
 
 ## Related
+
+- [[AI/backend/testing]]: Unit test commands, Vitest configuration, and local database test requirements.
 
 - [[AI/backend/backend]]: Backend request flow and notes.
 - [[AI/backend/authorization]]: Roles and ownership rules.
