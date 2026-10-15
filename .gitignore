@@ -1,7 +1,6 @@
 # Dependências e builds
 node_modules/
 dist/
-.angular/
 out-tsc/
 *.tsbuildinfo
 
@@ -20,12 +19,12 @@ local-env.env
 .vercel/
 
 # Supabase CLI (estado local)
-supabase/.temp/
-supabase/.branches/
+apps/api/infra/supabase/.temp/
+apps/api/infra/supabase/.branches/
 
-# Dados privados gravados pelos repositórios locais (api/src/repository.ts, manual-repository.ts)
-api/data/*.json
-api/data/*.tmp
+# Dados privados gravados pelos repositórios locais (apps/api/src/repository.ts, manual-repository.ts)
+apps/api/data/*.json
+apps/api/data/*.tmp
 *.tmp
 
 # Logs e lixo de SO/editor
@@ -48,3 +47,4 @@ Thumbs.db
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+.obsidian/

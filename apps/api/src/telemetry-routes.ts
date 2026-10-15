@@ -1,0 +1,27 @@
+// POST /api/v1/telemetry: authenticated, size-limited, rate-limited, schema-validated
+// collector. Events go through the log sink strategy; sinks never fail the request.
+import { telemetryBatch } from '../../../packages/core/src/telemetry.ts';
+import { getContext } from './context.ts';
+import { log, metrics } from './logger.ts';
+import { createRateLimiter } from './rate-limit.ts';
+import { AppError } from './service.ts';
+
+export const TELEMETRY_MAX_BYTES = 16 * 1024;
+const allow = createRateLimiter(60, 60_000);
+
+export async function telemetryRoute(readJson: (maxBytes: number) => Promise<unknown>) {
+  if (!allow(getContext()?.userId ?? 'anonymous'))
+    throw new AppError('Muitas requisições de telemetria', 429, { 'Retry-After': '60' });
+  const parsed = telemetryBatch.safeParse(await readJson(TELEMETRY_MAX_BYTES));
+  if (!parsed.success) throw new AppError('Telemetria inválida');
+  for (const e of parsed.data.events) {
+    const fields = { source: 'client', attributes: e.attributes };
+    // Client names are namespaced so they cannot impersonate server events.
+    const name = 'client.' + (e.eventName ?? e.type);
+    if (e.type === 'log') log.log(e.level, name, { ...fields, message: e.message });
+    // Client stacks are data, not server errors: log only, never through the ErrorReporter.
+    else if (e.type === 'error') log.error(name, { ...fields, message: e.message, stack: e.stack });
+    else metrics.count('client.' + e.name, e.value, fields);
+  }
+  return { status: 'accepted' };
+}

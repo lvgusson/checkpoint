@@ -1,0 +1,83 @@
+.detail-page {
+  display: block;
+  min-width: 0;
+}
+.detail-page .detail-hero > div:last-child,
+.detail-page .detail-layout > div {
+  min-width: 0;
+}
+.detail-page .detail-hero h1 {
+  overflow-wrap: anywhere;
+}
+.detail-page .detail-hero .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.detail-page .detail-hero .badge svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  stroke: none;
+}
+.detail-page .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.detail-page .stars {
+  flex-wrap: wrap;
+}
+.detail-page .stars button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.detail-page .stars .clear-rating {
+  margin-left: 0;
+  font-size: 12px;
+}
+.detail-page .checkbox {
+  min-height: 44px;
+  line-height: 1.5;
+}
+.detail-page .panel input:not([type='checkbox']),
+.detail-page .panel textarea {
+  min-height: 46px;
+}
+@media (max-width: 600px) {
+  .detail-page .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detail-page .panel {
+    padding: 16px;
+  }
+  .detail-page .panel h2 {
+    font-size: 20px;
+  }
+  .detail-page .detail-hero .tags {
+    gap: 6px;
+  }
+  .detail-page .detail-hero .badge {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+  .detail-page .detail-hero p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .detail-page .finish-open {
+    width: 100%;
+  }
+  .detail-page .save-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 0;
+  }
+  .detail-page .save-bar span {
+    max-width: none;
+    font-size: 12px;
+  }
+  .detail-page .save-bar button {
+    min-height: 48px;
+    font-size: 14px;
+  }
+}

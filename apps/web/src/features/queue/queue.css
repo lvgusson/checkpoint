@@ -1,0 +1,18 @@
+/* SortableList wraps each row in an <li>, so the legacy :first-of-type rounding must target the items. */
+.queue-list > ul > li > .queue-row,
+.queue-list > ul > li:only-child > .queue-row {
+  border-radius: 0;
+}
+.queue-list > ul > li:first-child > .queue-row {
+  border-radius: 10px 10px 0 0;
+}
+.queue-list > ul > li:last-child > .queue-row {
+  border-bottom: 0;
+  border-radius: 0 0 10px 10px;
+}
+.queue-list > ul > li:only-child > .queue-row {
+  border-radius: 10px;
+}
+.queue-list.is-busy {
+  cursor: progress;
+}

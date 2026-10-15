@@ -1,5 +1,0 @@
-# Review result contract
-
-The executable [JSON Schema](result.schema.json) defines each independent session result. Required fields are `status`, `digest`, `role`, `units`, and `uncertainties`. The digest binds the supplied exact-reference manifest. Every unit includes its unique ID, exact head and nullable parent/base, unit status, path assessments, and findings. Assessments cite commit-bound source/document references and explain inspected behavior and correspondence. Findings identify path, severity, explanation, and required correction.
-
-PASS requires all units, all required paths, complete independent evidence, no findings, and no uncertainties. FAIL identifies contradictions or missing required documentation/history. INCONCLUSIVE indicates unavailable or insufficient evidence. A result cannot self-authorize a push merely by writing PASS. The gate checks exact bindings/completeness and combines all independently launched specialist results; any non-PASS blocks push. Tests using controlled runtimes verify gate behavior, never AI semantic accuracy.

@@ -1,0 +1,50 @@
+.bonfire {
+  display: inline-grid;
+  width: var(--bonfire-size, 24px);
+  height: var(--bonfire-size, 24px);
+  flex-shrink: 0;
+}
+.bonfire svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.bonfire .bg {
+  fill: #1a1030;
+}
+.bonfire .fire {
+  fill: #ff7a3d;
+}
+.bonfire .blade {
+  fill: #e9e5f5;
+}
+.bonfire .blade-shade {
+  fill: #b9b0d6;
+}
+.bonfire .guard {
+  fill: #f2b84b;
+}
+.bonfire .grip {
+  fill: #c98a2b;
+}
+.bonfire .core {
+  fill: #ffc857;
+}
+.bonfire .ash {
+  fill: #5b3f8c;
+}
+.bonfire.mono :is(path, rect, circle) {
+  fill: currentColor;
+}
+.bonfire.mono .fire {
+  opacity: 0.55;
+}
+.bonfire.mono .ash {
+  opacity: 0.35;
+}
+.bonfire.mono .core {
+  opacity: 0.25;
+}
+.bonfire.mono .blade-shade {
+  opacity: 0.7;
+}

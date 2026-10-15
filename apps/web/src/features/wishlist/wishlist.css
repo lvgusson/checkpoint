@@ -1,0 +1,100 @@
+/* Ported from the Angular wishlist page; scoped under .wishlist. */
+.wishlist {
+  .add {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .add details,
+  .add .results,
+  .add > p {
+    grid-column: 1 / -1;
+  }
+  .results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .results button {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 92px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .results button:hover {
+    border-color: currentColor;
+  }
+  .results img {
+    width: 92px;
+    height: 35px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  .plus {
+    font-weight: 600;
+  }
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .manual {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .manual input {
+    flex: 1 1 160px;
+    min-height: 44px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 10px;
+    background: var(--surface);
+  }
+  .description {
+    font-size: 12px;
+    margin: 4px 0 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .price s {
+    opacity: 0.6;
+    margin-right: 6px;
+    font-size: 12px;
+  }
+  .notice {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  @media (max-width: 640px) {
+    .add {
+      grid-template-columns: 1fr;
+    }
+    .results button {
+      grid-template-columns: 1fr auto;
+    }
+    .results img,
+    .results .plus {
+      display: none;
+    }
+  }
+}

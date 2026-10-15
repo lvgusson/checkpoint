@@ -3,20 +3,17 @@
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
-import angular from 'angular-eslint';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
 export default defineConfig(
   {
     ignores: [
-      'dist/',
-      '.angular/',
+      '**/dist/',
       'node_modules/',
-      'supabase/',
-      'data/',
-      'db/',
-      'api/src/seed.ts', // snapshot gerado
+      'apps/api/infra/',
+      'apps/api/src/seed.ts', // snapshot gerado
     ],
   },
   // Scripts JS (config, scripts/, api/index.mjs): Node
@@ -27,31 +24,23 @@ export default defineConfig(
   },
   // API + modelos compartilhados (Node, TS por type stripping)
   {
-    files: ['api/**/*.ts', 'shared/**/*.ts'],
+    files: ['apps/api/**/*.ts', 'packages/**/*.ts'],
+    ignores: ['packages/ui-react/**'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: { globals: globals.node },
   },
-  // Front Angular: TS dos componentes + templates inline
+  // React app and UI kit
   {
-    files: ['web/**/*.ts'],
+    files: ['apps/web/src/**/*.{ts,tsx}', 'apps/web/*.ts', 'packages/ui-react/**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
-      ...angular.configs.tsRecommended,
+      reactHooks.configs.flat.recommended,
     ],
     languageOptions: { globals: globals.browser },
-    processor: angular.processInlineTemplates,
-    rules: {
-      // Componentes do app usam nomes curtos (Library, Queue, Detail) e seletor implícito.
-      '@angular-eslint/component-class-suffix': 'off',
-    },
   },
   {
-    files: ['web/**/*.html'],
-    extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
-  },
-  {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',

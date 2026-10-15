@@ -1,5 +1,0 @@
-{
-  "extends": "../tsconfig.api.json",
-  "compilerOptions": { "allowJs": true },
-  "include": ["src/**/*.ts", "test/**/*.ts", "../shared/**/*.ts"]
-}

@@ -5,18 +5,23 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist/web/browser" }
+      "config": { "distDir": "apps/web/dist" }
     },
     {
-      "src": "api/index.mjs",
+      "src": "apps/api/index.mjs",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["api/src/**", "shared/**", "docs/openapi.json", "package.json"]
+        "includeFiles": [
+          "apps/api/src/**",
+          "packages/core/src/**",
+          "apps/api/openapi.json",
+          "apps/api/package.json"
+        ]
       }
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.mjs" },
+    { "src": "/api/(.*)", "dest": "/apps/api/index.mjs" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]

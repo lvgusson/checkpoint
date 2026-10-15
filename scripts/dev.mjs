@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
 const processes = [
-  spawn(process.execPath, ['--watch', '--env-file-if-exists=.env', 'api/src/server.ts'], {
+  spawn(process.execPath, ['--watch', '--env-file-if-exists=.env', 'apps/api/src/server.ts'], {
     stdio: 'inherit',
   }),
-  spawn(process.execPath, ['node_modules/@angular/cli/bin/ng.js', 'serve', '--host', '127.0.0.1'], {
+  spawn('pnpm', ['--filter', '@checkpoint/web', 'dev', '--host', '127.0.0.1'], {
     stdio: 'inherit',
   }),
 ];
