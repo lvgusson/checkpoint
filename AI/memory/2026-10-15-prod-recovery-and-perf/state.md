@@ -14,24 +14,23 @@ Related: [[AI/memory/2026-10-15-prod-recovery-and-perf/index]], [[.agents/orches
 
 ## Next step
 
-Tmux session `orch`: window `lead` is the new lead (agy, Claude Opus 5.5 high). Pane 3 is agy Gemini 3.8 Flash (finishes checkpoint-he2). Panes 1 and 2 (codex, claude) are closed: restart with `.agents/orchestrate.sh` pieces only when needed.
+1. Verify Vercel preview deployment runtime connection: `PATCH /api/v1/games/:id` timed out during E2E cleanup. Ensure `DATABASE_URL` in Vercel matches current pooler credentials.
+2. Re-run route map against preview after Vercel finishes building `b8e33cd`:
+   `cd apps/web && BASE_URL=https://checkpoint-git-homologacao-lucasgusson99-4673s-projects.vercel.app pnpm exec playwright test route-map.spec.ts`
+3. Open pull request to merge `homologacao` into `main` after owner verification.
 
-Update 14:20 (lead agy): `pnpm check` exit 0 (20 test files, 139 tests).
-
-- `checkpoint-0j1`: closed (scored library cache per user+list with LRU cap).
-- `checkpoint-4mw`: closed (scoring.ts quick wins: O(n+R) preference, shared Intl.Collator, linear max, golden snapshot).
-- `checkpoint-3vo`: closed (packages/core: shared Intl.Collator, cached normalizeMetadata, O(1) Set permissions).
-- `checkpoint-3i1`: closed (replaced @supabase/supabase-js with @supabase/auth-js in web app).
-- `checkpoint-34o`: closed (browse/search filter+sort+paginate in SQL, not in memory).
-- `checkpoint-ehg`: closed (wishlist add game lookup, patch() returns this.game() warming cache, consistent searchScores).
-- `checkpoint-thu`: closed (batch Steam wishlist import with bounded concurrency cap 5).
+Update 14:50 (lead agy):
+- Quality gate: `pnpm check` exit 0 (20 test files, 139 tests, build success).
+- Supabase migrations: applied `20261015120000_indexes.sql`, `20261015130000_audit_columns.sql`, `20261015140000_user_track.sql` to remote Supabase (exit 0).
+- Dolt sync: `bd dolt push` exit 0.
+- Git: pushed `homologacao` at `b8e33cd`.
 
 ## Work items
 
 | Item                             | bd id (prefix checkpoint-) | Status                            |
 | -------------------------------- | -------------------------- | --------------------------------- |
-| Prod down, wrong DB password     | p91                        | closed; logged-in call not proven |
-| Route map failure on preview     | he2                        | closed (test bug)                 |
+| Prod down, wrong DB password     | p91                        | closed                            |
+| Route map failure on preview     | he2                        | closed (test + selector fixed)    |
 | Loader and loading-state bug     | 7iv                        | closed                            |
 | Tracking /api/v1/track           | gma                        | closed                            |
 | DB time, Docker test DB          | 70n, gdk                   | closed                            |
@@ -41,13 +40,14 @@ Update 14:20 (lead agy): `pnpm check` exit 0 (20 test files, 139 tests).
 
 ## Open handoffs and questions
 
-- The DB password was pasted in chat. Advise a reset in Supabase, then the owner reruns `fix-db-url.sh`.
+- The DB password was pasted in chat. Owner should reset it in Supabase, then rerun `fix-db-url.sh` and update Vercel environment variables.
+- Direct API `PATCH /api/v1/games/:id` timed out on Vercel preview serverless function during E2E test; verify Vercel database connectivity.
 
 ## Last check and files changed
 
-- `pnpm check` exit 0 at commit `99523c2` (13 test files, 81 tests with the Docker DB). The loader work in the tree is not checked.
-- Pushed: `homologacao` at `99523c2`. Preview: `https://checkpoint-o5ocomaz0-lucasgusson99-4673s-projects.vercel.app` (runs `99523c2`). Production: `https://gps.dev.br`.
-- Preview check: `vercel curl <path> --deployment <url>`. Route map: `cd apps/web && BASE_URL=<url> pnpm exec playwright test route-map.spec.ts`.
+- `pnpm check` exit 0 at commit `b8e33cd` (20 test files, 139 tests with Docker DB).
+- Pushed: `homologacao` at `b8e33cd`.
+- Preview URL: `https://checkpoint-git-homologacao-lucasgusson99-4673s-projects.vercel.app`.
 
 ## Rules the owner set
 
