@@ -1,9 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { Desire, GameStatus } from '../../../../../packages/core/src/models';
+import { testIdKey, testIdValue } from '@/components/ui/test-id';
 import { cn } from '@/lib/utils';
 import { MetadataBadge } from './MetadataBadge';
 import type { MetadataKind } from './presentation';
 
-type Common = { label: string; kind: MetadataKind; options: string[] };
+type Common = { label: string; kind: MetadataKind; options: string[]; 'data-testid': string };
+
+function metadataOptionKey(kind: MetadataKind, value: string) {
+  const codes = kind === 'status' ? GameStatus : kind === 'desire' ? Desire : {};
+  const code = Object.entries(codes).find(([, label]) => label === value)?.[0];
+  return code ? testIdKey(code) : testIdValue(value);
+}
 type Props =
   | (Common & { multiple?: false; value: string; onValueChange(value: string): void })
   | (Common & {
@@ -79,6 +87,7 @@ export function MetadataSelect(props: Props) {
         {label}
       </span>
       <button
+        data-testid={props['data-testid']}
         type="button"
         className="select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-[11px] py-2 text-left text-foreground"
         aria-labelledby={`${id}-label ${id}-value`}
@@ -118,6 +127,7 @@ export function MetadataSelect(props: Props) {
         >
           {options.map((item) => (
             <button
+              data-testid={`${props['data-testid']}-option-${metadataOptionKey(kind, item)}`}
               key={item}
               type="button"
               role="option"

@@ -32,7 +32,29 @@
       "Bash(bd show *)",
       "Bash(bd prime)"
     ],
-    "ask": ["Bash(git commit *)", "Bash(git push *)"]
+    "ask": ["Bash(git commit *)", "Bash(git push *)"],
+    "deny": [
+      "Read(**/node_modules/**)",
+      "Read(node_modules/**)",
+      "Read(apps/*/dist/**)",
+      "Read(**/dist/**)",
+      "Read(pnpm-lock.yaml)",
+      "Read(**/pnpm-lock.yaml)",
+      "Read(**/test-results/**)",
+      "Read(test-results/**)",
+      "Read(**/playwright-report/**)",
+      "Read(playwright-report/**)",
+      "Grep(**/node_modules/**)",
+      "Grep(node_modules/**)",
+      "Grep(apps/*/dist/**)",
+      "Grep(**/dist/**)",
+      "Grep(pnpm-lock.yaml)",
+      "Grep(**/pnpm-lock.yaml)",
+      "Grep(**/test-results/**)",
+      "Grep(test-results/**)",
+      "Grep(**/playwright-report/**)",
+      "Grep(playwright-report/**)"
+    ]
   },
   "env": {
     "PONYTAIL_DEFAULT_MODE": "off",

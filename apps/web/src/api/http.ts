@@ -1,6 +1,7 @@
 import ky, { isHTTPError, isTimeoutError, type Options } from 'ky';
 import { authSession } from '../auth/session';
 import { ApiError, toApiError } from './errors';
+import { clickToSendMs, computeTiming, recordTiming } from './timing';
 
 export { ApiError, isApiError } from './errors';
 
@@ -28,9 +29,14 @@ async function attempt(
   options: RequestOptions,
   token: string | null,
   requestId: string,
+  sentAt: number,
 ) {
   // The public config endpoint is fetched before any session exists and never carries a token.
-  const headers: Record<string, string> = { 'X-Request-Id': requestId };
+  const headers: Record<string, string> = {
+    'X-Request-Id': requestId,
+    'X-Client-Sent-At': String(sentAt),
+  };
+  if (import.meta.env.DEV) headers['X-Timing-Detail'] = '1'; // server still requires an authenticated caller
   if (token && path !== 'config') headers['Authorization'] = 'Bearer ' + token;
   return client(path, { ...options, method, headers });
 }
@@ -54,10 +60,28 @@ async function send(method: string, path: string, options: RequestOptions): Prom
   assertRelative(path);
   const requestId = crypto.randomUUID();
   const authed = authSession.enabled && path !== 'config';
+  // window.event is the DOM event being dispatched; it is undefined for requests started by effects or timers.
+  const started = performance.now();
+  const clicked = clickToSendMs(window.event?.timeStamp, started);
+  const sentAt = Date.now();
+  const done = (status: number, response?: Response) =>
+    recordTiming(
+      computeTiming({
+        requestId,
+        method,
+        path,
+        status,
+        totalMs: performance.now() - started,
+        clickToSendMs: clicked,
+        serverTiming: response?.headers.get('server-timing') ?? null,
+      }),
+    );
   try {
     const tokenUsed = authed ? authSession.accessToken() : Promise.resolve(null);
     try {
-      return await attempt(method, path, options, await tokenUsed, requestId);
+      const response = await attempt(method, path, options, await tokenUsed, requestId, sentAt);
+      done(response.status, response);
+      return response;
     } catch (error) {
       // Only 401 triggers a refresh (not 403/422/5xx). A 401 means the server did not run the
       // handler, so replaying even a POST once is safe.
@@ -68,7 +92,9 @@ async function send(method: string, path: string, options: RequestOptions): Prom
       const token = current && current !== used ? current : await authSession.refreshToken();
       if (!token) throw error;
       try {
-        return await attempt(method, path, options, token, requestId);
+        const response = await attempt(method, path, options, token, requestId, sentAt);
+        done(response.status, response);
+        return response;
       } catch (retryError) {
         if (isHTTPError(retryError) && retryError.response.status === 401)
           void authSession.signOut('local');
@@ -76,7 +102,9 @@ async function send(method: string, path: string, options: RequestOptions): Prom
       }
     }
   } catch (error) {
-    throw await normalize(error, requestId);
+    const normalized = await normalize(error, requestId);
+    done(normalized.status, isHTTPError(error) ? error.response : undefined);
+    throw normalized;
   }
 }
 

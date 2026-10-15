@@ -16,7 +16,7 @@ HTTP uses `node:http` without a framework.
 1. The router in `apps/api/src/main/server.ts` assigns the request identifier.
 2. The router adds security headers and enforces the request body limit.
 3. `apps/api/src/auth/auth.ts` authenticates the caller.
-4. The route verifies permissions through `packages/core/src/authorization.ts`.
+4. The central gate in `apps/api/src/main/server.ts` verifies permissions through `packages/core/src/authorization.ts`.
 5. The route delegates work to domain services (`GameService`, `WishlistService`, or `ConfigService`).
 6. Services query repositories, which execute operations through storage drivers.
 7. Errors convert to RFC 9457 problem+json format through `apps/api/src/routes/http-errors.ts`.
@@ -30,8 +30,8 @@ The data layer uses the Repository and Drivers pattern to replace old monolith r
 Repositories in `apps/api/src/data/repositories/` implement domain ports in `apps/api/src/data/ports.ts`.
 Repositories map data errors and resolve user tenancy.
 Drivers in `apps/api/src/data/drivers/` perform storage operations without business logic.
-Postgres drivers (`PgDriver` in `apps/api/src/data/drivers/pg/`) execute SQL queries.
-JSON drivers (`JsonDriver` in `apps/api/src/data/drivers/json/`) manage local JSON files.
+Postgres drivers (`PgGamesDriver` and other `Pg*Driver` classes in `apps/api/src/data/drivers/pg/`) execute SQL queries.
+JSON drivers (`JsonGamesDriver` and other `Json*Driver` classes in `apps/api/src/data/drivers/json/`) manage local JSON files.
 
 ## Features and scoring
 
@@ -45,6 +45,8 @@ JSON drivers (`JsonDriver` in `apps/api/src/data/drivers/json/`) manage local JS
 - Metadata configuration: `ConfigService` serves vocabulary categories loaded by `PgConfigDriver` from database tables.
 
 ## Where to go
+
+- New database tables: [[AI/backend/database-checklist]]: Steps to create a database table with indexes, audit columns, and access controls.
 
 - Hosting, storage modes, environment variables, scripts: [[AI/backend/infrastructure]]
 - Add a route, a service method, a repository, a permission or a log sink: [[AI/backend/extending-classes]]

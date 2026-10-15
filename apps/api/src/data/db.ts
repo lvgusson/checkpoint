@@ -6,6 +6,7 @@
 // nomeados são desligados (`prepare: false`). O pool local é pequeno porque, na Vercel,
 // cada instância da função abre o seu — quem multiplexa de verdade é o Supavisor.
 import postgres from 'postgres';
+import { timed } from '../observability/timing.ts';
 
 export type Sql = postgres.Sql;
 
@@ -14,17 +15,19 @@ let client: Sql | null = null;
 export function db(url = process.env.DATABASE_URL): Sql {
   if (client) return client;
   if (!url) throw new Error('DATABASE_URL não definida');
-  client = postgres(url, {
-    prepare: false,
-    max: Number(process.env.PG_POOL_MAX) || 5,
-    idle_timeout: 20, // s: devolve conexões ociosas (instâncias serverless congeladas)
-    connect_timeout: 10,
-    max_lifetime: 60 * 30,
-    // `undefined` vira NULL em vez de lançar (campos opcionais vindos da API).
-    transform: { undefined: null },
-    connection: { application_name: 'checkpoint-api' },
-    onnotice: () => {},
-  });
+  client = timed(
+    postgres(url, {
+      prepare: false,
+      max: Number(process.env.PG_POOL_MAX) || 5,
+      idle_timeout: 20, // s: devolve conexões ociosas (instâncias serverless congeladas)
+      connect_timeout: 10,
+      max_lifetime: 60 * 30,
+      // `undefined` vira NULL em vez de lançar (campos opcionais vindos da API).
+      transform: { undefined: null },
+      connection: { application_name: 'checkpoint-api' },
+      onnotice: () => {},
+    }),
+  );
   return client;
 }
 

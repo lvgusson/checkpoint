@@ -1,5 +1,6 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
+import { DayButton, DayPicker, NextMonthButton, PreviousMonthButton } from 'react-day-picker';
+import { format } from 'date-fns';
 import { ptBR } from 'react-day-picker/locale';
 import type * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
@@ -9,11 +10,13 @@ import { cn } from '@/lib/utils';
 export function Calendar({
   className,
   classNames,
+  'data-testid': testId,
   ...props
-}: React.ComponentProps<typeof DayPicker>) {
+}: React.ComponentProps<typeof DayPicker> & { 'data-testid': string }) {
   const nav = cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-9');
   return (
     <DayPicker
+      data-testid={testId}
       locale={ptBR}
       showOutsideDays
       className={cn('p-0', className)}
@@ -41,6 +44,18 @@ export function Calendar({
         ...classNames,
       }}
       components={{
+        PreviousMonthButton: (buttonProps) => (
+          <PreviousMonthButton {...buttonProps} data-testid={`${testId}-previous`} />
+        ),
+        NextMonthButton: (buttonProps) => (
+          <NextMonthButton {...buttonProps} data-testid={`${testId}-next`} />
+        ),
+        DayButton: (buttonProps) => (
+          <DayButton
+            {...buttonProps}
+            data-testid={`${testId}-day-${format(buttonProps.day.date, 'yyyy-MM-dd')}`}
+          />
+        ),
         Chevron: ({ orientation, className: c }) =>
           orientation === 'left' ? (
             <ChevronLeftIcon className={cn('size-4', c)} />

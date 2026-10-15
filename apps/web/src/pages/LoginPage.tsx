@@ -101,6 +101,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
   };
   const tab = (id: 'login' | 'signup', label: string) => (
     <button
+      data-testid={`login-tab-${id}`}
       type="button"
       role="tab"
       className={mode === id ? 'active' : undefined}
@@ -142,6 +143,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
               Link inválido ou expirado. Peça um novo link de redefinição.
             </p>
             <button
+              data-testid="login-recovery-request"
               type="button"
               className="button primary wide"
               onClick={() => switchMode('forgot')}
@@ -156,6 +158,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
                 <label className="field" htmlFor="auth-email">
                   <span>{mode === 'login' ? 'E-mail ou usuário' : 'E-mail'}</span>
                   <input
+                    data-testid="login-email"
                     id="auth-email"
                     type={mode === 'login' ? 'text' : 'email'}
                     inputMode="email"
@@ -181,6 +184,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
                 <label className="field" htmlFor="auth-password">
                   <span>{mode === 'reset' ? 'Nova senha' : 'Senha'}</span>
                   <input
+                    data-testid="login-password"
                     id="auth-password"
                     type="password"
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -201,6 +205,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
                 <label className="field" htmlFor="auth-confirm">
                   <span>Confirmar senha</span>
                   <input
+                    data-testid="login-confirm-password"
                     id="auth-confirm"
                     type="password"
                     autoComplete="new-password"
@@ -212,7 +217,12 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
               </>
             )}
             {mode === 'login' && (
-              <button type="button" className="link" onClick={() => switchMode('forgot')}>
+              <button
+                data-testid="login-forgot"
+                type="button"
+                className="link"
+                onClick={() => switchMode('forgot')}
+              >
                 Esqueci a senha
               </button>
             )}
@@ -226,14 +236,24 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
                 {notice}
               </p>
             )}
-            <button className="button primary wide" type="submit" disabled={loading}>
+            <button
+              data-testid={`login-submit-${mode}`}
+              className="button primary wide"
+              type="submit"
+              disabled={loading}
+            >
               {loading ? 'Aguarde…' : SUBMIT[mode]}
             </button>
           </form>
         )}
 
         {mode === 'forgot' && (
-          <button type="button" className="link center" onClick={() => switchMode('login')}>
+          <button
+            data-testid="login-back"
+            type="button"
+            className="link center"
+            onClick={() => switchMode('login')}
+          >
             ← Voltar para o login
           </button>
         )}
@@ -243,6 +263,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
               <span>ou</span>
             </div>
             <button
+              data-testid="login-github"
               type="button"
               className="button wide"
               disabled={loading}

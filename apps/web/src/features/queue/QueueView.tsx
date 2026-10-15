@@ -70,8 +70,9 @@ export function QueueView({ listId }: { listId: string }) {
   }
   const rowActions = (game: ScoredGame) => (
     <>
-      <PlayingButton game={game} />
+      <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
       <ImmediateButton
+        data-testid={`queue-immediate-${game.id.toLowerCase()}`}
         game={game}
         onChanged={(desire) => q.setDesire(game.id, desire)}
         onSaved={q.desireSaved}
@@ -81,6 +82,7 @@ export function QueueView({ listId }: { listId: string }) {
         }}
       />
       <button
+        data-testid={`queue-finish-${game.id.toLowerCase()}`}
         type="button"
         className="icon-button finish-btn"
         aria-label={`Finalizar ${game.name}`}
@@ -96,6 +98,7 @@ export function QueueView({ listId }: { listId: string }) {
     <>
       <ListPicker base="/ordem" current={listId}>
         <DropdownMenuItem
+          data-testid="queue-recalculate"
           className="min-h-11"
           disabled={q.isFetching}
           onSelect={() => void q.recalculate()}
@@ -126,6 +129,7 @@ export function QueueView({ listId }: { listId: string }) {
                 {data.playing.map((game) => (
                   <article className="playing-row" key={game.id}>
                     <Link
+                      data-testid={`queue-playing-detail-${game.id.toLowerCase()}`}
                       className="playing-link"
                       to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
                       onClick={(e) => {
@@ -195,6 +199,7 @@ export function QueueView({ listId }: { listId: string }) {
             <label className="search">
               <span aria-hidden="true">⌕</span>
               <input
+                data-testid="queue-search"
                 type="search"
                 aria-label="Buscar na fila por nome, gênero ou tag"
                 placeholder="Buscar na fila por nome, gênero ou tag…"
@@ -204,7 +209,12 @@ export function QueueView({ listId }: { listId: string }) {
               />
             </label>
             {search && (
-              <Button type="button" variant="outline" onClick={() => setSearch('')}>
+              <Button
+                data-testid="queue-search-clear"
+                type="button"
+                variant="outline"
+                onClick={() => setSearch('')}
+              >
                 Limpar
               </Button>
             )}
@@ -235,7 +245,12 @@ export function QueueView({ listId }: { listId: string }) {
           {q.notice && (
             <div className="reorder-notice" role="status">
               <span>{q.notice}</span>
-              <button type="button" onClick={() => q.setNotice(null)} aria-label="Fechar aviso">
+              <button
+                data-testid="queue-notice-close"
+                type="button"
+                onClick={() => q.setNotice(null)}
+                aria-label="Fechar aviso"
+              >
                 ×
               </button>
             </div>
@@ -244,6 +259,7 @@ export function QueueView({ listId }: { listId: string }) {
             className={cn('queue-list', busyId !== null && 'is-busy', searching && 'is-searching')}
           >
             <SortableList
+              data-testid="queue-sortable-list"
               items={rows}
               getId={(row) => row.item.game.id}
               disabled={searching || busyId !== null}
@@ -283,6 +299,7 @@ export function QueueView({ listId }: { listId: string }) {
           )}
           {!searching && visible < data.items.length && (
             <button
+              data-testid="queue-load-more"
               type="button"
               className="button load-more"
               onClick={() => setVisible(visible + PAGE_SIZE)}
@@ -298,7 +315,9 @@ export function QueueView({ listId }: { listId: string }) {
           )}
           {data.excluded.length > 0 && (
             <details className="method">
-              <summary>{data.excluded.length} jogos fora da fila</summary>
+              <summary data-testid="queue-excluded-open">
+                {data.excluded.length} jogos fora da fila
+              </summary>
               {excludedReasons(data).map((r) => (
                 <p key={r.reason}>
                   {r.reason}: {r.count}
@@ -310,7 +329,7 @@ export function QueueView({ listId }: { listId: string }) {
       ) : (
         q.isLoading && (
           <div className="empty flex flex-col items-center justify-center py-16">
-            <SwordLoader size={64} label="Calculando seu roteiro…" />
+            <SwordLoader data-testid="loader-queue" size={64} label="Calculando seu roteiro…" />
           </div>
         )
       )}
@@ -342,6 +361,7 @@ function NextGame({
 }) {
   return (
     <Link
+      data-testid={`queue-next-${first.game.id.toLowerCase()}`}
       className="next-game"
       to={`/jogos/${encodeURIComponent(first.game.id)}${DETAIL_STATE}`}
       onClick={(e) => {
@@ -421,10 +441,12 @@ function QueueRow({
         isDragging && 'lifted',
       )}
       data-id={game.id}
+      data-testid={`queue-row-${game.id.toLowerCase()}`}
       {...pointerProps}
     >
       {!searching && (
         <button
+          data-testid={`queue-drag-${game.id.toLowerCase()}`}
           type="button"
           {...handleProps}
           className="drag-handle"
@@ -436,6 +458,7 @@ function QueueRow({
         </button>
       )}
       <Link
+        data-testid={`queue-game-${game.id.toLowerCase()}`}
         className="queue-link"
         draggable={false}
         to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
@@ -500,6 +523,7 @@ function QueueRow({
               )}
               Fixado
               <button
+                data-testid={`queue-release-${game.id.toLowerCase()}`}
                 type="button"
                 className="chip-remove"
                 disabled={anyBusy}

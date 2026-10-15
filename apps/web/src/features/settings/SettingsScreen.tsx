@@ -1,3 +1,4 @@
+import { testIdKey, testIdValue } from '@/components/ui/test-id';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConfirmDialog } from '@checkpoint/ui-react';
 import { useMemo, useState } from 'react';
@@ -42,7 +43,7 @@ export function SettingsScreen() {
         {query.isError ? (
           <div className="error" role="alert">
             Não foi possível carregar as configurações. Confira se a API está no ar.
-            <button type="button" onClick={() => void query.refetch()}>
+            <button data-testid="settings-retry" type="button" onClick={() => void query.refetch()}>
               Tentar novamente
             </button>
           </div>
@@ -106,6 +107,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
     });
   const pick = (key: ListFilter, option: { value: string; count: number }, cls = '') => (
     <button
+      data-testid={`settings-filter-${testIdKey(key)}-${testIdValue(option.value)}`}
       key={option.value}
       type="button"
       className={'pick ' + cls}
@@ -150,6 +152,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
       <>
         <label className={'number' + (bad ? ' invalid' : '')}>
           <input
+            data-testid={`settings-weight-${testIdKey(key)}`}
             type="number"
             min={f.min}
             max={f.max}
@@ -174,6 +177,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
     <label className={'number' + (hoursInvalid ? ' invalid' : '')}>
       {text}
       <input
+        data-testid={`settings-filter-${testIdKey(key)}`}
         type="number"
         min="0"
         max="10000"
@@ -203,9 +207,17 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
       {success && (
         <div className="reorder-notice" role="status">
           <span>
-            {success} <Link to={`/ordem/${listId}`}>Ver a fila ↗</Link>
+            {success}{' '}
+            <Link data-testid="settings-open-queue" to={`/ordem/${listId}`}>
+              Ver a fila ↗
+            </Link>
           </span>
-          <button type="button" onClick={() => setSuccess('')} aria-label="Fechar aviso">
+          <button
+            data-testid="settings-notice-close"
+            type="button"
+            onClick={() => setSuccess('')}
+            aria-label="Fechar aviso"
+          >
             ×
           </button>
         </div>
@@ -240,6 +252,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
                     {f.rule ? (
                       <label className="switch">
                         <input
+                          data-testid={`settings-rule-${testIdKey(f.id)}`}
                           type="checkbox"
                           role="switch"
                           disabled={saving}
@@ -266,6 +279,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
           candidatos cada escolha tira da fila.
           {activeFilters && (
             <button
+              data-testid="settings-filters-clear"
               type="button"
               className="link"
               disabled={saving}
@@ -288,6 +302,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             {hoursInput('maxHours', 'Horas máximas', 'máx.')}
             <label className="check">
               <input
+                data-testid="settings-filter-exclude-unknown-hours"
                 type="checkbox"
                 disabled={saving}
                 {...register('filters.excludeUnknownHours')}
@@ -324,6 +339,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
           <label className="select">
             Vontade mínima
             <select
+              data-testid="settings-filter-min-desire"
               disabled={saving}
               {...register('filters.minDesire', {
                 setValueAs: (v) => (v || null) as Desire | null,
@@ -339,13 +355,20 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             <span className="removed">−{desireRemoved(d, o.desires)} jogos</span>
           </label>
           <label className="check">
-            <input type="checkbox" disabled={saving} {...register('filters.coopOnly')} />
+            <input
+              data-testid="settings-filter-coop-only"
+              type="checkbox"
+              disabled={saving}
+              {...register('filters.coopOnly')}
+            />
             Só jogos com coop (local ou online) <small>{o.coop} jogos</small>
           </label>
         </fieldset>
 
         <details className="filter-group" open={d.filters.excludedTags.length > 0 || undefined}>
-          <summary>Excluir subgêneros/tags ({d.filters.excludedTags.length})</summary>
+          <summary data-testid="settings-filter-tags">
+            Excluir subgêneros/tags ({d.filters.excludedTags.length})
+          </summary>
           <div className="chips">{o.tags.map((t) => pick('excludedTags', t, 'exclude'))}</div>
         </details>
       </section>
@@ -362,6 +385,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
         </span>
         <div className="actions">
           <button
+            data-testid="settings-reset"
             type="button"
             className="button"
             onClick={() => setConfirmReset(true)}
@@ -370,6 +394,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             Restaurar padrão
           </button>
           <button
+            data-testid="settings-discard"
             type="button"
             className="button"
             onClick={() => resetForm(settings.config)}
@@ -378,6 +403,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             Descartar
           </button>
           <button
+            data-testid="settings-save"
             type="button"
             className="button primary"
             onClick={() => void onSave()}
@@ -388,6 +414,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
         </div>
       </div>
       <ConfirmDialog
+        data-testid="dialog-settings-reset"
         open={confirmReset}
         title="Restaurar o padrão?"
         description="Voltar todos os pesos, regras e filtros desta lista para o padrão?"

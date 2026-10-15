@@ -33,7 +33,7 @@ Session notes link bd ids. They do not copy issue text.
 
 ## Sessions
 
-- [[AI/memory/2026-10-14-multi-agent-refactor/index]]: active. Seven-slice refactor epic, security audit and memory system.
+- [[AI/memory/2026-10-14-multi-agent-refactor/index]]: completed. Seven-slice refactor epic, security audit and memory system.
 
 ## Related
 

@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 export interface SwordLoaderProps {
   /** Size of the loader SVG in pixels or CSS unit. Defaults to 56. */
   size?: number | string;
+  'data-testid'?: string;
   /** Optional container class name. */
   className?: string;
   /** Accessible label and visible status text below the icon. */
@@ -13,11 +14,17 @@ export interface SwordLoaderProps {
  * Animated bonfire sword loader.
  * The blade, flames, and crossguard glow and gain color in a continuous loop.
  */
-export function SwordLoader({ size = 56, className, label }: SwordLoaderProps) {
+export function SwordLoader({
+  size = 56,
+  className,
+  label,
+  'data-testid': testId = 'loader-sword',
+}: SwordLoaderProps) {
   const dimension = typeof size === 'number' ? `${size}px` : size;
 
   return (
     <div
+      data-testid={testId}
       className={cn('inline-flex flex-col items-center justify-center gap-3', className)}
       role="status"
       aria-label={label ?? 'Carregando…'}

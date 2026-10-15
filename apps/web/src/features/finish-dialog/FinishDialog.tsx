@@ -108,6 +108,7 @@ export function FinishDialog({
 
   return (
     <dialog
+      data-testid={`dialog-finish-${game.id.toLowerCase()}`}
       ref={dialog}
       className="finish-sheet"
       aria-labelledby="finish-title"
@@ -118,6 +119,7 @@ export function FinishDialog({
     >
       <form className="finish-body" onSubmit={save} noValidate>
         <div
+          data-testid="dialog-finish-drag"
           className="finish-grabber"
           aria-hidden="true"
           onPointerDown={(e) => {
@@ -151,6 +153,7 @@ export function FinishDialog({
                 {n === 1 ? (
                   <label className="whole">
                     <input
+                      data-testid="dialog-finish-rating-1"
                       type="radio"
                       name="finish-rating"
                       checked={rating === 1}
@@ -162,6 +165,7 @@ export function FinishDialog({
                   <>
                     <label className="half left">
                       <input
+                        data-testid={`dialog-finish-rating-${String(n - 0.5).replace('.', '-')}`}
                         type="radio"
                         name="finish-rating"
                         checked={rating === n - 0.5}
@@ -171,6 +175,7 @@ export function FinishDialog({
                     </label>
                     <label className="half right">
                       <input
+                        data-testid={`dialog-finish-rating-${n}`}
                         type="radio"
                         name="finish-rating"
                         checked={rating === n}
@@ -188,6 +193,7 @@ export function FinishDialog({
         <label className="finish-field" htmlFor="finish-hours">
           <span>Tempo de jogo (horas)</span>
           <input
+            data-testid="dialog-finish-hours"
             id="finish-hours"
             name="actualHours"
             autoComplete="off"
@@ -211,6 +217,7 @@ export function FinishDialog({
         <label className="finish-field" htmlFor="finish-notes">
           <span>Avaliação</span>
           <textarea
+            data-testid="dialog-finish-notes"
             id="finish-notes"
             name="notes"
             autoComplete="off"
@@ -228,10 +235,21 @@ export function FinishDialog({
           </div>
         )}
         <div className="finish-actions">
-          <button type="button" className="button" onClick={() => close(false)} disabled={saving}>
+          <button
+            data-testid="dialog-finish-cancel"
+            type="button"
+            className="button"
+            onClick={() => close(false)}
+            disabled={saving}
+          >
             Cancelar
           </button>
-          <button type="submit" className="button primary" disabled={!canSave}>
+          <button
+            data-testid="dialog-finish-save"
+            type="submit"
+            className="button primary"
+            disabled={!canSave}
+          >
             {saving ? 'Salvando…' : 'Finalizar'}
           </button>
         </div>

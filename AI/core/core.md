@@ -28,10 +28,11 @@ The apps import from `packages/core` using relative paths to `packages/core/src`
 
 `packages/core` provides contracts for scoring, purchases, and wishlists:
 
-- Purchase timestamp: `Game.purchasedAt` records the first purchase time as an ISO string.
-- Recency weight: `ScoreWeights.recentPurchase` defines the scoring bonus for games purchased within 30 days.
+- Purchase timestamp: `Game.purchasedAt` is optional and nullable. It holds the first purchase time as an ISO string. Legacy data has no value.
+- Recency weight: `ScoreWeights.recentPurchase` is the scoring bonus for a recent purchase. It decays linearly to zero over 30 days from `purchasedAt`.
 - Wishlist items: `WishlistItem` combines a `ScoredGame` with optional `SteamPrice` and description.
 - Wishlist sorting: `compareWishlistItems` sorts items by `'name'`, `'price'`, `'discount'`, or `'recommendation'`.
+- Unavailable prices sort last. Ties break by name (pt-BR), then by id.
 - Recommendation sort: `'recommendation'` orders wishlist entries by `game.baseScore` descending.
 
 ## Controlled metadata vocabulary

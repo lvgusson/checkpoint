@@ -35,7 +35,14 @@ function Choice({
 }) {
   return (
     <label className={`choice ${className} ${selected ? 'selected' : ''}`}>
-      <input type="radio" name={name} value={value} checked={selected} onChange={onSelect} />
+      <input
+        data-testid={`settings-${name}-${value}`}
+        type="radio"
+        name={name}
+        value={value}
+        checked={selected}
+        onChange={onSelect}
+      />
       {children}
     </label>
   );
@@ -175,6 +182,7 @@ export function AppearanceScreen() {
             <label className="button">
               Enviar imagem
               <input
+                data-testid="settings-logo-upload"
                 className="sr-only"
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -183,6 +191,7 @@ export function AppearanceScreen() {
             </label>
             {value.customLogo && (
               <button
+                data-testid="settings-logo-remove"
                 type="button"
                 className="button"
                 onClick={() => update({ customLogo: null, logo: 'bonfire' })}
@@ -205,11 +214,21 @@ export function AppearanceScreen() {
         <p className="muted">{user ? user.email : 'Modo local, sem login.'}</p>
         <div className="row">
           {user && (
-            <button type="button" className="button" onClick={() => void signOut()}>
+            <button
+              data-testid="settings-logout"
+              type="button"
+              className="button"
+              onClick={() => void signOut()}
+            >
               Sair
             </button>
           )}
-          <button type="button" className="button" onClick={reset}>
+          <button
+            data-testid="settings-appearance-reset"
+            type="button"
+            className="button"
+            onClick={reset}
+          >
             Restaurar aparência padrão
           </button>
         </div>

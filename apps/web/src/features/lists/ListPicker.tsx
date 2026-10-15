@@ -26,6 +26,7 @@ export function ListPicker({
   current: string | null;
   children?: ReactNode;
 }) {
+  const screen = base === '/ordem' ? 'queue' : 'settings';
   const navigate = useNavigate();
   const { data: lists = [] } = useLists();
   const { create, rename, remove } = useListMutations();
@@ -86,6 +87,7 @@ export function ListPicker({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
+                  data-testid={`${screen}-list-trigger`}
                   type="button"
                   aria-label="Lista atual"
                   className="flex h-11 w-full items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 text-base font-semibold"
@@ -107,6 +109,7 @@ export function ListPicker({
                     aria-label={list.name}
                   >
                     <DropdownMenuItem
+                      data-testid={`${screen}-list-select-${list.id}`}
                       className="min-h-11 flex-1 justify-between"
                       onSelect={() => list.id !== current && go(list.id)}
                     >
@@ -120,6 +123,7 @@ export function ListPicker({
                       <span aria-hidden="true">{list.id === current ? '✓' : ''}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
+                      data-testid={`${screen}-list-rename-${list.id}`}
                       className="size-11 justify-center"
                       aria-label={'Renomear ' + list.name}
                       title={'Renomear ' + list.name}
@@ -143,6 +147,7 @@ export function ListPicker({
         ) : (
           <form className="flex min-w-0 flex-1 items-center gap-2" onSubmit={submit}>
             <Input
+              data-testid={`${screen}-list-name`}
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -154,6 +159,7 @@ export function ListPicker({
               placeholder={mode === 'create' ? 'Nome da nova lista' : 'Novo nome da lista'}
             />
             <Button
+              data-testid={`${screen}-list-save`}
               type="submit"
               size="icon"
               className="size-11"
@@ -164,6 +170,7 @@ export function ListPicker({
               <span aria-hidden="true">✓</span>
             </Button>
             <Button
+              data-testid={`${screen}-list-cancel`}
               type="button"
               variant="outline"
               size="icon"
@@ -180,6 +187,7 @@ export function ListPicker({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              data-testid={`${screen}-list-actions`}
               type="button"
               variant="outline"
               size="icon"
@@ -193,16 +201,22 @@ export function ListPicker({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60" aria-label="Ações da lista">
             <DropdownMenuItem
+              data-testid={`${screen}-list-rename-current`}
               className="min-h-11"
               disabled={!current}
               onSelect={() => start('rename')}
             >
               Renomear lista
             </DropdownMenuItem>
-            <DropdownMenuItem className="min-h-11" onSelect={() => start('create')}>
+            <DropdownMenuItem
+              data-testid={`${screen}-list-create`}
+              className="min-h-11"
+              onSelect={() => start('create')}
+            >
               Adicionar lista
             </DropdownMenuItem>
             <DropdownMenuItem
+              data-testid={`${screen}-list-remove`}
               variant="destructive"
               className="min-h-11"
               disabled={!current || lists.length < 2}
@@ -222,6 +236,7 @@ export function ListPicker({
         </span>
       )}
       <ConfirmDialog
+        data-testid={`dialog-list-remove-${current ?? 'none'}`}
         open={confirmRemove}
         destructive
         title={`Apagar a lista "${currentList?.name ?? ''}"?`}

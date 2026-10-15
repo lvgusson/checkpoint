@@ -106,6 +106,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
   return (
     <>
       <dialog
+        data-testid={`modal-game-${gameId?.toLowerCase() ?? 'empty'}`}
         key={gameId ?? 'empty'}
         ref={dialogRef}
         onClick={(e) => {
@@ -121,6 +122,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
         <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
           <span className="eyebrow m-0">DETALHES DO JOGO</span>
           <button
+            data-testid="modal-close"
             type="button"
             className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-lg text-[var(--muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
             onClick={() => onOpenChange(false)}
@@ -133,7 +135,11 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12" role="status">
-              <SwordLoader size={48} label="Carregando detalhes do jogo…" />
+              <SwordLoader
+                data-testid="loader-modal"
+                size={48}
+                label="Carregando detalhes do jogo…"
+              />
             </div>
           ) : isError ? (
             <div className="py-12 text-center text-[var(--muted)]" role="alert">
@@ -184,6 +190,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     {game.status !== 'Finalizado' && game.status !== 'Desejado' && (
                       <button
+                        data-testid="modal-finish"
                         type="button"
                         className="button primary text-sm"
                         onClick={() => setFinishing(true)}
@@ -192,6 +199,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       </button>
                     )}
                     <Link
+                      data-testid="modal-open-detail"
                       to={`/jogos/${encodeURIComponent(game.id)}`}
                       className="text-xs text-[var(--muted)] underline hover:text-[var(--text)]"
                       onClick={() => onOpenChange(false)}
@@ -207,6 +215,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                   <span className="eyebrow">STATUS DO JOGO</span>
                   <div className="mt-2">
                     <MetadataSelect
+                      data-testid="modal-status"
                       label="Status"
                       kind="status"
                       options={catalog?.statuses ?? []}
@@ -219,6 +228,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                   <span className="eyebrow">VONTADE DE JOGAR</span>
                   <div className="mt-2">
                     <MetadataSelect
+                      data-testid="modal-desire"
                       label="Vontade"
                       kind="desire"
                       options={catalog?.desires ?? []}
@@ -268,6 +278,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                     O que vale lembrar sobre este jogo?
                   </label>
                   <textarea
+                    data-testid="modal-notes"
                     id="modal-notes"
                     rows={5}
                     value={notes}
@@ -284,6 +295,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       {notesSaved ? 'Salvo!' : notesError ? notesError : ''}
                     </span>
                     <button
+                      data-testid="modal-notes-save"
                       type="button"
                       className="button text-xs"
                       disabled={savingNotes}

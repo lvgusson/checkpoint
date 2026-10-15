@@ -44,7 +44,7 @@ None. All quality gates pass (`pnpm check` exit 0, tests exit 0).
 
 - 2026-10-15 00:30 -03: `pnpm check` exit 0. Unit/feature tests: 20 pass. Security tests: 27 pass.
 - Summary file: [[AI/memory/2026-10-14-multi-agent-refactor/summary]].
-- Slice 2: `apps/api/src/data/**` (new), old `*repository.ts` files deleted. 1xc: `apps/api/src/validation/*`, `apps/api/test/security/*`.
+- Slice 2: `apps/api/src/data/**` (new), old `*repository.ts` files deleted. 1xc: `apps/api/src/routes/validation/*`, `apps/api/test/security/*`.
 - Memory and rules: `AI/memory/**`, `AGENTS.md`, `AI/index.md`, `AI/documentation-rules.md`. Full list: `git status --short`.
 
 ## Decisions ([[AI/memory/2026-10-14-multi-agent-refactor/decisions]])

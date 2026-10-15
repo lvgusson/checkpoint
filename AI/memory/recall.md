@@ -10,7 +10,7 @@ area: memory
 Budget: about 2,000 tokens before you read code. Read only the files in these steps.
 
 1. Find the active session. Run `grep -l '^status: active' AI/memory/*/index.md`. If more than one session is active, ask the owner which one.
-2. Read `AI/memory/<session>/state.md` first. It is 60 lines or less. If the SessionStart hook already printed it, do not read it again.
+2. Read `AI/memory/<session>/state.md` first. It is 60 lines or less. The SessionStart hook runs `bd prime`. It does not print `state.md`, so read the file.
 3. Stop when `state.md` answers your question. Most questions stop here.
 4. If you need a detail, follow the one link in `state.md` that names it, for example `log-codex-security-audit#E2`. Read only that entry.
 5. Read `index.md` only when you need a file that `state.md` does not link.

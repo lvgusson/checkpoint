@@ -15,9 +15,9 @@ Private stores must use the same driver. Authenticated operation requires Postgr
 JSON stores support local development with one user. They do not provide ownership isolation.
 
 PostgreSQL drivers filter private records by the caller's account ID. Services return 404 for foreign resources.
-Shared game metadata and prices contain no private notes, hours, ratings, or library status.
+Shared game metadata and prices hold no per-user data. Per-user notes, ratings and status live in `library_entry`. The shared `game` row keeps review notes and play-time hours.
 The backend database role can bypass row security. API ownership filters remain necessary.
-Migration 017 limits direct account updates to `display_name` for authenticated database clients.
+Migration `20261015000000_app_user_identity.sql` limits direct account updates to `display_name` for authenticated database clients.
 
 ## Request boundaries
 

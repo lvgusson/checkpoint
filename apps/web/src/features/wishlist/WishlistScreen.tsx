@@ -98,7 +98,13 @@ export function WishlistScreen() {
           </h1>
           <p>Jogos que você ainda não tem, com o preço atual da Steam.</p>
         </div>
-        <button type="button" className="button" onClick={() => void refresh()} disabled={busy}>
+        <button
+          data-testid="wishlist-prices-refresh"
+          type="button"
+          className="button"
+          onClick={() => void refresh()}
+          disabled={busy}
+        >
           Atualizar preços <span>↻</span>
         </button>
       </div>
@@ -107,6 +113,7 @@ export function WishlistScreen() {
         <label className="search">
           <span>⌕</span>
           <input
+            data-testid="wishlist-steam-search"
             aria-label="Buscar na Steam"
             placeholder="Buscar na Steam pelo nome…"
             value={q}
@@ -115,6 +122,7 @@ export function WishlistScreen() {
           />
         </label>
         <select
+          data-testid="wishlist-desire"
           aria-label="Vontade de jogar"
           value={desire}
           onChange={(e) => setDesire(e.target.value as Desire)}
@@ -127,7 +135,12 @@ export function WishlistScreen() {
           <ul className="results" role="listbox">
             {search.results.map((r) => (
               <li key={r.appId}>
-                <button type="button" onClick={() => void addFromSteam(r.appId)} disabled={busy}>
+                <button
+                  data-testid={`wishlist-steam-add-${r.appId}`}
+                  type="button"
+                  onClick={() => void addFromSteam(r.appId)}
+                  disabled={busy}
+                >
                   {r.imageUrl && <img src={r.imageUrl} alt="" />}
                   <span className="name">{r.name}</span>
                   <span className="muted">{formatPrice(r.price)}</span>
@@ -140,9 +153,10 @@ export function WishlistScreen() {
           search.searching && <p className="muted">Buscando…</p>
         )}
         <details>
-          <summary>Cadastrar sem a Steam</summary>
+          <summary data-testid="wishlist-manual-open">Cadastrar sem a Steam</summary>
           <form className="manual" onSubmit={(e) => void addManual(e)}>
             <input
+              data-testid="wishlist-manual-name"
               aria-label="Nome"
               placeholder="Nome do jogo"
               value={manual.name}
@@ -150,6 +164,7 @@ export function WishlistScreen() {
               required
             />
             <select
+              data-testid="wishlist-manual-genre"
               aria-label="Gênero"
               value={manual.primaryGenre}
               onChange={(e) => setManual({ ...manual, primaryGenre: e.target.value })}
@@ -162,6 +177,7 @@ export function WishlistScreen() {
               ))}
             </select>
             <input
+              data-testid="wishlist-manual-hours"
               aria-label="Horas"
               type="number"
               min="0"
@@ -169,21 +185,29 @@ export function WishlistScreen() {
               value={manual.mainHours}
               onChange={(e) => setManual({ ...manual, mainHours: e.target.value })}
             />
-            <button className="button" disabled={busy || !manual.name.trim()}>
+            <button
+              data-testid="wishlist-manual-add"
+              className="button"
+              disabled={busy || !manual.name.trim()}
+            >
               Cadastrar
             </button>
           </form>
         </details>
         <details>
-          <summary>Importar minha lista de desejos da Steam</summary>
+          <summary data-testid="wishlist-import-open">
+            Importar minha lista de desejos da Steam
+          </summary>
           <div className="manual">
             <input
+              data-testid="wishlist-steam-profile"
               aria-label="Perfil da Steam"
               placeholder="SteamID64 ou URL do perfil (vazio = perfil configurado)"
               value={profile}
               onChange={(e) => setProfile(e.target.value)}
             />
             <button
+              data-testid="wishlist-steam-import"
               type="button"
               className="button primary"
               onClick={() => void importSteam()}
@@ -218,6 +242,7 @@ export function WishlistScreen() {
         <label>
           Ordenar
           <select
+            data-testid="wishlist-sort"
             aria-label="Ordenação"
             value={sort}
             onChange={(e) => setSort(e.target.value as WishlistSort)}
@@ -233,6 +258,7 @@ export function WishlistScreen() {
         {sorted.map((i) => (
           <article className="game-card" key={i.game.id}>
             <Link
+              data-testid={`wishlist-game-${i.game.id.toLowerCase()}`}
               to={`/jogos/${encodeURIComponent(i.game.id)}`}
               style={{ color: 'inherit', textDecoration: 'none' }}
               onClick={(e) => {
@@ -284,6 +310,7 @@ export function WishlistScreen() {
               </div>
             </Link>
             <button
+              data-testid={`wishlist-purchase-${i.game.id.toLowerCase()}`}
               type="button"
               className="button"
               disabled={busy}

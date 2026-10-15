@@ -12,7 +12,7 @@ Use a pattern for the behavior it gives, not for style. Extend by adding an impl
 | Pattern              | Where                                                                               | Use it to                                          |
 | -------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------- |
 | Repository + Adapter | `GameRepository` in `apps/api/src/data/ports.ts`; JSON and Postgres implementations | Swap storage without touching services             |
-| Composition root     | `createService` in `apps/api/src/main/setup.ts`                                     | Pick implementations in one place                  |
+| Composition root     | `createData` and `createService` in `apps/api/src/main/`                            | Pick implementations in one place                  |
 | Strategy + registry  | Log sinks: `registerSink` in `apps/api/src/observability/sinks.ts`                  | Change a destination by changing `LOG_SINK`        |
 | Decorator            | `SafeSink` wraps every sink                                                         | Add safety (queue, backoff) without changing sinks |
 | Facade               | `log` in `apps/api/src/observability/logger.ts`                                     | Give call sites one small API                      |

@@ -8,10 +8,12 @@ import { previousDesire, rememberDesire } from './desireMemory';
 /** Toggle immediate desire; emits the optimistic change and restores the original desire after failure. */
 export function ImmediateButton({
   game,
+  'data-testid': testId,
   onChanged,
   onFailed,
   onSaved,
 }: {
+  'data-testid': string;
   game: { id: string; name: string; desire: Desire };
   onChanged?(desire: Desire): void;
   onFailed?(message: string): void;
@@ -43,6 +45,7 @@ export function ImmediateButton({
 
   return (
     <button
+      data-testid={testId}
       type="button"
       className={cn('immediate-btn', on && 'on')}
       aria-pressed={on}

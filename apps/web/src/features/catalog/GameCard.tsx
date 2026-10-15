@@ -17,7 +17,11 @@ export function GameCard({ game, onDesire, onError }: GameCardProps) {
 
   return (
     <article className="game-card">
-      <Link className="card-link" to={`/jogos/${encodeURIComponent(g.id)}`}>
+      <Link
+        data-testid={`library-game-${g.id.toLowerCase()}`}
+        className="card-link"
+        to={`/jogos/${encodeURIComponent(g.id)}`}
+      >
         <div className="cover" data-genre={g.primaryGenre}>
           {g.coverUrl && !coverBroken && (
             <img src={g.coverUrl} alt="" loading="lazy" onError={() => setCoverBroken(true)} />
@@ -46,9 +50,14 @@ export function GameCard({ game, onDesire, onError }: GameCardProps) {
       </Link>
       {g.status !== 'Finalizado' && g.status !== 'Desejado' && (
         <>
-          <PlayingButton game={g} />
+          <PlayingButton data-testid={`library-playing-${g.id.toLowerCase()}`} game={g} />
           <span className="card-immediate">
-            <ImmediateButton game={g} onChanged={(d) => onDesire(g.id, d)} onFailed={onError} />
+            <ImmediateButton
+              data-testid={`library-immediate-${g.id.toLowerCase()}`}
+              game={g}
+              onChanged={(d) => onDesire(g.id, d)}
+              onFailed={onError}
+            />
           </span>
         </>
       )}

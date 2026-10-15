@@ -75,6 +75,7 @@ export function LibraryPage() {
     values: string[] = [],
   ) => (
     <select
+      data-testid={`library-filter-${name === 'primaryGenre' ? 'genre' : name}`}
       aria-label={label}
       value={filters[name]}
       onChange={(e) => setFilter(name, e.target.value)}
@@ -96,7 +97,7 @@ export function LibraryPage() {
           </h1>
           <p>Sua coleção inteira. A próxima história começa aqui.</p>
         </div>
-        <Link className="button primary" to="/ordem">
+        <Link data-testid="library-open-queue" className="button primary" to="/ordem">
           Ver ordem recomendada <span>↗</span>
         </Link>
       </div>
@@ -126,6 +127,7 @@ export function LibraryPage() {
         <label className="search">
           <span aria-hidden="true">⌕</span>
           <input
+            data-testid="library-search"
             type="search"
             aria-label="Buscar jogo"
             placeholder="Buscar um jogo ou subgênero…"
@@ -144,7 +146,12 @@ export function LibraryPage() {
         </span>
         <label>
           Ordenar
-          <select aria-label="Ordenação" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            data-testid="library-sort"
+            aria-label="Ordenação"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="name">Nome (A-Z)</option>
             <option value="score">Pontuação</option>
             <option value="desire">Vontade de jogar</option>
@@ -153,11 +160,15 @@ export function LibraryPage() {
       </div>
       {error && (
         <div className="error" role="alert">
-          {error} <button onClick={() => (setError(''), void refetch())}>Tentar novamente</button>
+          {error}{' '}
+          <button data-testid="library-retry" onClick={() => (setError(''), void refetch())}>
+            Tentar novamente
+          </button>
         </div>
       )}
       {isInitialError && !hasData ? (
         <ErrorState
+          data-testid="library-error"
           message="Não foi possível carregar a biblioteca. Confira se a API está rodando."
           onRetry={() => void refetch()}
         />
@@ -184,7 +195,7 @@ export function LibraryPage() {
                 justifyContent: 'center',
                 gap: '0.5rem',
                 padding: '1.5rem',
-                color: 'var(--text-muted, #888)',
+                color: 'var(--muted)',
               }}
             >
               <span className="spinner" aria-hidden="true" />
@@ -204,7 +215,12 @@ export function LibraryPage() {
               }}
             >
               <span>Não foi possível carregar mais jogos.</span>
-              <button type="button" className="button outline" onClick={retryNextPage}>
+              <button
+                data-testid="library-load-more-retry"
+                type="button"
+                className="button outline"
+                onClick={retryNextPage}
+              >
                 Tentar novamente
               </button>
             </div>

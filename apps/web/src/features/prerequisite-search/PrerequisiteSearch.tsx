@@ -85,6 +85,7 @@ export function PrerequisiteSearch({
 
   const clearButton = (
     <button
+      data-testid="detail-prerequisite-remove"
       type="button"
       className="size-11 shrink-0 border-0 bg-transparent text-2xl text-foreground"
       onClick={clear}
@@ -116,6 +117,7 @@ export function PrerequisiteSearch({
         </div>
       )}
       <input
+        data-testid="detail-prerequisite-search"
         id={inputId}
         type="search"
         value={text}
@@ -143,6 +145,7 @@ export function PrerequisiteSearch({
           {results.map((game) => (
             <li key={game.id}>
               <button
+                data-testid={`detail-prerequisite-result-${game.id.toLowerCase()}`}
                 type="button"
                 className={`${rowClass} hover:bg-secondary`}
                 onClick={() => choose(game)}

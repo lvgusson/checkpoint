@@ -28,8 +28,8 @@ It replaces the old monolith repositories with the Repository and Drivers patter
 Repositories in `apps/api/src/data/repositories/` implement domain ports in `apps/api/src/data/ports.ts`.
 Each repository enforces tenant isolation and business constraints.
 Drivers in `apps/api/src/data/drivers/` handle raw persistence without business logic.
-Postgres drivers (`PgDriver` classes in `apps/api/src/data/drivers/pg/`) execute SQL queries.
-JSON drivers (`JsonDriver` classes in `apps/api/src/data/drivers/json/`) read and write local files.
+Postgres drivers (`PgGamesDriver`, `PgWishlistDriver`, `PgListsDriver` in `apps/api/src/data/drivers/pg/`) execute SQL queries.
+JSON drivers (`JsonGamesDriver` and the other `Json*Driver` classes in `apps/api/src/data/drivers/json/`) read and write local files.
 
 Environment variables select the driver for each entity:
 
@@ -69,7 +69,7 @@ Variable groups include Supabase (`SUPABASE_URL`), database (`DATABASE_URL`), st
 ## Hosting
 
 Vercel builds the web app (`apps/web/dist`) and runs the API as one function through `vercel.json`.
-Without authentication configured the API refuses to start on Vercel or in production.
+Without authentication configured, `apps/api/src/main/server.ts` refuses to start. On Vercel, `index.mjs` starts and `authenticatorFromEnv` returns a 503 authenticator: every `/api/*` route except system and release answers 503.
 No-auth mode exists only on a loopback host outside production.
 
 ## Release and account commands

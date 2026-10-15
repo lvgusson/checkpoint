@@ -57,6 +57,7 @@ interface Props<T> {
   disabled?: boolean;
   className?: string;
   'aria-label'?: string;
+  'data-testid'?: string;
 }
 
 /** Vertical sortable list with pointer (mouse and touch via the handle's touch-action: none) and keyboard (Space, arrows) sensors. */
@@ -68,6 +69,7 @@ export function SortableList<T>({
   disabled,
   className,
   'aria-label': label,
+  'data-testid': testId,
 }: Props<T>) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -91,6 +93,7 @@ export function SortableList<T>({
     >
       <SortableContext items={ids} strategy={verticalListSortingStrategy} disabled={disabled}>
         <ul
+          data-testid={testId}
           className={className}
           aria-label={label}
           style={{ listStyle: 'none', margin: 0, padding: 0 }}
