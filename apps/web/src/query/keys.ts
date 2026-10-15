@@ -14,6 +14,7 @@ export const queryKeys = (userId: string) =>
     gamesPage: (params: Record<string, string | number>) => [userId, 'games', params] as const,
     game: (id: string) => [userId, 'game', id] as const,
     queue: (listId: string) => [userId, 'queue', listId] as const,
+    recommendations: (listId: string) => [userId, 'queue', listId] as const,
     lists: () => [userId, 'lists'] as const,
     settings: (listId: string) => [userId, 'settings', listId] as const,
     wishlist: () => [userId, 'wishlist'] as const,

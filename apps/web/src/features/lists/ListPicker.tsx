@@ -1,4 +1,5 @@
 import { ConfirmDialog } from '@checkpoint/ui-react';
+import { ChevronDown } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,7 @@ export function ListPicker({
                   className="flex h-11 w-full items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 text-base font-semibold"
                 >
                   <span className="truncate">{currentList?.name ?? 'Selecionar lista'}</span>
-                  <span aria-hidden="true">⌄</span>
+                  <ChevronDown className="size-4 shrink-0 opacity-70" aria-hidden="true" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent

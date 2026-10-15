@@ -45,7 +45,7 @@ export function makeServer(
   releases: ReleaseStore | null = releaseStoreFromEnv(),
   config: ConfigService | null = null,
 ) {
-  const guardExpensive = createRequestGuard(60, 60_000, 2);
+  const guardExpensive = createRequestGuard(60, 60_000, 10);
   return createServer((req, res) => {
     const incoming = req.headers['x-request-id'];
     const requestId =
@@ -158,8 +158,13 @@ export function makeServer(
           (await listsRoute(service, req, url, readJson)) ??
           (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
           (config ? await configRoute(config, req, url, readJson) : null);
+        const isGet = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
         const hit = isExpensive
-          ? await guardExpensive(getContext()?.userId ?? 'local', dispatch)
+          ? await guardExpensive(
+              `${getContext()?.userId ?? 'local'}:${path}${url.search}`,
+              dispatch,
+              isGet,
+            )
           : await dispatch();
         if (hit) return reply(hit);
         if (path.startsWith(ApiPath.Root)) throw new AppError('Rota não encontrada', 404);

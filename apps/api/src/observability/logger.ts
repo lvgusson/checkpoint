@@ -29,13 +29,21 @@ export function redact(value: unknown, depth = 0): unknown {
   if (value === null || typeof value !== 'object') return value;
   if (value instanceof Date) return value.toISOString();
   if (depth >= 5) return '[truncated]';
-  if (value instanceof Error)
+  if (value instanceof Error) {
+    const extra: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (k !== 'name' && k !== 'message' && k !== 'stack' && k !== 'cause') {
+        extra[k] = SENSITIVE_KEY.test(k) ? '[redacted]' : redact(v, depth + 1);
+      }
+    }
     return {
       name: value.name,
       message: scrub(value.message),
       stack: value.stack && scrub(value.stack),
       cause: value.cause === undefined ? undefined : redact(value.cause, depth + 1),
+      ...extra,
     };
+  }
   if (value instanceof Map) return redact(Object.fromEntries(value), depth);
   if (value instanceof Set) return redact([...value], depth);
   if (Array.isArray(value)) return value.slice(0, 50).map((v) => redact(v, depth + 1));
@@ -47,13 +55,20 @@ export function redact(value: unknown, depth = 0): unknown {
   );
 }
 
-const sink: LogSink = createSinkFromEnv();
+let activeSink: LogSink = createSinkFromEnv();
+
+export const setSink = (newSink: LogSink): void => {
+  activeSink = newSink;
+};
+
+export const getSink = (): LogSink => activeSink;
+
 const configured = process.env.LOG_LEVEL as LogLevel | undefined;
 const threshold = LEVELS[configured && configured in LEVELS ? configured : 'info'];
 
 export const flushLogs = async () => {
   try {
-    await sink.flush?.();
+    await activeSink.flush?.();
   } catch {
     // Flushing is best effort.
   }
@@ -64,7 +79,7 @@ function emit(level: LogLevel, event: string, fields: Attributes = {}): void {
   try {
     const ctx = getContext();
     const { requestId, userId, ...rest } = fields;
-    sink.write({
+    activeSink.write({
       time: new Date().toISOString(),
       level,
       event,

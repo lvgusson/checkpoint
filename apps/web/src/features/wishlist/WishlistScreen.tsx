@@ -4,6 +4,7 @@ import { EmptyState } from '@checkpoint/ui-react';
 import type { Desire, SteamPrice } from '../../../../../packages/core/src/models';
 import { badgeColor } from '../metadata';
 import { formatPrice, useSteamSearch, useWishlist, useWishlistActions } from './wishlist';
+import { GameDetailModal } from '../details';
 import './wishlist.css';
 
 const DESIRES: Desire[] = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
@@ -16,6 +17,7 @@ const messageOf = (e: unknown, fallback: string) =>
 export function WishlistScreen() {
   const { wishlist, genres } = useWishlist();
   const actions = useWishlistActions();
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [desire, setDesire] = useState<Desire>('Média');
   const [profile, setProfile] = useState('');
@@ -233,6 +235,12 @@ export function WishlistScreen() {
             <Link
               to={`/jogos/${encodeURIComponent(i.game.id)}`}
               style={{ color: 'inherit', textDecoration: 'none' }}
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                  e.preventDefault();
+                  setSelectedGameId(i.game.id);
+                }
+              }}
             >
               <div className="cover" data-genre={i.game.primaryGenre}>
                 {i.game.coverUrl && (
@@ -297,6 +305,11 @@ export function WishlistScreen() {
           description="Busque um jogo na Steam ou importe sua lista de desejos."
         />
       )}
+      <GameDetailModal
+        gameId={selectedGameId}
+        open={Boolean(selectedGameId)}
+        onOpenChange={(open) => !open && setSelectedGameId(null)}
+      />
     </div>
   );
 }

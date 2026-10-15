@@ -16,3 +16,44 @@
 .queue-list.is-busy {
   cursor: progress;
 }
+
+/* Proportional spacing for featured Next Game card on desktop (token scale: 8px, 16px, 20px) */
+@media (min-width: 601px) {
+  .next-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .next-copy .eyebrow {
+    margin-bottom: 8px;
+  }
+  .next-copy h2 {
+    margin: 0 0 16px 0;
+    line-height: 1.25;
+  }
+  .next-copy .tags {
+    margin-bottom: 16px;
+  }
+  .next-copy p {
+    margin: 0 0 20px 0;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .next-copy .button {
+    margin-top: 2px;
+  }
+}
+
+/* First game in list highlighting: ties to featured card with matching accent background and left indicator */
+.queue-row.is-next-game {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.queue-row.is-next-game:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.queue-row.is-next-game .rank {
+  color: var(--accent);
+  font-weight: 700;
+}

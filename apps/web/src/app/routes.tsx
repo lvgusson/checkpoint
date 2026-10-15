@@ -29,8 +29,8 @@ export const router = createBrowserRouter([
           { path: 'aparencia', element: <AppearancePage /> },
         ],
       },
-      { index: true, element: <Navigate replace to="/jogos" /> },
-      { path: '*', element: <Navigate replace to="/jogos" /> },
+      { index: true, element: <Navigate replace to="/ordem" /> },
+      { path: '*', element: <Navigate replace to="/ordem" /> },
     ],
   },
 ]);

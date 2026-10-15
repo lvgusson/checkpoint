@@ -10,6 +10,8 @@ import { ImmediateButton } from '../immediate';
 import { ListPicker } from '../lists';
 import { MetadataBadge } from '../metadata';
 import { PlayingButton } from '../playing';
+import { SwordLoader } from '../loader/SwordLoader';
+import { GameDetailModal } from '../details';
 import { fold, PAGE_SIZE, displayDate, excludedReasons, shownRows } from './queue-model';
 import { useQueue } from './useQueue';
 import './queue.css';
@@ -56,8 +58,10 @@ export function QueueView({ listId }: { listId: string }) {
   const [search, setSearch] = useState('');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [finishing, setFinishing] = useState<ScoredGame | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const searching = !!fold(search).trim();
   const rows = shownRows(data, search, visible);
+  const firstGameId = !searching ? data?.items[0]?.game.id : undefined;
 
   function finish(game: ScoredGame, e: MouseEvent) {
     e.preventDefault();
@@ -124,6 +128,12 @@ export function QueueView({ listId }: { listId: string }) {
                     <Link
                       className="playing-link"
                       to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
+                      onClick={(e) => {
+                        if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                          e.preventDefault();
+                          setSelectedGameId(game.id);
+                        }
+                      }}
                     >
                       <div className="queue-cover">
                         <Cover game={game} />
@@ -180,7 +190,7 @@ export function QueueView({ listId }: { listId: string }) {
               </strong>
             </div>
           </div>
-          {data.items[0] && <NextGame entry={data.items[0]} />}
+          {data.items[0] && <NextGame entry={data.items[0]} onOpenDetails={setSelectedGameId} />}
           <section className="filters queue-search" role="search">
             <label className="search">
               <span aria-hidden="true">⌕</span>
@@ -252,6 +262,7 @@ export function QueueView({ listId }: { listId: string }) {
                   <QueueRow
                     entry={item}
                     index={i}
+                    isNextGame={item.game.id === firstGameId}
                     searching={searching}
                     busy={busyId === item.game.id}
                     anyBusy={busyId !== null}
@@ -260,6 +271,7 @@ export function QueueView({ listId }: { listId: string }) {
                     pointerProps={{ onPointerDown, onTouchStart }}
                     handleProps={{ ...aria, onKeyDown }}
                     onResetManual={() => void q.resetManual(item.game.id)}
+                    onOpenDetails={setSelectedGameId}
                     actions={rowActions(item.game)}
                   />
                 );
@@ -296,7 +308,11 @@ export function QueueView({ listId }: { listId: string }) {
           )}
         </>
       ) : (
-        q.isLoading && <div className="empty">Calculando seu roteiro…</div>
+        q.isLoading && (
+          <div className="empty flex flex-col items-center justify-center py-16">
+            <SwordLoader size={64} label="Calculando seu roteiro…" />
+          </div>
+        )
       )}
       {finishing && (
         <FinishDialog
@@ -308,13 +324,33 @@ export function QueueView({ listId }: { listId: string }) {
           }}
         />
       )}
+      <GameDetailModal
+        gameId={selectedGameId}
+        open={Boolean(selectedGameId)}
+        onOpenChange={(open) => !open && setSelectedGameId(null)}
+      />
     </>
   );
 }
 
-function NextGame({ entry: first }: { entry: QueueEntry }) {
+function NextGame({
+  entry: first,
+  onOpenDetails,
+}: {
+  entry: QueueEntry;
+  onOpenDetails?: (id: string) => void;
+}) {
   return (
-    <Link className="next-game" to={`/jogos/${encodeURIComponent(first.game.id)}${DETAIL_STATE}`}>
+    <Link
+      className="next-game"
+      to={`/jogos/${encodeURIComponent(first.game.id)}${DETAIL_STATE}`}
+      onClick={(e) => {
+        if (onOpenDetails && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+          e.preventDefault();
+          onOpenDetails(first.game.id);
+        }
+      }}
+    >
       <div className="next-copy">
         <span className="eyebrow">01 / SUA PRÓXIMA PARTIDA</span>
         <h2>{first.game.name}</h2>
@@ -341,6 +377,7 @@ function NextGame({ entry: first }: { entry: QueueEntry }) {
 interface RowProps {
   entry: QueueEntry;
   index: number;
+  isNextGame?: boolean;
   searching: boolean;
   busy: boolean;
   anyBusy: boolean;
@@ -349,12 +386,14 @@ interface RowProps {
   pointerProps: React.HTMLAttributes<HTMLElement>;
   handleProps: React.HTMLAttributes<HTMLElement>;
   onResetManual(): void;
+  onOpenDetails?: (id: string) => void;
   actions: React.ReactNode;
 }
 
 function QueueRow({
   entry: item,
   index: i,
+  isNextGame = false,
   searching,
   busy,
   anyBusy,
@@ -363,6 +402,7 @@ function QueueRow({
   pointerProps,
   handleProps,
   onResetManual,
+  onOpenDetails,
   actions,
 }: RowProps) {
   const { game } = item;
@@ -373,7 +413,13 @@ function QueueRow({
   };
   return (
     <div
-      className={cn('queue-row', busy && 'saving', flash && 'just-moved', isDragging && 'lifted')}
+      className={cn(
+        'queue-row',
+        isNextGame && 'is-next-game',
+        busy && 'saving',
+        flash && 'just-moved',
+        isDragging && 'lifted',
+      )}
       data-id={game.id}
       {...pointerProps}
     >
@@ -393,6 +439,12 @@ function QueueRow({
         className="queue-link"
         draggable={false}
         to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
+        onClick={(e) => {
+          if (onOpenDetails && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+            e.preventDefault();
+            onOpenDetails(game.id);
+          }
+        }}
       >
         <span className="rank">
           {String(i + 1).padStart(2, '0')}{' '}

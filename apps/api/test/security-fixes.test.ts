@@ -124,6 +124,55 @@ test('expensive operations reject overlapping calls and release failed work', as
   assert.equal(await run('a', async () => 3), 3);
 });
 
+test('expensive operations coalesce concurrent GET calls for identical key', async () => {
+  const run = createRequestGuard(10, 60_000, 1);
+  let calls = 0;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const work = async () => {
+    calls++;
+    await gate;
+    return 'result';
+  };
+
+  const first = run('k', work, true);
+  const second = run('k', work, true);
+
+  release();
+  const [res1, res2] = await Promise.all([first, second]);
+  assert.equal(res1, 'result');
+  assert.equal(res2, 'result');
+  assert.equal(calls, 1);
+
+  const third = await run(
+    'k',
+    async () => {
+      calls++;
+      return 'fresh';
+    },
+    true,
+  );
+  assert.equal(third, 'fresh');
+  assert.equal(calls, 2);
+});
+
+test('coalesced in-flight promises propagate errors to all callers and clean up', async () => {
+  const run = createRequestGuard(10, 60_000, 1);
+  let release!: (err: Error) => void;
+  const gate = new Promise<void>((_, reject) => {
+    release = reject;
+  });
+  const first = run('err-key', () => gate, true);
+  const second = run('err-key', () => gate, true);
+  release(new Error('boom'));
+  await assert.rejects(first, /boom/);
+  await assert.rejects(second, /boom/);
+
+  assert.equal(await run('err-key', async () => 'ok', true), 'ok');
+});
+
 test('request admission releases only once and counts requests after completion', async () => {
   const { createRequestAdmission } = await import('../src/shared/request-guard.ts');
   const acquire = createRequestAdmission(2, 60_000);

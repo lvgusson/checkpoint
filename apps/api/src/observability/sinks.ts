@@ -3,6 +3,8 @@
 import { appendFile, mkdir, rename, stat } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { LogEvent, LogSink, SinkKind } from '../../../../packages/core/src/observability.ts';
+import { db } from '../data/db.ts';
+import type { DatabaseLogRow } from './types.ts';
 
 type Env = Record<string, string | undefined>;
 
@@ -168,6 +170,161 @@ export class SafeSink implements LogSink {
   }
 }
 
+/** Extracts the function name from a V8 stack trace. */
+export function extractFunctionName(stack?: string | null): string | null {
+  if (!stack) return null;
+  const lines = stack.split('\n');
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]?.trim();
+    if (!line) continue;
+    const matchNamed = line.match(/^at\s+(?:async\s+)?([^\s(]+)\s*\(/);
+    if (matchNamed && matchNamed[1]) {
+      return matchNamed[1];
+    }
+    if (/^at\s+/.test(line)) {
+      return 'anonymous';
+    }
+  }
+  return null;
+}
+
+/** Formats a LogEvent into a DatabaseLogRow suitable for public.logs table. */
+export function formatDatabaseLogRow(e: LogEvent): DatabaseLogRow {
+  const fields = e.fields ?? {};
+  const errorObj =
+    fields.error && typeof fields.error === 'object' && !Array.isArray(fields.error)
+      ? (fields.error as Record<string, unknown>)
+      : null;
+
+  const stack =
+    (typeof fields.stack === 'string' && fields.stack) ||
+    (typeof errorObj?.stack === 'string' && (errorObj.stack as string)) ||
+    null;
+
+  const function_name =
+    (typeof fields.function_name === 'string' && fields.function_name) ||
+    (typeof fields.functionName === 'string' && fields.functionName) ||
+    (typeof errorObj?.function_name === 'string' && (errorObj.function_name as string)) ||
+    (typeof errorObj?.functionName === 'string' && (errorObj.functionName as string)) ||
+    extractFunctionName(stack);
+
+  const message =
+    (typeof fields.message === 'string' && fields.message) ||
+    (typeof errorObj?.message === 'string' && (errorObj.message as string)) ||
+    (typeof fields.error === 'string' && fields.error) ||
+    e.event;
+
+  const request_id =
+    e.requestId ??
+    (typeof fields.requestId === 'string' ? fields.requestId : null) ??
+    (typeof fields.request_id === 'string' ? fields.request_id : null);
+
+  const user_id =
+    e.userId ??
+    (typeof fields.userId === 'string' ? fields.userId : null) ??
+    (typeof fields.user_id === 'string' ? fields.user_id : null);
+
+  let payload: Record<string, unknown> | null = null;
+  if (fields.payload && typeof fields.payload === 'object' && !Array.isArray(fields.payload)) {
+    payload = fields.payload as Record<string, unknown>;
+  } else if (fields.payload !== undefined && fields.payload !== null) {
+    payload = { value: fields.payload };
+  } else if (
+    errorObj?.payload &&
+    typeof errorObj.payload === 'object' &&
+    !Array.isArray(errorObj.payload)
+  ) {
+    payload = errorObj.payload as Record<string, unknown>;
+  } else {
+    const rest = { ...fields };
+    delete rest.message;
+    delete rest.stack;
+    delete rest.function_name;
+    delete rest.functionName;
+    delete rest.requestId;
+    delete rest.userId;
+    delete rest.request_id;
+    delete rest.user_id;
+    if (Object.keys(rest).length > 0) {
+      payload = rest;
+    }
+  }
+
+  return {
+    level: e.level,
+    event: e.event,
+    function_name,
+    message,
+    stack,
+    request_id,
+    user_id,
+    payload,
+  };
+}
+
+/**
+ * Persists error-level and unhandled error logs to the Supabase `public.logs` table.
+ * Operations are non-blocking and caught so DB failures never affect the request path.
+ */
+export class DatabaseSink implements LogSink {
+  private url: string | undefined;
+  private pending = new Set<Promise<void>>();
+
+  constructor(url = process.env.DATABASE_URL) {
+    this.url = url;
+  }
+
+  async write(e: LogEvent): Promise<void> {
+    if (e.level !== 'error' && !e.event.includes('unhandled_error')) return;
+    const dbUrl = this.url ?? process.env.DATABASE_URL;
+    if (!dbUrl) return;
+
+    const op = this.persist(e, dbUrl);
+    this.pending.add(op);
+    try {
+      await op;
+    } finally {
+      this.pending.delete(op);
+    }
+  }
+
+  private async persist(e: LogEvent, dbUrl: string): Promise<void> {
+    try {
+      const sql = db(dbUrl);
+      const row = formatDatabaseLogRow(e);
+      await sql`
+        INSERT INTO public.logs (
+          level,
+          event,
+          function_name,
+          message,
+          stack,
+          request_id,
+          user_id,
+          payload
+        ) VALUES (
+          ${row.level},
+          ${row.event},
+          ${row.function_name ?? null},
+          ${row.message ?? null},
+          ${row.stack ?? null},
+          ${row.request_id ?? null},
+          ${row.user_id ?? null},
+          ${row.payload ? sql.json(row.payload as never) : null}
+        )
+      `;
+    } catch {
+      // Non-blocking / caught so logging failures never cause requests to fail.
+    }
+  }
+
+  async flush(): Promise<void> {
+    if (this.pending.size > 0) {
+      await Promise.allSettled([...this.pending]);
+    }
+  }
+}
+
 export interface SinkOptions {
   env?: Env;
   /** `fanout` only: the kinds to combine. */
@@ -192,6 +349,9 @@ export function createSink(kind: SinkKind | (string & {}), options: SinkOptions 
 registerSink('console', () => new ConsoleSink());
 registerSink('noop', () => new NoopSink());
 registerSink('memory', () => new MemorySink());
+registerSink('db', ({ env = {} }) => new DatabaseSink(env.DATABASE_URL));
+registerSink('postgres', ({ env = {} }) => new DatabaseSink(env.DATABASE_URL));
+registerSink('database', ({ env = {} }) => new DatabaseSink(env.DATABASE_URL));
 registerSink(
   'file',
   ({ env = {} }) =>
@@ -210,10 +370,17 @@ export function createSinkFromEnv(env: Env = process.env): LogSink {
     .map((k) => k.trim())
     .filter((k) => k && k !== 'fanout');
   try {
-    // Each fanout member is already a SafeSink; a single sink is wrapped here.
-    return kinds.length > 1
-      ? createSink('fanout', { env, kinds })
-      : new SafeSink(createSink(kinds[0] ?? 'console', { env }));
+    const sinks: LogSink[] = [];
+    for (const kind of kinds) {
+      sinks.push(new SafeSink(createSink(kind, { env })));
+    }
+    const hasDbSink = kinds.some((k) => k === 'db' || k === 'postgres' || k === 'database');
+    if (env.DATABASE_URL && !hasDbSink && !kinds.includes('noop')) {
+      sinks.push(new SafeSink(new DatabaseSink(env.DATABASE_URL)));
+    }
+    if (sinks.length === 1) return sinks[0]!;
+    if (sinks.length > 1) return new FanoutSink(sinks);
+    return new SafeSink(new ConsoleSink());
   } catch (e) {
     // A misconfigured destination must not take the API down; fall back and say so.
     process.stderr.write(`log sink setup failed (${(e as Error).message}); using console\n`);

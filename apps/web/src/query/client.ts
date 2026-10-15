@@ -13,8 +13,9 @@ try {
   // Storage unavailable: nothing to clean.
 }
 
-/** Same freshness window as the Angular DataCache (FRESH_MS). */
-const FRESH_MS = 60_000;
+/** Freshness window: 2 minutes keeps queries fresh without hammering the API during navigation. */
+export const FRESH_MS = 2 * 60_000;
+export const GC_MS = 10 * 60_000;
 
 /**
  * Single retry owner for reads: up to 2 retries with backoff, only for transient failures.
@@ -34,9 +35,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: FRESH_MS,
-      gcTime: 10 * 60_000,
+      gcTime: GC_MS,
       retry: shouldRetry,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     },
     mutations: { retry: false },
   },

@@ -43,12 +43,25 @@ export function createRequestAdmission(limit: number, windowMs: number, maxConcu
 
 export function createRequestGuard(limit: number, windowMs: number, maxConcurrent = 1) {
   const acquire = createRequestAdmission(limit, windowMs, maxConcurrent);
-  return async <T>(key: string, work: () => Promise<T>): Promise<T> => {
-    const release = acquire(key);
-    try {
-      return await work();
-    } finally {
-      release();
+  const inFlight = new Map<string, Promise<unknown>>();
+  return async <T>(key: string, work: () => Promise<T>, coalesce = false): Promise<T> => {
+    if (coalesce) {
+      const active = inFlight.get(key);
+      if (active) return active as Promise<T>;
     }
+    const release = acquire(key);
+    const promise = (async () => {
+      try {
+        return await work();
+      } finally {
+        release();
+      }
+    })();
+    if (coalesce) {
+      inFlight.set(key, promise);
+      const clean = () => inFlight.delete(key);
+      promise.then(clean, clean);
+    }
+    return promise;
   };
 }

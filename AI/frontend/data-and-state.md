@@ -9,13 +9,13 @@ area: frontend
 
 ## Layers
 
-| Layer       | File              | Responsibility                                                                                   |
-| ----------- | ----------------- | ------------------------------------------------------------------------------------------------ |
-| Transport   | `api/http.ts`     | Ky client: token on API paths only, one refresh retry on 401, timeout, request id, no retries    |
-| Error shape | `api/errors.ts`   | `ApiError` parsed from problem+json or the legacy body                                           |
-| Cache       | `query/client.ts` | TanStack Query client: reads retry on transient errors, mutations never retry, 60 s fresh window |
-| Keys        | `query/keys.ts`   | `useQueryKeys()`; every key starts with the user id                                              |
-| Session     | `auth/`           | Supabase session, guards, safe redirect                                                          |
+| Layer       | File              | Responsibility                                                                                    |
+| ----------- | ----------------- | ------------------------------------------------------------------------------------------------- |
+| Transport   | `api/http.ts`     | Ky client: token on API paths only, one refresh retry on 401, timeout, request id, no retries     |
+| Error shape | `api/errors.ts`   | `ApiError` parsed from problem+json or the legacy body                                            |
+| Cache       | `query/client.ts` | TanStack Query client: reads retry on transient errors, mutations never retry, 120 s fresh window |
+| Keys        | `query/keys.ts`   | `useQueryKeys()`; every key starts with the user id                                               |
+| Session     | `auth/`           | Supabase session, guards, safe redirect                                                           |
 
 There is exactly one retry owner: TanStack Query for reads.
 

@@ -11,8 +11,8 @@ import { Logo } from './Logo';
 /** Navigation targets (sidebar on desktop, tab bar on mobile). */
 const NAV = [
   { path: '/jogos', icon: '▦', label: 'Lista de jogos', short: 'Jogos' },
-  { path: '/ordem', icon: '≋', label: 'Ordem de jogos', short: 'Ordem' },
   { path: '/desejos', icon: '♡', label: 'Lista de desejos', short: 'Desejos' },
+  { path: '/ordem', icon: '≋', label: 'Ordem de jogos', short: 'Ordem' },
   { path: '/configuracoes', icon: '⚙', label: 'Regras da fila', short: 'Regras' },
   { path: '/aparencia', icon: '◐', label: 'Aparência e conta', short: 'Aparência' },
 ];
@@ -66,7 +66,7 @@ export function Shell() {
       <div className={bare ? 'shell bare' : 'shell'}>
         {!bare && (
           <aside className="sidebar">
-            <Link className="brand" to="/jogos">
+            <Link className="brand" to="/ordem">
               <Logo />
               <span>
                 checkpoint<small>SUA BIBLIOTECA, SEU RITMO</small>
@@ -88,7 +88,7 @@ export function Shell() {
         <div className="main" style={bare ? { marginLeft: 0, width: '100%' } : undefined}>
           {!bare && (
             <header className="topbar">
-              <Link className="brand compact" to="/jogos" aria-label="Checkpoint, início">
+              <Link className="brand compact" to="/ordem" aria-label="Checkpoint, início">
                 <Logo />
                 <span>checkpoint</span>
               </Link>

@@ -5,6 +5,7 @@ import type { Catalog, ScoredGame } from '../../../../packages/core/src/models';
 import { api, isApiError } from '../api/http';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { FinishDialog } from '../features/finish-dialog';
+import { SwordLoader } from '../features/loader/SwordLoader';
 import { MetadataBadge, MetadataSelect } from '../features/metadata';
 import { useGameWriter } from '../features/playing';
 import { PrerequisiteSearch } from '../features/prerequisite-search';
@@ -37,14 +38,24 @@ const NULLABLE_WHEN_EMPTY = ['finishedAt', 'startedAt', 'prerequisiteId'];
 const SHARED_FIELD_FORBIDDEN =
   'Você não tem permissão para alterar dados compartilhados do catálogo.';
 
+function safeDecode(str: string): string {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return str;
+  }
+}
+
 export function DetailPage() {
-  const { id = '' } = useParams();
+  const { id: rawId = '' } = useParams();
+  const id = safeDecode(rawId).trim();
   const back = useSearchParams()[0].get('from') === 'ordem' ? '/ordem' : '/jogos';
   const k = useQueryKeys();
   const writer = useGameWriter();
   const gameQuery = useQuery({
     queryKey: k.game(id),
     queryFn: ({ signal }) => api.get<ScoredGame>('games/' + encodeURIComponent(id), { signal }),
+    enabled: Boolean(id),
   });
   const catalogQuery = useQuery({
     queryKey: k.catalog(),
@@ -61,8 +72,23 @@ export function DetailPage() {
   const [saveError, setSaveError] = useState('');
   const [finishing, setFinishing] = useState(false);
 
+  const isLoading = Boolean(id) && (gameQuery.isLoading || catalogQuery.isLoading);
+  const isNotFound = !isLoading && Boolean(id) && !gameQuery.isError && !game;
+  const isGameError = gameQuery.isError && !game;
+  const isCatalogError = catalogQuery.isError && !catalog;
   const error =
-    saveError || (gameQuery.isError && !game ? 'Não foi possível carregar o jogo.' : '');
+    saveError ||
+    (!id
+      ? 'Jogo não encontrado.'
+      : isGameError
+        ? isApiError(gameQuery.error) && gameQuery.error.status === 404
+          ? 'Jogo não encontrado.'
+          : 'Não foi possível carregar o jogo.'
+        : isCatalogError
+          ? 'Não foi possível carregar os dados do catálogo.'
+          : isNotFound
+            ? 'Jogo não encontrado.'
+            : '');
   const form = edits ?? game;
   const set = <K extends keyof ScoredGame>(key: K, value: ScoredGame[K]) =>
     game && setEdits({ ...(edits ?? game), [key]: value });
@@ -423,9 +449,13 @@ export function DetailPage() {
             />
           )}
         </>
-      ) : (
-        !error && <div className="empty">Carregando jogo…</div>
-      )}
+      ) : isLoading ? (
+        <div className="empty" role="status">
+          <SwordLoader size={48} label="Carregando jogo…" />
+        </div>
+      ) : !error ? (
+        <div className="empty">Jogo não encontrado.</div>
+      ) : null}
     </div>
   );
 }
