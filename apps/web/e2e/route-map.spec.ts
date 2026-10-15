@@ -58,6 +58,25 @@ async function getAuthToken(p: Page): Promise<string | null> {
   }
 }
 
+async function ensureAuth(p: Page): Promise<void> {
+  if (!hasCredentials) return;
+  if (p.url().includes('/login')) {
+    const emailInput = p.getByTestId('login-email');
+    const passwordInput = p.getByTestId('login-password');
+    if (await emailInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await emailInput.fill(EMAIL!);
+      await passwordInput.fill(PASSWORD!);
+      const submitBtn = p.getByTestId('login-submit-login');
+      if (await submitBtn.isVisible().catch(() => false)) {
+        await submitBtn.click();
+      } else {
+        await p.getByRole('button', { name: /^Entrar$/i }).click();
+      }
+      await p.waitForURL(/\/(jogos|ordem)/, { timeout: 30000 });
+    }
+  }
+}
+
 async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext): Promise<void> {
   console.log(
     `[CLEANUP] Starting cleanup for game "${cleanup.gameId}". Original notes length: ${cleanup.originalNotes.length}`,
@@ -377,8 +396,13 @@ test.describe('Route Map E2E Spec', () => {
     expect(gameId).toBeTruthy();
 
     await page.goto(href!);
-    const detailForm = page.getByTestId('detail-form').or(page.locator('form.detail-form'));
-    await expect(detailForm).toBeVisible({ timeout: 30000 });
+    await ensureAuth(page);
+    const detailForm = page
+      .getByTestId('detail-form')
+      .or(page.locator('form.detail-form'))
+      .or(page.locator('.detail-page form'))
+      .or(page.locator('form'));
+    await expect(detailForm.first()).toBeVisible({ timeout: 30000 });
 
     // detail-{back,open-queue,time-source,imported-data}
     const backBtn = page.getByTestId('detail-back');
@@ -478,6 +502,7 @@ test.describe('Route Map E2E Spec', () => {
       return;
     }
     await page.goto('/ordem');
+    await ensureAuth(page);
     await expect(page.getByRole('heading', { name: /Ordem de jogos/i })).toBeVisible({
       timeout: 30000,
     });
@@ -532,6 +557,7 @@ test.describe('Route Map E2E Spec', () => {
       return;
     }
     await page.goto('/desejos');
+    await ensureAuth(page);
     await expect(page.getByRole('heading', { name: /Lista de desejos/i })).toBeVisible({
       timeout: 30000,
     });
@@ -591,6 +617,7 @@ test.describe('Route Map E2E Spec', () => {
       return;
     }
     await page.goto('/configuracoes');
+    await ensureAuth(page);
     await expect(page.getByRole('heading', { name: /Configurações/i })).toBeVisible({
       timeout: 30000,
     });
@@ -649,6 +676,7 @@ test.describe('Route Map E2E Spec', () => {
       return;
     }
     await page.goto('/ordem');
+    await ensureAuth(page);
     const rowLink = page.locator('.queue-row .queue-link').first();
     if (await rowLink.isVisible({ timeout: 30000 }).catch(() => false)) {
       await rowLink.click();

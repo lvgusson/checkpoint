@@ -181,7 +181,7 @@ export function DetailPage() {
               )}
             </div>
           </div>
-          <form onSubmit={save}>
+          <form data-testid="detail-form" className="detail-form" onSubmit={save}>
             <div className="detail-layout">
               <div>
                 <section className="panel">
