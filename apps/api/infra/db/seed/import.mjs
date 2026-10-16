@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Gera db/seed/seed.sql a partir de api/src/seed.ts (+ data/metadata/game-metadata.json, se existir).
+// Generate seed SQL from src/data/seed.ts and infra/data/metadata/game-metadata.json.
 // Não conecta no banco e não usa dependências npm. Node 24+ (type stripping para importar .ts).
 //
 // Uso:
@@ -31,8 +31,10 @@ const METADATA = resolve(opt('--metadata', resolve(root, 'data/metadata/game-met
 if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(USER_ID))
   throw new Error('--user precisa ser um uuid');
 
-const { seedGames } = await import(pathToFileURL(resolve(root, '../src/seed.ts')).href);
-const { defaultWeights } = await import(pathToFileURL(resolve(root, '../src/scoring.ts')).href);
+const { seedGames } = await import(pathToFileURL(resolve(root, '../src/data/seed.ts')).href);
+const { defaultWeights } = await import(
+  pathToFileURL(resolve(root, '../src/domain/scoring.ts')).href
+);
 
 let metadata = [];
 try {

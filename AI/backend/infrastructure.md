@@ -26,7 +26,7 @@ area: backend
 `createData` in `apps/api/src/main/data.ts` builds the persistence layer.
 It replaces the old monolith repositories with the Repository and Drivers pattern.
 Repositories in `apps/api/src/data/repositories/` implement domain ports in `apps/api/src/data/ports.ts`.
-Each repository enforces tenant isolation and business constraints.
+Repositories resolve ownership for private records and map persistence failures. Shared catalog and release data remain global.
 Drivers in `apps/api/src/data/drivers/` handle raw persistence without business logic.
 Postgres drivers (`PgGamesDriver`, `PgWishlistDriver`, `PgListsDriver` in `apps/api/src/data/drivers/pg/`) execute SQL queries.
 JSON drivers (`JsonGamesDriver` and the other `Json*Driver` classes in `apps/api/src/data/drivers/json/`) read and write local files.
@@ -38,11 +38,13 @@ Environment variables select the driver for each entity:
 - `PINS_STORE`: driver for manual pins (`pg` or `json`).
 - `SCORING_STORE`: driver for scoring settings (`pg` or `json`).
 - `APP_USERS_STORE`: driver for user identity mapping (`pg` or `json`).
-- `RELEASES_STORE`: driver for release registry (`pg` or `json`).
+- `RELEASES_STORE`: `pg` enables the release registry. `json` disables it; no JSON release driver exists.
 
 When `DATABASE_URL` is present, entities default to `pg`.
 Otherwise, entities default to `json`.
-Local JSON files reside in `DATA_DIR` (defaults to temporary directory `checkpoint`).
+Private stores must use the same driver. With `SUPABASE_URL`, every private store must use `pg`.
+The local server uses `apps/api/data`. The Vercel entry uses `DATA_DIR` or the temporary `checkpoint` directory.
+Explicit file variables, such as `DATA_FILE`, override paths in that directory.
 Use local JSON storage for development only.
 
 ## Metadata configuration storage
@@ -58,7 +60,7 @@ The API loads metadata vocabularies through `ConfigRepository`.
 - `ref_structure`: game structures.
 - `ref_platform`: gaming platforms.
 
-`JsonConfigDriver` loads metadata from `config.json` or falls back to `apps/api/src/data/config-seed.ts`.
+`JsonConfigDriver` loads `config.json`. Without that file, it combines `apps/api/src/data/config-seed.ts` with metadata from local games.
 
 ## Environment variables
 
@@ -69,12 +71,16 @@ Variable groups include Supabase (`SUPABASE_URL`), database (`DATABASE_URL`), st
 ## Hosting
 
 Vercel builds the web app (`apps/web/dist`) and runs the API as one function through `vercel.json`.
-Without authentication configured, `apps/api/src/main/server.ts` refuses to start. On Vercel, `index.mjs` starts and `authenticatorFromEnv` returns a 503 authenticator: every `/api/*` route except system and release answers 503.
-No-auth mode exists only on a loopback host outside production.
+Without `SUPABASE_URL`, production uses an authenticator that returns 503 on protected routes.
+System and release routes run before that authenticator. Release registration still requires its separate token and a release store.
+The Vercel entry passes no release store, so release endpoints return 503 there.
+The local executable permits no-auth mode only on a loopback host outside production.
+With `SUPABASE_URL`, JSON private stores prevent startup.
 
 ## Release and account commands
 
-Run them from the repository root. They read `.env` and need `DATABASE_URL`.
+Run these commands from the repository root. Root scripts load environment files.
+Database release tools prefer `DATABASE_URL_SESSION`, then `DATABASE_URL`. HTTP release registration uses its configured endpoint and token.
 
 | Command                                      | What it does                                                                                                  |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -90,3 +96,5 @@ Run them from the repository root. They read `.env` and need `DATABASE_URL`.
 
 - [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
 - [[AI/backend/authorization]]: Authentication, permission and ownership rules of the API.
+- [[AI/backend/database-checklist]]: Steps to create a database table with indexes, audit columns, and access controls.
+- [[AI/backend/security]]: API security boundaries and isolated security tests.

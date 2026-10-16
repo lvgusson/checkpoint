@@ -4,11 +4,9 @@ pnpm-lock.yaml
 apps/api/infra/supabase/.temp
 apps/api/infra/data/
 .vercel
-# Generated snapshot (570 KB): formatting only produces noisy diffs
-apps/api/src/seed.ts
-
 # Generated output, not source
 .beads/backup
+apps/api/src/data/seed.ts
 apps/web/playwright-report
 apps/web/test-results
 

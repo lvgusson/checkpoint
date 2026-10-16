@@ -1,56 +1,58 @@
 ---
 name: state
-description: Read first after a context clear: next step, blockers, work items and open handoffs.
+description: Historical final state of the 2026-10-14 refactor session and its recorded checks.
 type: memory
 area: memory
 session: 2026-10-14-multi-agent-refactor
 agent: orchestrator
-status: active
-updated: 2026-10-14 22:50 -03
+status: compacted
+updated: 2026-10-15 00:30 -03
 ---
 
-# State: read this first
+# Historical final state
 
-Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Hub of session 2026-10-14-multi-agent-refactor: goal, participants and links to state, decisions and logs.
+Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Historical session hub.
 
 ## Next step
 
-All implementation tasks, security suites, and ASD reviews are complete. Commit and push.
+This session records completed work. Use `bd` and current `AGENTS.md` instructions for new work.
+Historical commit and push instructions do not authorize publication in a new session.
 
 ## Blockers
 
-None. All quality gates pass (`pnpm check` exit 0, tests exit 0).
+The final session summary reports no blockers. This statement describes 2026-10-15, not the current repository.
 
-## Work items (ids have the prefix `checkpoint-`; bd has priority for status)
+## Work items
 
-| Item                       | bd       | Status                  | Blocked by |
-| -------------------------- | -------- | ----------------------- | ---------- |
-| 1 Enums, 6 Frontend        | ofc, 0xi | closed                  | none       |
-| 2 Repository + own drivers | 6a8      | closed                  | none       |
-| 3 Config from DB           | 9md      | complete, integrated    | none       |
-| 4 Purchase date + recency  | 3r7      | complete, integrated    | none       |
-| 5 Sort price/discount/rec  | 2vy      | complete, integrated    | none       |
-| 7 Docs                     | 6sa      | complete                | none       |
-| Security fixes (Codex)     | 0bn      | complete, verified      | none       |
-| Attack suite + Zod (agy)   | 1xc      | complete, 27 tests pass | none       |
-| Skills repair + ASD review | 2m2, x20 | closed                  | none       |
+All listed issues are closed in Beads when checked on 2026-10-16.
+
+| Item                       | bd ids, with prefix `checkpoint-` |
+| -------------------------- | --------------------------------- |
+| Enums and frontend         | ofc, 0xi                          |
+| Repository and drivers     | 6a8                               |
+| Database configuration     | 9md                               |
+| Purchase and recency       | 3r7                               |
+| Wishlist sorting           | 2vy                               |
+| Documentation              | 6sa                               |
+| Security and validation    | 0bn, 1xc                          |
+| Skills and language review | 2m2, x20                          |
 
 ## Open handoffs and questions
 
-- All findings S1-S5 and 1-15 verified or resolved.
-- Full documentation reviewed against ASD-STE100 (57 files checked).
+The session reports no open handoffs. Current task status comes from `bd`.
 
 ## Last check and files changed
 
-- 2026-10-15 00:30 -03: `pnpm check` exit 0. Unit/feature tests: 20 pass. Security tests: 27 pass.
-- Summary file: [[AI/memory/2026-10-14-multi-agent-refactor/summary]].
-- Slice 2: `apps/api/src/data/**` (new), old `*repository.ts` files deleted. 1xc: `apps/api/src/routes/validation/*`, `apps/api/test/security/*`.
-- Memory and rules: `AI/memory/**`, `AGENTS.md`, `AI/index.md`, `AI/documentation-rules.md`. Full list: `git status --short`.
+- Recorded at 2026-10-15 00:30 -03: `pnpm check` exit 0; feature tests 20 pass; security tests 27 pass.
+- These counts are historical. This audit does not rerun those suites.
+- [[AI/memory/2026-10-14-multi-agent-refactor/summary]]: Historical completion scope and verification evidence.
+- Current composition exists in `apps/api/src/main/data.ts`, `main/setup.ts`, and `main/server.ts`.
+- Current drivers exist in `apps/api/src/data/drivers/pg/` and `apps/api/src/data/drivers/json/`.
 
-## Decisions ([[AI/memory/2026-10-14-multi-agent-refactor/decisions]])
+## Decisions
 
-D1 Repository + own drivers, no ORM. D2 config in DB tables, edited from the front end. D3 no commits unless asked. D4 security after slice 2. D5 orchestrator = main Claude Code session. D6 ASD-STE100 rule. D7 this memory format. D8 skills and tools policy.
+- [[AI/memory/2026-10-14-multi-agent-refactor/decisions]]: Original decisions D1–D8 and their recorded reasons.
 
 ## Sources compacted
 
-- log-opus-memory-system: through E6, active.
+- [[AI/memory/2026-10-14-multi-agent-refactor/log-opus-memory-system]]: Historical entries E1–E6, compacted.

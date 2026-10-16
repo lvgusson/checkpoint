@@ -40,4 +40,6 @@ Mutations without their own `onError` and background refetch errors reach the to
 ## Related
 
 - [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
+- [[AI/frontend/creating-a-component]]: Where a new component, screen or feature lives and how to build it.
+- [[AI/frontend/infinite-scroll]]: Infinite scroll pattern using useInfiniteScroll and paginated queries.
 - [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.

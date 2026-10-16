@@ -17,6 +17,7 @@ Start here, pick the area you change, then follow one link. Open Obsidian with t
 - [[AI/patterns/design-patterns]]: the design patterns this project uses and where.
 - [[AI/decisions/0001-monorepo-and-stack]]: why the stack and layout are what they are.
 - [[AI/memory/memory]]: Hub of session memory: when to use it, the notes, the sessions.
+- [[AI/jobs/index]]: Table of role checklists to run before you report a task done.
 
 ## Related
 

@@ -111,15 +111,15 @@ area: frontend
 
 ## Modal
 
+The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focused.
+
 | Test ID                                                 | Action                                              | Destructive? |
 | ------------------------------------------------------- | --------------------------------------------------- | ------------ |
 | `modal-game-<code>`, `modal-close`, `modal-open-detail` | Dismiss the backdrop, close, or open the full page. | no           |
-
-The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focused.
-| `modal-{status,desire}` | Open the metadata menu. | no |
-| `modal-{status,desire}-option-<key>` | Persist a status or desire change. | yes |
-| `modal-notes` | Edit notes. | no |
-| `modal-notes-save`, `modal-finish` | Save notes or open completion. | yes |
+| `modal-{status,desire}`                                 | Open the metadata menu.                             | no           |
+| `modal-{status,desire}-option-<key>`                    | Persist a status or desire change.                  | yes          |
+| `modal-notes`                                           | Edit notes.                                         | no           |
+| `modal-notes-save`, `modal-finish`                      | Save notes or open completion.                      | yes          |
 
 ## Dialog
 
@@ -139,8 +139,7 @@ The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focuse
 | `loader-library{-more,}`, `loader-prerequisite{-search,}`     | Read loading status. Loaders have no interactive actions. | no           |
 | `loader-{settings,wishlist}`, `loader-{queue,settings}-lists` | Read loading status. Loaders have no interactive actions. | no           |
 
-Date-time picker variants also expose `<picker>-{hour,minute,clear,done}` and `<picker>-{hour,minute}-<value>`.
-Native selects use their option values. Sortable handles use Space, arrows, Space, and Escape.
+Date-time picker variants also expose `<picker>-{hour,minute,clear,done}` and `<picker>-{hour,minute}-<value>`. Native selects use option values. Sortable handles support keyboard operation.
 
 ## Related
 

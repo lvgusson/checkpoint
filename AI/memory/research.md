@@ -7,9 +7,11 @@ area: memory
 
 # Why is session memory designed this way?
 
+This note records research from 2026-10-14. External source details are historical and are not revalidated in the repository audit.
+
 The design uses files, links and one existing hook type. It has no daemon, no database and no new dependency. Anthropic documentation was sufficient for most decisions. One targeted check of other tools was necessary for parallel writers. Academic papers and forum threads were not consulted.
 
-## Sources and what we adopted
+## Historical sources and choices
 
 | Source (fetched 2026-10-14)                                                                                        | What it says                                                                                                                                                    | What we adopted                                                                                                   |
 | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |

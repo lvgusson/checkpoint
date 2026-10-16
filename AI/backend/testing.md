@@ -16,6 +16,7 @@ The project includes `apps/api/test/**/*.test.ts`. Playwright browser tests use 
 | `pnpm test`                                   | Run all Vitest tests once.                                              |
 | `pnpm test:watch`                             | Watch unit tests during development.                                    |
 | `pnpm test apps/api/test/timing.test.ts`      | Run one test file.                                                      |
+| `pnpm --filter @checkpoint/api test`          | Run all API Vitest tests.                                               |
 | `pnpm --filter @checkpoint/api test:security` | Run the six HTTP security suites.                                       |
 | `pnpm check`                                  | Check types, lint, formatting, tests, and the web build, in that order. |
 
@@ -25,7 +26,7 @@ New tests use existing public service, route, or storage interfaces.
 
 ## Database tests
 
-Result: `pnpm db:up` starts a real Postgres 18 in Docker. `pnpm test` then runs all 73 tests with no skips.
+`pnpm db:up` starts Postgres 18 in Docker. Healthy, migrated storage enables the database-dependent tests.
 
 | Command         | What it does                                                                     |
 | --------------- | -------------------------------------------------------------------------------- |
@@ -40,11 +41,12 @@ Result: `pnpm db:up` starts a real Postgres 18 in Docker. `pnpm test` then runs 
 4. A Vitest `globalSetup` (`apps/api/scripts/test-db-global-setup.ts`) prints one line: `db tests: using checkpoint-test-db`, or `db tests: SKIPPED (run pnpm db:up)`. It sets `SECURITY_TEST_DATABASE_URL` only when the container is healthy and migrated.
 5. A `SECURITY_TEST_DATABASE_URL` that you set yourself wins over the container.
 
-Without Docker, 61 tests run and 12 skip: the SQL-injection, IDOR and log-persistence tests. The 61 do not need a database.
-With a missing URL these tests skip. With a URL set they run. The helper still refuses any host that is not `localhost`, `127.0.0.1` or `[::1]`, and any database whose name does not start with `checkpoint_security_`.
+Without a database URL, SQL-injection, IDOR, and log-persistence tests skip. Other suites run without PostgreSQL.
+Use the current Vitest summary for totals; the count changes when tests are added.
+With a URL set, these database tests run. The helper still refuses any host that is not `localhost`, `127.0.0.1` or `[::1]`, and any database whose name does not start with `checkpoint_security_`.
 Never use a production database for tests. Do not load application environment files into the test runner.
 
-Disk rule: Docker data lives in `/var/lib/docker`, inside the WSL disk on D:. The test database uses tmpfs, so it writes nothing to disk. Never write large files to `/mnt/c`. Never start Docker Desktop.
+Disk rule: Docker data lives in `/var/lib/docker`, inside the WSL disk on D:. The database data directory uses tmpfs. Docker can still write container metadata and logs to disk. Never write large files to `/mnt/c`. Never start Docker Desktop.
 
 ## Related
 

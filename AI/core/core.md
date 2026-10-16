@@ -7,7 +7,7 @@ area: core
 
 # Core packages
 
-## `packages/core` (no framework, no vendor)
+## `packages/core` (no UI framework)
 
 Shared contracts and pure domain rules live in `packages/core/src`.
 
@@ -22,6 +22,7 @@ Key files:
 - `telemetry.ts`: client telemetry event contracts.
 
 Dependency rule: `packages/core` imports nothing from React, Node-only APIs, Supabase, or apps.
+`telemetry.ts` imports Zod for shared runtime schemas; the package is not dependency-free.
 The apps import from `packages/core` using relative paths to `packages/core/src`.
 
 ## Domain models and scoring contracts
@@ -33,7 +34,7 @@ The apps import from `packages/core` using relative paths to `packages/core/src`
 - Recency weight: `ScoreWeights.recentPurchase` is the scoring bonus for a recent purchase. It decays linearly to zero over 30 days from `purchasedAt`.
 - Wishlist items: `WishlistItem` combines a `ScoredGame` with optional `SteamPrice` and description.
 - Wishlist sorting: `compareWishlistItems` sorts items by `'name'`, `'price'`, `'discount'`, or `'recommendation'`.
-- Unavailable prices sort last. Ties break by name (pt-BR), then by id.
+- Price and discount sorts place unavailable prices last. Ties break by name (pt-BR), then by id.
 - Recommendation sort: `'recommendation'` orders wishlist entries by `game.baseScore` descending.
 
 ## Controlled metadata vocabulary
@@ -47,12 +48,11 @@ The apps import from `packages/core` using relative paths to `packages/core/src`
 
 ## `packages/ui-react` (product-agnostic UI kit)
 
-| Export                                                    | Purpose                                                               |
-| --------------------------------------------------------- | --------------------------------------------------------------------- |
-| `useDataCollection`                                       | Filters, sort, page or cursor, URL sync, debounced search             |
-| `PrefetchScheduler`                                       | Configurable prefetch of following pages; cancels when filters change |
-| `SortableList`                                            | Drag and drop (pointer, keyboard); emits a move intent only           |
-| `EmptyState`, `ErrorState`, `Pagination`, `ConfirmDialog` | Common states                                                         |
+| Export                                      | Purpose                                                        |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| `SortableList`                              | Drag and drop (pointer, keyboard); emits a move intent only    |
+| `EmptyState`, `ErrorState`, `ConfirmDialog` | Common states                                                  |
+| `Loader`, `registerLoaderArt`               | Accessible loading state and application-supplied art registry |
 
 Dependency rule: the kit never imports from `apps/web`.
 It knows nothing about games, queues, or wishlists.
@@ -67,3 +67,4 @@ A second real consumer exists. Until then keep new code inside the app's `featur
 - [[AI/index]]: Entry point: pick the area you change and follow one link.
 - [[AI/frontend/creating-a-component]]: Where a new component, screen or feature lives and how to build it.
 - [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
+- [[AI/decisions/0001-monorepo-and-stack]]: Why the repo is a pnpm monorepo with this stack.
