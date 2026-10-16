@@ -33,7 +33,7 @@ area: frontend
 | Test ID                                                            | Action                                       | Destructive? |
 | ------------------------------------------------------------------ | -------------------------------------------- | ------------ |
 | `login-tab-{login,signup}`, `login-{back,forgot,recovery-request}` | Choose the authentication form.              | no           |
-| `login-{email,password,confirm-password}`                          | Enter credentials.                           | no           |
+| `login-{email,password,confirm-password,password-toggle}`          | Enter credentials or toggle visibility.      | no           |
 | `login-submit-login`, `login-github`                               | Start a session.                             | no           |
 | `login-submit-{signup,forgot,reset}`                               | Create an account or change password access. | yes          |
 

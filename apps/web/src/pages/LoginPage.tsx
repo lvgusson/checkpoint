@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { safeRedirect } from '../auth/safeRedirect';
 import type { AuthResult } from '../auth/session';
+import { Bonfire } from '../features/immediate/Bonfire';
 import { AppLoader } from '../features/loader/AppLoader';
 import './login.css';
 
@@ -40,6 +42,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -56,6 +59,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
 
   const switchMode = (next: Mode) => {
     setMode(next);
+    setShowPassword(false);
     setError('');
     setNotice('');
     reset(undefined, { keepValues: true });
@@ -118,7 +122,7 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
       <section className="auth-card">
         <div className="auth-brand">
           <span className="brand-mark">
-            C<span>•</span>
+            <Bonfire />
           </span>
           <span>
             checkpoint<small>SUA BIBLIOTECA, SEU RITMO</small>
@@ -182,18 +186,35 @@ export function LoginPage({ initialMode = 'login' }: { initialMode?: Mode }) {
             )}
             {mode !== 'forgot' && (
               <>
-                <label className="field" htmlFor="auth-password">
-                  <span>{mode === 'reset' ? 'Nova senha' : 'Senha'}</span>
-                  <input
-                    data-testid="login-password"
-                    id="auth-password"
-                    type="password"
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    placeholder="Mínimo de 8 caracteres"
-                    aria-invalid={!!errors.password}
-                    {...register('password', { required: true, minLength: 8 })}
-                  />
-                </label>
+                <div className="field">
+                  <label htmlFor="auth-password">
+                    <span>{mode === 'reset' ? 'Nova senha' : 'Senha'}</span>
+                  </label>
+                  <div className="password-input-wrap">
+                    <input
+                      data-testid="login-password"
+                      id="auth-password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      placeholder="Mínimo de 8 caracteres"
+                      aria-invalid={!!errors.password}
+                      {...register('password', { required: true, minLength: 8 })}
+                    />
+                    <button
+                      data-testid="login-password-toggle"
+                      type="button"
+                      className="password-toggle"
+                      aria-label={showPassword ? 'Ocultar' : 'Mostrar'}
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} aria-hidden="true" />
+                      ) : (
+                        <Eye size={18} aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
+                </div>
                 {errors.password && (
                   <small className="field-error">
                     A senha precisa ter pelo menos 8 caracteres.
