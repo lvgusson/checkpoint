@@ -116,3 +116,32 @@ it('wishlist rejects invalid order and imports over 1000 games before app downlo
     code: 413,
   });
 });
+
+it('purchase rejects a game that is not on the wishlist and was never bought', async () => {
+  const data = await createData({
+    dataDir: '/tmp',
+    env: {
+      DATA_FILE: '',
+      LISTS_FILE: '',
+      MANUAL_FILE: '',
+      SETTINGS_FILE: '',
+      WISHLIST_FILE: '',
+    },
+  });
+  const game = { ...emptyGame('Owned test'), id: 'owned-test', status: GameStatus.Playing };
+  await data.games.save(game);
+  const service = new GameService(data.games, data.manual, data.queue, data.scoring, data.lists);
+  await expect(service.purchase(game.id)).rejects.toMatchObject({ code: 409 });
+});
+
+it('cover falls back to the Steam header image, and an explicit cover wins', () => {
+  const base = { ...emptyGame('Cover test'), status: GameStatus.NotStarted };
+  const cover = (g: typeof base) => scoreGames([g]).games[0].coverUrl;
+  expect(cover({ ...base, steamAppId: 620 })).toBe(
+    'https://cdn.akamai.steamstatic.com/steam/apps/620/header.jpg',
+  );
+  expect(cover({ ...base, steamAppId: 620, coverUrl: 'https://example.com/c.jpg' })).toBe(
+    'https://example.com/c.jpg',
+  );
+  expect(cover({ ...base, steamAppId: null, coverUrl: null })).toBeNull();
+});
