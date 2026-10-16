@@ -19,6 +19,7 @@ Infinite scroll uses two layers:
    Default `rootMargin` is `100px`.
    The observer effect depends on `enabled`, `hasMore` and `isLoading`. It is re-created when `isLoading` flips back to false, so a sentinel that is still visible fires again.
    Only `onLoadMore` is read through a ref, so a new callback does not rebuild the observer.
+   `resetKey` is an optional extra dependency. Client-sliced callers pass their visible count, so the observer restarts after each slice and a sentinel still in view loads the next slice. Unit test: `apps/web/src/hooks/useInfiniteScroll.test.ts`.
 
 2. A feature hook (such as `useInfiniteCatalog`):
    Loads pages sequentially with `useQueries`.

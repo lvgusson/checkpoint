@@ -76,6 +76,7 @@ export function QueueView({ listId }: { listId: string }) {
     hasMore,
     isLoading: false,
     enabled: !searching,
+    resetKey: visible,
   });
 
   const haystacks = useMemo(() => {

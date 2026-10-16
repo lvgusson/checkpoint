@@ -46,6 +46,7 @@ export function WishlistScreen() {
     onLoadMore: handleLoadMore,
     hasMore,
     isLoading: false,
+    resetKey: visibleCount,
   });
   const onSale = useMemo(() => sorted.filter((i) => i.price?.discountPercent).length, [sorted]);
   const busy =
