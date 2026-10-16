@@ -545,7 +545,9 @@ test.describe('Route Map E2E Spec', () => {
     skipDestructive('queue-finish-<code>', 'Opens finish completion');
     skipDestructive('queue-row-<code>', 'Reorders row');
     skipDestructive('queue-drag-<code>', 'Drags row position');
+    skipDestructive('queue-drag-handle-<code>', 'Drags row position');
     skipDestructive('queue-release-<code>', 'Removes pin position');
+    skipDestructive('queue-unpin-<code>', 'Removes pin position');
     skipDestructive('queue-list-save', 'Saves new list');
     skipDestructive('queue-list-remove', 'Deletes list');
 
