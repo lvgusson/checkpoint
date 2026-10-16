@@ -72,10 +72,16 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
     const imageCount = await coverImages.count();
     expect(imageCount).toBeGreaterThan(0);
 
-    const hasLoadedImage = await coverImages.first().evaluate((img: HTMLImageElement) => {
-      return img.complete && img.naturalWidth > 0;
-    });
-    expect(hasLoadedImage).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          return await coverImages.first().evaluate((img: HTMLImageElement) => {
+            return img.complete && img.naturalWidth > 0;
+          });
+        },
+        { timeout: 10000 },
+      )
+      .toBe(true);
 
     // Verify requests stabilized (no infinite runaway)
     const countAfterLoad = gamesRequestCount;
