@@ -20,12 +20,12 @@ The tests live in `apps/web/e2e/` and are not part of `pnpm check`. Playwright a
 
 ## What the setup does
 
-| Fact     | Value                                                                             |
-| -------- | --------------------------------------------------------------------------------- |
-| Config   | `apps/web/playwright.config.js`                                                   |
-| Browser  | Chromium only                                                                     |
-| Base URL | `http://localhost:5173`; Playwright starts `pnpm dev` and reuses a running server |
-| Retries  | 2 and one worker when `CI` is set, none locally                                   |
+| Fact     | Value                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------- |
+| Config   | `apps/web/playwright.config.js`                                                                         |
+| Browser  | Chromium only                                                                                           |
+| Base URL | `BASE_URL` or `http://localhost:5173`; local URLs start `pnpm dev`; local runs reuse an existing server |
+| Retries  | 2 and one worker when `CI` is set, none locally                                                         |
 
 ## Write a test
 
@@ -37,7 +37,13 @@ The tests live in `apps/web/e2e/` and are not part of `pnpm check`. Playwright a
 
 ## Current coverage
 
-`smoke.spec.ts` has five tests that check structure without login: login page, navigation shell, Portuguese text, route redirects, and no fatal JavaScript errors. `route-map.spec.ts` tests authenticated routes conditionally when credentials are set, with safe notes restoration. `game-fixes.spec.ts` covers covers and infinite scroll in Library and Queue, modal focus, the detail page loader, and the purchase dialog in Library and Wishlist. `bypass-headers.spec.ts` checks Vercel bypass headers.
+`smoke.spec.ts` has five tests: login inputs, console errors, Portuguese text, route redirects, and fatal JavaScript errors.
+Its redirect assertion accepts `/jogos` or `/login`; the router currently sends the home route to `/ordem`.
+`route-map.spec.ts` has ten screen checks. Authenticated checks depend on credentials; the notes edit restores the original value.
+`game-fixes.spec.ts` has six tests for Library covers and request counts, modal focus, detail loading, queue pagination controls, and purchase dialogs.
+The Library test scrolls without asserting that more cards appear. The Queue test checks that the manual pagination button is absent.
+`bypass-headers.spec.ts` has six checks for Vercel bypass helpers.
+[[AI/frontend/design-engineering]] describes the responsive and accessibility gate.
 
 ## Related
 

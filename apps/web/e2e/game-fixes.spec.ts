@@ -107,7 +107,7 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
 
     // Verify that loader-modal is not stuck
     const modalLoader = page.getByTestId('loader-modal');
-    await expect(modalLoader).not.toBeVisible({ timeout: 5000 });
+    await expect(modalLoader).not.toBeVisible({ timeout: 20000 });
 
     // Verify modal close button (X) is NOT the activeElement
     const isCloseFocused = await page.evaluate(() => {

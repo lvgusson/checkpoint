@@ -19,9 +19,9 @@ Use a pattern for the behavior it gives, not for style. Extend by adding an impl
 | Policy table         | `packages/core/src/authorization.ts`                                                | Decide permissions from data, evaluated in memory  |
 | Error translation    | `AppError` to problem+json in `apps/api/src/routes/http-errors.ts`                  | Keep internal errors off the wire                  |
 | Query-key factory    | `useQueryKeys()` in `apps/web/src/query/keys.ts`                                    | Scope and invalidate cache precisely               |
-| Variants (cva)       | `components/ui/*` with `class-variance-authority`                                   | Offer styles as named variants                     |
+| Variants (cva)       | `apps/web/src/components/ui/*` with `class-variance-authority`                      | Offer styles as named variants                     |
 | Headless + intent    | `SortableList` emits `onMoveIntent`; the app decides the order                      | Keep generic UI free of domain rules               |
-| Optimistic update    | `features/playing/gameWriter.ts`                                                    | Show change at once, roll back on failure          |
+| Optimistic update    | `apps/web/src/features/playing/gameWriter.ts`                                       | Show change at once, roll back on failure          |
 
 ## Expanding a class or module
 
@@ -34,3 +34,5 @@ Use a pattern for the behavior it gives, not for style. Extend by adding an impl
 - [[AI/backend/extending-classes]]: Steps to add a repository, service method, route, permission or log sink.
 - [[AI/frontend/creating-a-component]]: Where a new component, screen or feature lives and how to build it.
 - [[AI/index]]: Entry point: pick the area you change and follow one link.
+- [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
+- [[AI/backend/observability]]: Why logging uses a pluggable sink, and how redaction and safety work.

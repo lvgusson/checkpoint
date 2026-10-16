@@ -5,19 +5,6 @@ export const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').to
 
 export const PAGE_SIZE = 30;
 
-/** Rows to show: the first `visible` entries, or every match of the search (keeping real positions). */
-export function shownRows(queue: Recommendations | undefined, search: string, visible: number) {
-  const items = queue?.items ?? [];
-  const q = fold(search).trim();
-  const rows = items.map((item, index) => ({ item, index }));
-  if (!q) return rows.slice(0, visible);
-  const words = q.split(/\s+/);
-  return rows.filter(({ item: { game: g } }) => {
-    const hay = fold([g.name, g.primaryGenre, ...g.secondaryTags, g.mechanic, g.pace].join(' '));
-    return words.every((w) => hay.includes(w));
-  });
-}
-
 /** Games left out of the queue, grouped by reason. */
 export function excludedReasons(queue: Recommendations) {
   const counts = new Map<string, number>();

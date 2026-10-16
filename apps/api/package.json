@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:security": "vitest run --config ../../vitest.config.ts --project api test/security/"
+    "test": "vitest run --root ../.. --project api",
+    "test:security": "vitest run --root ../.. --project api test/security/"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.11",

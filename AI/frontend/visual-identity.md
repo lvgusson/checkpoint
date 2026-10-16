@@ -30,12 +30,12 @@ Calm, readable and green: a neutral off-white or deep green-black surface, one a
 
 - Font: DM Sans (Manrope for display accents), loaded in `styles.css`.
 - Radius: 6, 8 and 14 px (`rounded-sm`, `rounded-md`, `rounded-lg`); badges are fully rounded.
-- Dark mode uses the same token names; never branch on the theme in a component. The theme toggle in `Shell.tsx` is the one exception.
+- Use the same tokens in both themes. `Shell.tsx` renders the theme toggle; `components/ui/sonner.tsx` passes the resolved theme to Sonner.
 - Respect `prefers-reduced-motion`; contrast of text on every accent must stay readable.
 
 ## Rules
 
-- Use tokens, never raw hex values, in components. Brand SVG art (`SwordLoader.tsx`) is exempt.
+- Use tokens, never raw hex values, in components. Brand SVG art (`features/loader/SwordArt.tsx`) is exempt.
 - A new category color is a new `--b-*` pair in both themes.
 - Change the identity in `styles.css` first, then update this note.
 
@@ -43,3 +43,4 @@ Calm, readable and green: a neutral off-white or deep green-black surface, one a
 
 - [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
 - [[AI/frontend/creating-a-component]]: Where a new component, screen or feature lives and how to build it.
+- [[AI/frontend/design-engineering]]: How agents design and verify UI in Checkpoint.

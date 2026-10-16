@@ -1,18 +1,21 @@
 ---
 name: handoff
-description: Recovery instructions for completing the owner-authorized session after Codex stops.
+description: Historical recovery handoff from 2026-10-14, including former worker ownership and integration steps.
 type: memory
 area: memory
 session: 2026-10-14-multi-agent-refactor
 agent: orchestrator
-status: active
+status: compacted
 ---
 
-# Continue here
+# Historical recovery handoff
+
+Historical record from 2026-10-14 and 2026-10-15. Counts, paths, worker state, and checks describe that session.
+Current instructions come from `AGENTS.md`. Historical authorization does not apply to a new session.
 
 Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 
-## Owner authorization
+## Owner authorization for that historical session
 
 - The owner asks Codex to continue Claude's work and act as orchestrator.
 - Finish all pending features, security corrections, documentation, summary, commit and push.
@@ -23,7 +26,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 - After skills repair, Agy reviews all Markdown against ASD-STE100.
 - Preserve original third-party skill files. Report their language deviations without rewriting them.
 
-## Verified recovery facts
+## Recovery facts recorded at that handoff
 
 - Branch: main. Starting HEAD: 1b3389c. Origin is github.com/lvgusson/checkpoint.
 - Many uncommitted changes predate this handoff. Preserve them and review the complete diff.
@@ -38,7 +41,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 - One retained script differs: diagnosing-bugs/scripts/hitl-loop.template.sh. Check its executable mode.
 - checkpoint-418 duplicates checkpoint-2m2. Close the duplicate only after final validation.
 
-## Current parallel workers
+## Parallel workers at that handoff
 
 - config_feature: checkpoint-9md. Implements metadata management, existing seven DB tables, admin add/delete unused options.
 - Config uses no new migration. It avoids a redundant config_option table and preserves public auth config.
@@ -50,7 +53,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 - Workers must not commit or push. The orchestrator reviews and publishes.
 - Original audit reports remain in the scratchpad path below.
 
-## Integration still required
+## Integration pending at that handoff
 
 1. Read current files before editing. Workers can still apply final fixes.
 2. Integrate ConfigRepository and ConfigService into main/data.ts, main/setup.ts, main/server.ts and API index.mjs.
@@ -73,7 +76,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 19. Fix seed compatibility issue checkpoint-1ar without rewriting historical migrations.
 20. Add CI and complete env template if confirmed by the consolidated audit scope.
 
-## Local database verification
+## Local database verification recorded at that handoff
 
 - A disposable PostgreSQL18 server runs on 127.0.0.1:54329. No live database changes are authorized or required.
 - Bundled binaries and scripts are under the scratchpad pg/ folder.
@@ -83,7 +86,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 - Create a fresh isolated database. Apply migrations017 and019 before testing new code.
 - Use its local database URL only in each test process. Never read or print production credentials.
 
-## Validation and publication
+## Historical validation and publication instructions
 
 - Run pnpm install after manifest changes.
 - Run focused Vitest suites, real local PostgreSQL ownership checks and browser tests.
@@ -113,7 +116,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 - Tests run during recovery: TypeScript noEmit passes before feature integration.
 - Earlier audit assertions pass. They do not replace final regression tests.
 
-## Latest recovery checks
+## Recovery checks recorded at that handoff
 
 - Agy received /tmp/agy-continuation-20261014.txt through pane.sh on pane1. The prompt requires subagents if its tools support them. No spawn is confirmed yet.
 - API TypeScript passes after the games service uses MetadataCatalog as a type and reads the repository catalog.
@@ -121,3 +124,8 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 - Security worker reports 17 local HTTP tests pass. Its startup-store regression stays red until main/data wires assertPrivateStores.
 - Security worker owns isolated local database checkpoint_security_codex. It is restarting the scratch PostgreSQL server. Do not share that database.
 - Purchase worker released its source files. Its issues remain open until integration and PostgreSQL checks pass.
+
+## Related
+
+- [[AI/memory/2026-10-14-multi-agent-refactor/summary]]: Historical completion summary for this recovery work.
+- [[AI/backend/infrastructure]]: Hosting, storage modes, environment variables and scripts of the API.

@@ -5,10 +5,13 @@ type: memory
 area: memory
 session: 2026-10-14-multi-agent-refactor
 agent: orchestrator
-status: active
+status: compacted
 ---
 
 # Decisions of session 2026-10-14-multi-agent-refactor
+
+Historical record from 2026-10-14 and 2026-10-15. Counts, paths, worker state, and checks describe that session.
+Current instructions come from `AGENTS.md`. Historical authorization does not apply to a new session.
 
 Append only. To change a decision, add a new one with `Supersedes`.
 

@@ -32,7 +32,7 @@ The API processes and records events in the background.
 
 ### `public.user_track`
 
-Append-only event log table.
+The application inserts events. The retention function deletes old events. No trigger prevents privileged updates or deletions.
 Columns: `id`, `user_id`, `session_id`, `kind`, `screen`, `element`, `automated`, `occurred_at`, `received_at`, and audit columns.
 Row Level Security (RLS) is enabled.
 No client policies exist; client connections cannot read or write directly.
@@ -69,7 +69,7 @@ ORDER BY click_count DESC;
 
 ## Privacy & LGPD rule
 
-The system records only the user UUID and the element `data-testid` identifier.
+The system records user UUIDs, session identifiers, route patterns, event types, element identifiers, timestamps, and automation flags.
 The `user_track` table stores no input values, passwords, text content, or IP addresses.
 
 ## Retention
@@ -77,12 +77,13 @@ The `user_track` table stores no input values, passwords, text content, or IP ad
 Purge raw events older than 90 days with this command:
 
 ```sql
-SELECT public.purge_user_track('90 days'::interval);
+SELECT public.purge_user_track(90);
 ```
 
+The migration schedules a daily purge when `pg_cron` is available. Otherwise, an operator must schedule or run it.
 Consolidated counts in `page_track` remain intact after the purge.
 
 ## Related
 
-- `[[AI/backend/backend]]`
-- `[[AI/frontend/frontend]]`
+- [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
+- [[AI/frontend/frontend]]: Structure of apps/web and the map of frontend notes.

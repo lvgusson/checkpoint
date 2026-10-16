@@ -14,13 +14,14 @@ HTTP uses `node:http` without a framework.
 ## Request flow
 
 1. The router in `apps/api/src/main/server.ts` assigns the request identifier.
-2. The router adds security headers and enforces the request body limit.
+2. The router adds security headers. Body readers enforce size limits when a route reads JSON.
 3. `apps/api/src/auth/auth.ts` authenticates the caller.
 4. The central gate in `apps/api/src/main/server.ts` verifies permissions through `packages/core/src/authorization.ts`.
 5. The route delegates work to domain services (`GameService`, `WishlistService`, or `ConfigService`).
 6. Services query repositories, which execute operations through storage drivers.
 7. Errors convert to RFC 9457 problem+json format through `apps/api/src/routes/http-errors.ts`.
 
+System routes and release routes run before user authentication. Release registration uses a separate token.
 A resource owned by another user returns HTTP 404.
 The API retains the legacy `error.message` field for compatibility with older clients.
 
@@ -37,7 +38,9 @@ JSON drivers (`JsonGamesDriver` and other `Json*Driver` classes in `apps/api/src
 
 `GameService` and `WishlistService` provide game management and recommendations.
 
-- Game purchase: `POST /api/v1/games/:id/purchase` accepts an empty body only. It moves a `Desejado` game to `GameStatus.NotStarted`. A repeat call on a purchased game returns it unchanged. Any other status returns 409. The Library card and the Wishlist card both call it.
+- Game purchase: `POST /api/v1/games/:id/purchase` accepts no body or an empty JSON object. It moves `GameStatus.Wishlist` to `GameStatus.NotStarted`.
+- Purchase retry: a game outside the wishlist returns unchanged only when `purchasedAt` exists. Otherwise, the service returns 409.
+- Purchase callers: the Library card and the Wishlist card both call the purchase route.
 - Purchase timestamp: the purchase route sets `purchasedAt` to the current ISO timestamp and preserves earlier purchase dates.
 - Recency scoring: the scoring formula adds a bonus for recent purchases based on `purchasedAt`.
 - Recency decay: the purchase bonus decreases linearly from full weight to zero across 30 days.
@@ -46,17 +49,15 @@ JSON drivers (`JsonGamesDriver` and other `Json*Driver` classes in `apps/api/src
 
 ## Where to go
 
-- Unit tests and local database checks: [[AI/backend/testing]]
-
-- New database tables: [[AI/backend/database-checklist]]: Steps to create a database table with indexes, audit columns, and access controls.
-
-- Hosting, storage modes, environment variables, scripts: [[AI/backend/infrastructure]]
-- Add a route, a service method, a repository, a permission or a log sink: [[AI/backend/extending-classes]]
-- Roles, permissions and the ownership rule: [[AI/backend/authorization]]
-- Logging, metrics and the pluggable sink: [[AI/backend/observability]]
-- User tracking and page metrics: [[AI/backend/tracking]]: Fire-and-forget user navigation and click tracking architecture.
-- Patterns used in this code: [[AI/patterns/design-patterns]]
-- Threat model, attack test suite, and validation: [[AI/backend/security]]
+- [[AI/backend/testing]]: Unit test commands, Vitest configuration, and local database test requirements.
+- [[AI/backend/database-checklist]]: Steps to create a database table with indexes, audit columns, and access controls.
+- [[AI/backend/infrastructure]]: Hosting, storage modes, environment variables and scripts of the API.
+- [[AI/backend/extending-classes]]: Steps to add a repository, service method, route, permission or log sink.
+- [[AI/backend/authorization]]: Authentication, permission and ownership rules of the API.
+- [[AI/backend/observability]]: Why logging uses a pluggable sink, and how redaction and safety work.
+- [[AI/backend/tracking]]: User navigation and click tracking via POST /api/v1/track, user_track, and page_track tables.
+- [[AI/patterns/design-patterns]]: Design patterns in use, where they live, and how to expand a class.
+- [[AI/backend/security]]: API security boundaries and isolated security tests.
 
 ## Related
 
