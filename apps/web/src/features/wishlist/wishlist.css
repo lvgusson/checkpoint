@@ -40,7 +40,9 @@
   .results img {
     width: 92px;
     height: 35px;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
+    background: var(--surface-2);
     border-radius: 4px;
   }
   .results .name {
@@ -136,5 +138,16 @@
   }
   .card-bottom {
     padding-right: 44px;
+  }
+  .cover {
+    background: var(--surface-2);
+  }
+  .cover:not(:has(img)),
+  .cover:has(img[style*='none']) {
+    background: linear-gradient(130deg, var(--cover-a), var(--cover-b));
+  }
+  .cover img {
+    object-fit: contain;
+    object-position: center;
   }
 }

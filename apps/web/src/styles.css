@@ -604,8 +604,12 @@ textarea {
 .cover {
   aspect-ratio: 460/215;
   position: relative;
-  background: linear-gradient(130deg, var(--cover-a), var(--cover-b));
+  background: var(--surface-2);
   overflow: hidden;
+}
+.cover:not(:has(img)),
+.cover:has(img[style*='none']) {
+  background: linear-gradient(130deg, var(--cover-a), var(--cover-b));
 }
 .cover img,
 .next-cover img,
@@ -614,8 +618,15 @@ textarea {
   position: absolute;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   z-index: 1;
+}
+.cover:has(img:not([style*='none'])) .cover-fallback,
+.next-cover:has(img:not([style*='none'])) > span,
+.queue-cover:has(img:not([style*='none'])) > span,
+.detail-cover:has(img:not([style*='none'])) > span {
+  display: none;
 }
 .cover-fallback,
 .next-cover > span,
@@ -777,6 +788,10 @@ footer {
 .next-cover {
   position: relative;
   min-width: 37%;
+  background: var(--surface-2);
+}
+.next-cover:not(:has(img)),
+.next-cover:has(img[style*='none']) {
   background: linear-gradient(135deg, var(--cover-a), var(--cover-b));
 }
 .method {
@@ -1124,8 +1139,12 @@ footer {
   position: relative;
   overflow: hidden;
   border-radius: 6px;
-  background: var(--cover-a);
+  background: var(--surface-2);
   flex-shrink: 0;
+}
+.queue-cover:not(:has(img)),
+.queue-cover:has(img[style*='none']) {
+  background: var(--cover-a);
 }
 .queue-cover > span {
   font-size: 25px;
@@ -1187,11 +1206,15 @@ footer {
 .detail-cover {
   width: 250px;
   aspect-ratio: 460/215;
-  background: var(--cover-a);
+  background: var(--surface-2);
   border-radius: 10px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
+}
+.detail-cover:not(:has(img)),
+.detail-cover:has(img[style*='none']) {
+  background: var(--cover-a);
 }
 .detail-hero h1 {
   font-size: 31px;

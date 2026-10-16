@@ -37,10 +37,11 @@ export const GameCard = memo(function GameCard({
         to={`/jogos/${encodeURIComponent(g.id)}`}
       >
         <div className="cover" data-genre={g.primaryGenre}>
-          {g.coverUrl && !coverBroken && (
+          {g.coverUrl && !coverBroken ? (
             <img src={g.coverUrl} alt="" loading="lazy" onError={() => setCoverBroken(true)} />
+          ) : (
+            <span className="cover-fallback">{g.name.slice(0, 1)}</span>
           )}
-          <span className="cover-fallback">{g.name.slice(0, 1)}</span>
           <span className={'badge cover-status ' + badgeColor(g.status)}>{g.status}</span>
         </div>
         <div className="card-body">
