@@ -20,7 +20,7 @@ interface TagItem {
 export function GameDetailTags({
   game,
   className = '',
-  testIdPrefix = 'detail',
+  testIdPrefix = 'detail-badge',
 }: GameDetailTagsProps) {
   const tags: TagItem[] = [];
 
