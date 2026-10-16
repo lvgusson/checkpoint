@@ -72,7 +72,7 @@ export function DetailPage() {
   const [saveError, setSaveError] = useState('');
   const [finishing, setFinishing] = useState(false);
 
-  const isLoading = Boolean(id) && (gameQuery.isLoading || catalogQuery.isLoading);
+  const isLoading = Boolean(id) && gameQuery.isLoading && !game;
   const isNotFound = !isLoading && Boolean(id) && !gameQuery.isError && !game;
   const isGameError = gameQuery.isError && !game;
   const isCatalogError = catalogQuery.isError && !catalog;

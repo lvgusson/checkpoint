@@ -1,3 +1,4 @@
+import { CircleDollarSign } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 import type { Desire, ScoredGame } from '../../../../../packages/core/src/models';
@@ -9,9 +10,15 @@ export interface GameCardProps {
   game: ScoredGame;
   onDesire(id: string, desire: Desire): void;
   onError(message: string): void;
+  onPurchase?(game: ScoredGame): void;
 }
 
-export const GameCard = memo(function GameCard({ game, onDesire, onError }: GameCardProps) {
+export const GameCard = memo(function GameCard({
+  game,
+  onDesire,
+  onError,
+  onPurchase,
+}: GameCardProps) {
   const [coverBroken, setCoverBroken] = useState(false);
   const g = game;
 
@@ -67,6 +74,24 @@ export const GameCard = memo(function GameCard({ game, onDesire, onError }: Game
             />
           </span>
         </>
+      )}
+      {g.status === 'Desejado' && onPurchase && (
+        <span className="card-immediate">
+          <button
+            data-testid={`library-purchase-${g.id.toLowerCase()}`}
+            type="button"
+            className="immediate-btn"
+            aria-label={`Comprar ${g.name}`}
+            title="Marcar como comprado"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onPurchase(g);
+            }}
+          >
+            <CircleDollarSign className="size-5" />
+          </button>
+        </span>
       )}
     </article>
   );

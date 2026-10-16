@@ -37,7 +37,7 @@ The tests live in `apps/web/e2e/` and are not part of `pnpm check`. Playwright a
 
 ## Current coverage
 
-`smoke.spec.ts` has five tests that check structure without login: login page, navigation shell, Portuguese text, route redirects, and no fatal JavaScript errors. `route-map.spec.ts` tests authenticated routes conditionally when credentials are set, with safe notes restoration.
+`smoke.spec.ts` has five tests that check structure without login: login page, navigation shell, Portuguese text, route redirects, and no fatal JavaScript errors. `route-map.spec.ts` tests authenticated routes conditionally when credentials are set, with safe notes restoration. `game-fixes.spec.ts` covers covers and infinite scroll in Library and Queue, modal focus, the detail page loader, and the purchase dialog in Library and Wishlist. `bypass-headers.spec.ts` checks Vercel bypass headers.
 
 ## Related
 

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EmptyState, ErrorState } from '@checkpoint/ui-react';
+import { ConfirmDialog, EmptyState, ErrorState } from '@checkpoint/ui-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { Catalog, Desire, ScoredGame } from '../../../../packages/core/src/models';
@@ -15,6 +15,7 @@ export function LibraryPage() {
   const qc = useQueryClient();
   const writer = useGameWriter();
   const [error, setError] = useState('');
+  const [purchasingGame, setPurchasingGame] = useState<ScoredGame | null>(null);
 
   const catalog = useQuery({
     queryKey: k.catalog(),
@@ -45,7 +46,7 @@ export function LibraryPage() {
   const sentinelRef = useInfiniteScroll({
     onLoadMore: loadMore,
     hasMore,
-    isLoading: isFetchingNextPage || isLoading,
+    isLoading: isFetching || isFetchingNextPage || isLoading,
   });
 
   // Surface failed playing toggles (the writer already rolled the caches back and refetches).
@@ -190,7 +191,13 @@ export function LibraryPage() {
         <>
           <div className="game-grid">
             {items.map((g) => (
-              <GameCard key={g.id} game={g} onDesire={setDesire} onError={handleError} />
+              <GameCard
+                key={g.id}
+                game={g}
+                onDesire={setDesire}
+                onError={handleError}
+                onPurchase={setPurchasingGame}
+              />
             ))}
           </div>
           <div
@@ -250,6 +257,24 @@ export function LibraryPage() {
           description="Tente outro nome ou remova um filtro."
         />
       )}
+      <ConfirmDialog
+        data-testid="dialog-purchase"
+        open={Boolean(purchasingGame)}
+        title="Você comprou o jogo?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        onConfirm={async () => {
+          if (!purchasingGame) return;
+          const target = purchasingGame;
+          setPurchasingGame(null);
+          try {
+            await writer.purchase(target.id);
+          } catch {
+            setError(`Não foi possível marcar ${target.name} como comprado.`);
+          }
+        }}
+        onCancel={() => setPurchasingGame(null)}
+      />
     </>
   );
 }

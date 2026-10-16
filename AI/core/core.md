@@ -29,6 +29,7 @@ The apps import from `packages/core` using relative paths to `packages/core/src`
 `packages/core` provides contracts for scoring, purchases, and wishlists:
 
 - Purchase timestamp: `Game.purchasedAt` is optional and nullable. It holds the first purchase time as an ISO string. Legacy data has no value.
+- Cover: `Game.coverUrl` is optional and nullable. The Postgres driver fills it from the generated column `card_cover_url`. Scoring sets `ScoredGame.coverUrl` to `Game.coverUrl`, else the Steam `header.jpg` for `steamAppId`, else `null`.
 - Recency weight: `ScoreWeights.recentPurchase` is the scoring bonus for a recent purchase. It decays linearly to zero over 30 days from `purchasedAt`.
 - Wishlist items: `WishlistItem` combines a `ScoredGame` with optional `SteamPrice` and description.
 - Wishlist sorting: `compareWishlistItems` sorts items by `'name'`, `'price'`, `'discount'`, or `'recommendation'`.

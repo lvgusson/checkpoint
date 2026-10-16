@@ -54,7 +54,10 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
     if (open) {
       const prevOverflow = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
-      if (!el.open) el.showModal();
+      if (!el.open) {
+        el.showModal();
+        el.focus({ preventScroll: true });
+      }
       return () => {
         document.documentElement.style.overflow = prevOverflow;
         if (el.open) el.close();
@@ -100,8 +103,8 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
 
   if (!open) return null;
 
-  const isLoading = Boolean(gameId) && (gameQuery.isLoading || catalogQuery.isLoading);
-  const isError = Boolean(!gameId || gameQuery.isError || (!isLoading && !game));
+  const isLoading = Boolean(gameId) && gameQuery.isLoading && !game;
+  const isError = Boolean(!gameId || (gameQuery.isError && !game) || (!isLoading && !game));
 
   return (
     <>
@@ -109,6 +112,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
         data-testid={`modal-game-${gameId?.toLowerCase() ?? 'empty'}`}
         key={gameId ?? 'empty'}
         ref={dialogRef}
+        tabIndex={-1}
         onClick={(e) => {
           if (e.target === dialogRef.current) onOpenChange(false);
         }}
@@ -116,7 +120,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
           e.preventDefault();
           onOpenChange(false);
         }}
-        className="fixed inset-0 z-50 m-auto flex max-h-[calc(100dvh-48px)] w-[min(720px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--text)] shadow-2xl backdrop:bg-[var(--scrim)]"
+        className="fixed inset-0 z-50 m-auto flex max-h-[calc(100dvh-48px)] w-[min(720px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--text)] shadow-2xl backdrop:bg-[var(--scrim)] outline-none focus:outline-none"
         aria-labelledby="modal-game-title"
       >
         <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">

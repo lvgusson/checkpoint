@@ -13,19 +13,19 @@ Each step reads request timings from `window.__timings` and writes them to `apps
 
 ## Steps table
 
-| Id                | Route            | Action                                        | Expected result                                            | Timing to read                             |
-| ----------------- | ---------------- | --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------ |
-| `login-view`      | `/login`         | Open the login page                           | The login form displays email, password and submit inputs  | `GET /api/v1/config`                       |
-| `login-submit`    | `/login`         | Submit credentials from environment variables | The application signs in and redirects to the home route   | None (Supabase call)                       |
-| `theme-toggle`    | `/jogos`         | Click the theme toggle button in the header   | The application changes the color theme and update label   | None (client state)                        |
-| `library-view`    | `/jogos`         | Open the game library page                    | The grid displays game cards and catalog statistics        | `GET /api/v1/catalog`, `GET /api/v1/games` |
-| `library-filters` | `/jogos`         | Enter search text and choose filter values    | The grid updates with filtered results and count           | `GET /api/v1/games`                        |
-| `library-scroll`  | `/jogos`         | Scroll to the bottom of the page              | The application loads and appends the next page of games   | `GET /api/v1/games`                        |
-| `detail-modal`    | `/jogos`         | Click a game card in the list                 | The game detail modal opens with scores and information    | `GET /api/v1/games/:id`                    |
-| `game-edit`       | `/jogos/:id`     | Edit notes, save, and restore original value  | The game saves changes and restores verified original data | `PATCH /api/v1/games/:id`                  |
-| `queue-view`      | `/ordem`         | Open the queue page                           | The recommended game queue displays ranked items           | `GET /api/v1/lists/:id/recommendations`    |
-| `wishlist-view`   | `/desejos`       | Open the wishlist page                        | The wishlist displays game items and prices                | `GET /api/v1/wishlist`                     |
-| `settings-view`   | `/configuracoes` | Open the settings page                        | The screen displays scoring rules, weights and filters     | `GET /api/v1/lists/:id/settings/scoring`   |
+| Id                | Route            | Action                                        | Expected result                                                      | Timing to read                             |
+| ----------------- | ---------------- | --------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------ |
+| `login-view`      | `/login`         | Open the login page                           | The login form displays email, password and submit inputs            | `GET /api/v1/config`                       |
+| `login-submit`    | `/login`         | Submit credentials from environment variables | The application signs in and redirects to the home route             | None (Supabase call)                       |
+| `theme-toggle`    | `/jogos`         | Click the theme toggle button in the header   | The application changes the color theme and update label             | None (client state)                        |
+| `library-view`    | `/jogos`         | Open the game library page                    | The grid displays game cards and catalog statistics                  | `GET /api/v1/catalog`, `GET /api/v1/games` |
+| `library-filters` | `/jogos`         | Enter search text and choose filter values    | The grid updates with filtered results and count                     | `GET /api/v1/games`                        |
+| `library-scroll`  | `/jogos`         | Scroll to the bottom of the page              | The application loads and appends the next page of games             | `GET /api/v1/games`                        |
+| `detail-modal`    | `/jogos`         | Click a game card in the list                 | The modal opens with scores; the dialog has focus, not `modal-close` | `GET /api/v1/games/:id`                    |
+| `game-edit`       | `/jogos/:id`     | Edit notes, save, and restore original value  | The game saves changes and restores verified original data           | `PATCH /api/v1/games/:id`                  |
+| `queue-view`      | `/ordem`         | Open the queue page                           | The recommended game queue displays ranked items                     | `GET /api/v1/lists/:id/recommendations`    |
+| `wishlist-view`   | `/desejos`       | Open the wishlist page                        | The wishlist displays game items and prices                          | `GET /api/v1/wishlist`                     |
+| `settings-view`   | `/configuracoes` | Open the settings page                        | The screen displays scoring rules, weights and filters               | `GET /api/v1/lists/:id/settings/scoring`   |
 
 ## Environment variables
 

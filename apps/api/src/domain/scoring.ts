@@ -263,9 +263,11 @@ export function scoreGames(
             (r.duration ? w.duration * duration : 0) +
             recentPurchase,
         ),
-        coverUrl: g.steamAppId
-          ? `https://cdn.akamai.steamstatic.com/steam/apps/${g.steamAppId}/header.jpg`
-          : null,
+        coverUrl:
+          g.coverUrl ??
+          (g.steamAppId
+            ? `https://cdn.akamai.steamstatic.com/steam/apps/${g.steamAppId}/header.jpg`
+            : null),
       };
     }),
   };

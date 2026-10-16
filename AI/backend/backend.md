@@ -37,7 +37,7 @@ JSON drivers (`JsonGamesDriver` and other `Json*Driver` classes in `apps/api/src
 
 `GameService` and `WishlistService` provide game management and recommendations.
 
-- Game purchase: `POST /api/v1/games/:id/purchase` moves a game from wishlist to library (`GameStatus.NotStarted`).
+- Game purchase: `POST /api/v1/games/:id/purchase` accepts an empty body only. It moves a `Desejado` game to `GameStatus.NotStarted`. A repeat call on a purchased game returns it unchanged. Any other status returns 409. The Library card and the Wishlist card both call it.
 - Purchase timestamp: the purchase route sets `purchasedAt` to the current ISO timestamp and preserves earlier purchase dates.
 - Recency scoring: the scoring formula adds a bonus for recent purchases based on `purchasedAt`.
 - Recency decay: the purchase bonus decreases linearly from full weight to zero across 30 days.

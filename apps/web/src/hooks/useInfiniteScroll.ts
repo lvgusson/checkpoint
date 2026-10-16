@@ -7,7 +7,7 @@ export interface UseInfiniteScrollOptions {
   hasMore: boolean;
   /** Whether a fetch is currently in flight. */
   isLoading: boolean;
-  /** Distance from viewport to start loading (default: '200px'). */
+  /** Distance from viewport to start loading (default: '100px'). */
   rootMargin?: string;
   /** Visibility threshold to trigger (default: 0). */
   threshold?: number;
@@ -25,7 +25,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
   onLoadMore,
   hasMore,
   isLoading,
-  rootMargin = '200px',
+  rootMargin = '100px',
   threshold = 0,
   root = null,
   enabled = true,
@@ -35,7 +35,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
 
   useEffect(() => {
     onLoadMoreRef.current = onLoadMore;
-  }, [onLoadMore]);
+  });
 
   useEffect(() => {
     if (!enabled || !hasMore || isLoading) return;
@@ -47,9 +47,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry?.isIntersecting) {
-          onLoadMoreRef.current();
-        }
+        if (entry?.isIntersecting) onLoadMoreRef.current();
       },
       { root, rootMargin, threshold },
     );
