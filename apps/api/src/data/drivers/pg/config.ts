@@ -20,6 +20,7 @@ const CACHE_MS = 10_000;
 export class PgConfigDriver implements ConfigDriver {
   private sql: Sql;
   // Options change rarely. Writes on this instance clear it; other instances catch up in CACHE_MS.
+  private writes = 0; // a read that overlaps a write must not fill the cache
   private cached: { value: MetadataCatalog; expires: number } | null = null;
   constructor(sql: Sql) {
     this.sql = sql;
@@ -32,6 +33,7 @@ export class PgConfigDriver implements ConfigDriver {
   async list(): Promise<MetadataCatalog> {
     if (this.cached && this.cached.expires > Date.now()) return structuredClone(this.cached.value);
     const { sql } = this;
+    const writesBefore = this.writes;
     const list = (category: MetadataCategory) =>
       sql`(SELECT coalesce(json_agg(name ORDER BY name), '[]') FROM ${sql(tables[category])} WHERE name <> '')`;
     const [row] = await sql<{ catalog: MetadataCatalog }[]>`
@@ -40,7 +42,8 @@ export class PgConfigDriver implements ConfigDriver {
         'stores', ${list('stores')}, 'paces', ${list('paces')},
         'structures', ${list('structures')}, 'platforms', ${list('platforms')}
       ) AS catalog`;
-    this.cached = { value: row.catalog, expires: Date.now() + CACHE_MS };
+    if (writesBefore === this.writes)
+      this.cached = { value: row.catalog, expires: Date.now() + CACHE_MS };
     return structuredClone(row.catalog);
   }
   async add(category: MetadataCategory, name: string) {
@@ -54,6 +57,7 @@ export class PgConfigDriver implements ConfigDriver {
         await sql`INSERT INTO ${sql(table)} (name) VALUES (${name}) ON CONFLICT (key) DO NOTHING`;
     });
     this.cached = null;
+    this.writes++;
   }
 
   async remove(category: MetadataCategory, name: string): Promise<'removed' | 'missing' | 'used'> {
@@ -61,6 +65,7 @@ export class PgConfigDriver implements ConfigDriver {
       const rows = await this
         .sql`DELETE FROM ${this.sql(tables[category])} WHERE name <> '' AND norm_key(name) = norm_key(${name}) RETURNING name`;
       this.cached = null;
+      this.writes++;
       return rows.length ? 'removed' : 'missing';
     } catch (error) {
       if ((error as { code?: string }).code === '23503') return 'used';
