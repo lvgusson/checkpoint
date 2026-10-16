@@ -440,6 +440,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
         title="Restaurar o padrão?"
         description="Voltar todos os pesos, regras e filtros desta lista para o padrão?"
         confirmLabel="Restaurar"
+        defaultFocus="confirm"
         onConfirm={() => void onReset()}
         onCancel={() => setConfirmReset(false)}
       />
