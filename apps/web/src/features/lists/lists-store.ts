@@ -46,15 +46,30 @@ export function useListMutations() {
 /** Last list opened, per user (for when the URL carries none, e.g. queue to settings). */
 const lastOpened = new Map<string, string>();
 
+export type RouteListStatus = 'loading' | 'error' | 'empty' | 'ready';
+
+/** Why there is no list id yet. A known id is `ready` even while the lists still load (no waterfall). */
+export function routeListStatus(
+  listId: string | null,
+  lists: { isError: boolean; data?: readonly unknown[] },
+): RouteListStatus {
+  if (listId !== null) return 'ready';
+  if (lists.isError) return 'error';
+  if (lists.data?.length === 0) return 'empty';
+  return 'loading'; // pending, or one render while the effect redirects to a valid list
+}
+
 /**
- * `listId` of the route (`/ordem/:listId`, `/configuracoes/:listId`). Without an id in the URL, or
- * with an unknown one, it redirects to the last used list, else the first.
+ * List of the route (`/ordem/:listId`, `/configuracoes/:listId`) with the state of the lists query.
+ * Returns `current` immediately when present in the URL to eliminate query waterfalls.
+ * Redirects when `current` is null or invalid.
  */
 export function useRouteListId(base: string) {
   const current = useParams().listId ?? null;
   const { userId } = useAuth();
   const navigate = useNavigate();
-  const { data: lists } = useLists();
+  const query = useLists();
+  const lists = query.data;
   useEffect(() => {
     if (!lists?.length) return;
     if (lists.some((l) => l.id === current)) {
@@ -64,6 +79,9 @@ export function useRouteListId(base: string) {
     const target = lists.find((l) => l.id === lastOpened.get(userId)) ?? lists[0]!;
     void navigate(`${base}/${target.id}`, { replace: true });
   }, [lists, current, base, userId, navigate]);
-  // Unknown ids are not exposed, so callers never request a queue for a list that does not exist.
-  return lists?.some((l) => l.id === current) ? current : null;
+
+  let listId: string | null;
+  if (current !== null) listId = !lists || lists.some((l) => l.id === current) ? current : null;
+  else listId = (lists?.find((l) => l.id === lastOpened.get(userId)) ?? lists?.[0])?.id ?? null;
+  return { listId, status: routeListStatus(listId, query), retry: () => void query.refetch() };
 }

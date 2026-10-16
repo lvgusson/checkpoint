@@ -28,8 +28,8 @@ It replaces the old monolith repositories with the Repository and Drivers patter
 Repositories in `apps/api/src/data/repositories/` implement domain ports in `apps/api/src/data/ports.ts`.
 Each repository enforces tenant isolation and business constraints.
 Drivers in `apps/api/src/data/drivers/` handle raw persistence without business logic.
-Postgres drivers (`PgDriver` classes in `apps/api/src/data/drivers/pg/`) execute SQL queries.
-JSON drivers (`JsonDriver` classes in `apps/api/src/data/drivers/json/`) read and write local files.
+Postgres drivers (`PgGamesDriver`, `PgWishlistDriver`, `PgListsDriver` in `apps/api/src/data/drivers/pg/`) execute SQL queries.
+JSON drivers (`JsonGamesDriver` and the other `Json*Driver` classes in `apps/api/src/data/drivers/json/`) read and write local files.
 
 Environment variables select the driver for each entity:
 
@@ -65,11 +65,12 @@ The API loads metadata vocabularies through `ConfigRepository`.
 `.env.example` lists the main variables.
 Search `process.env` and `env.` in `apps/api` for other variables.
 Variable groups include Supabase (`SUPABASE_URL`), database (`DATABASE_URL`), storage drivers (`GAMES_STORE`), logging (`LOG_SINK`), and release tooling.
+`API_DEADLINE_MS` (default 15000) sets the request deadline; see "Pooler and deadlines" below.
 
 ## Hosting
 
 Vercel builds the web app (`apps/web/dist`) and runs the API as one function through `vercel.json`.
-Without authentication configured the API refuses to start on Vercel or in production.
+Without authentication configured, `apps/api/src/main/server.ts` refuses to start. On Vercel, `index.mjs` starts and `authenticatorFromEnv` returns a 503 authenticator: every `/api/*` route except system and release answers 503.
 No-auth mode exists only on a loopback host outside production.
 
 ## Release and account commands
@@ -85,6 +86,15 @@ Run them from the repository root. They read `.env` and need `DATABASE_URL`.
 | `pnpm master:create`                         | Creates an ordinary account and writes its credentials to `local-env.env`. `--reset` clears only that account |
 
 `vercel-build` runs `apps/api/scripts/record-release.mjs` after the web build to register the deployed commit.
+
+## Pooler and deadlines (lesson from the catalog hang)
+
+- `DATABASE_URL` uses the Supavisor transaction pooler (port 6543). The `postgres` pool has `max: 5`.
+- Never fire more queries in parallel than the pool has slots. Seven parallel option queries stalled `GET /api/v1/catalog` and `PATCH /api/v1/games/:id` for 20 s or more on Vercel. The SQL itself ran in under 1 ms.
+- Read related rows with ONE statement (`json_build_object`). `PgConfigDriver.list()` does this and caches the result for 10 s. `add` and `remove` clear the cache.
+- Every request has a deadline: `withDeadline` in `apps/api/src/shared/request-guard.ts` returns 504 after `API_DEADLINE_MS` (default 15000). It sits inside `createRequestGuard`, so a hung route frees its guard slot.
+- Do not rely on `statement_timeout` here. A session-level `SET` does not work in transaction mode (Supabase "Timeouts" guide), and a stalled client read is not a slow statement.
+- Proven: the catalog SQL is fast and the old code issued 7 parallel statements with no deadline. Inferred: the exact Supavisor stall mechanism.
 
 ## Related
 

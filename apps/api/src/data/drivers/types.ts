@@ -38,6 +38,21 @@ export class DataError extends Error {
 /** Nome da lista criada automaticamente no primeiro acesso. */
 export const DEFAULT_LIST_NAME = 'Principal';
 
+export interface GameBrowseQuery {
+  q?: string;
+  status?: string;
+  primaryGenre?: string;
+  store?: string;
+  sort: 'name' | 'desire';
+  page: number;
+  pageSize: number;
+}
+
+export interface GameBrowseResult {
+  items: Game[];
+  total: number;
+}
+
 export interface GamesDriver {
   list(owner: string): Promise<Game[]>;
   get(owner: string, id: string): Promise<Game | undefined>;
@@ -47,6 +62,7 @@ export interface GamesDriver {
   catalog(): Promise<MetadataCatalog | null>;
   /** `writeCatalog`: the caller may change the fields shared by every library. */
   save(owner: string, game: Game, options: { writeCatalog: boolean }): Promise<void>;
+  browse(owner: string, query: GameBrowseQuery): Promise<GameBrowseResult>;
 }
 
 export interface ListsDriver {
@@ -158,4 +174,22 @@ export interface ConfigDriver {
   list(): Promise<MetadataCatalog>;
   add(category: MetadataCategory, name: string): Promise<void>;
   remove(category: MetadataCategory, name: string): Promise<'removed' | 'missing' | 'used'>;
+}
+
+export interface TrackEventRecord {
+  kind: 'page_view' | 'click';
+  screen: string;
+  element?: string | null;
+  occurredAt: Date;
+}
+
+export interface TrackBatchRecord {
+  userId: string;
+  sessionId: string;
+  automated: boolean;
+  events: TrackEventRecord[];
+}
+
+export interface TrackDriver {
+  recordBatch(batch: TrackBatchRecord): Promise<void>;
 }

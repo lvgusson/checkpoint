@@ -1,10 +1,13 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { EmptyState } from '@checkpoint/ui-react';
-import type { Desire, SteamPrice } from '../../../../../packages/core/src/models';
+import { ConfirmDialog, EmptyState, ErrorState } from '@checkpoint/ui-react';
+import { CircleDollarSign } from 'lucide-react';
+import type { Desire, SteamPrice, WishlistItem } from '../../../../../packages/core/src/models';
 import { badgeColor } from '../metadata';
 import { formatPrice, useSteamSearch, useWishlist, useWishlistActions } from './wishlist';
 import { GameDetailModal } from '../details';
+import { AppLoader } from '../loader/AppLoader';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import './wishlist.css';
 
 const DESIRES: Desire[] = ['Muito Alta', 'Alta', 'Média', 'Baixa', 'Muito Baixa'];
@@ -18,10 +21,12 @@ export function WishlistScreen() {
   const { wishlist, genres } = useWishlist();
   const actions = useWishlistActions();
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [purchasingGame, setPurchasingGame] = useState<WishlistItem['game'] | null>(null);
   const [q, setQ] = useState('');
   const [desire, setDesire] = useState<Desire>('Média');
   const [profile, setProfile] = useState('');
   const [sort, setSort] = useState<WishlistSort>('name');
+  const [visibleCount, setVisibleCount] = useState(24);
   const [manual, setManual] = useState({ name: '', primaryGenre: '', mainHours: '' });
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -31,18 +36,26 @@ export function WishlistScreen() {
     () => [...(wishlist.data ?? [])].sort(compareWishlistItems(sort)),
     [wishlist.data, sort],
   );
-  const onSale = sorted.filter((i) => i.price?.discountPercent).length;
+  const displayed = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
+  const hasMore = visibleCount < sorted.length;
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((v) => Math.min(v + 24, sorted.length));
+  }, [sorted.length]);
+
+  const sentinelRef = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore,
+    isLoading: false,
+    resetKey: visibleCount,
+  });
+  const onSale = useMemo(() => sorted.filter((i) => i.price?.discountPercent).length, [sorted]);
   const busy =
     actions.add.isPending ||
     actions.purchase.isPending ||
     actions.importSteam.isPending ||
     actions.refreshPrices.isPending;
   const shownError =
-    error ||
-    (wishlist.isError && !wishlist.data
-      ? messageOf(wishlist.error, 'Não foi possível carregar a lista de desejos.')
-      : '') ||
-    (search.error ? messageOf(search.error, 'Busca na Steam indisponível.') : '');
+    error || (search.error ? messageOf(search.error, 'Busca na Steam indisponível.') : '');
 
   async function run(action: () => Promise<string>) {
     setError('');
@@ -98,7 +111,13 @@ export function WishlistScreen() {
           </h1>
           <p>Jogos que você ainda não tem, com o preço atual da Steam.</p>
         </div>
-        <button type="button" className="button" onClick={() => void refresh()} disabled={busy}>
+        <button
+          data-testid="wishlist-prices-refresh"
+          type="button"
+          className="button"
+          onClick={() => void refresh()}
+          disabled={busy}
+        >
           Atualizar preços <span>↻</span>
         </button>
       </div>
@@ -107,6 +126,7 @@ export function WishlistScreen() {
         <label className="search">
           <span>⌕</span>
           <input
+            data-testid="wishlist-steam-search"
             aria-label="Buscar na Steam"
             placeholder="Buscar na Steam pelo nome…"
             value={q}
@@ -115,6 +135,7 @@ export function WishlistScreen() {
           />
         </label>
         <select
+          data-testid="wishlist-desire"
           aria-label="Vontade de jogar"
           value={desire}
           onChange={(e) => setDesire(e.target.value as Desire)}
@@ -127,7 +148,12 @@ export function WishlistScreen() {
           <ul className="results" role="listbox">
             {search.results.map((r) => (
               <li key={r.appId}>
-                <button type="button" onClick={() => void addFromSteam(r.appId)} disabled={busy}>
+                <button
+                  data-testid={`wishlist-steam-add-${r.appId}`}
+                  type="button"
+                  onClick={() => void addFromSteam(r.appId)}
+                  disabled={busy}
+                >
                   {r.imageUrl && <img src={r.imageUrl} alt="" />}
                   <span className="name">{r.name}</span>
                   <span className="muted">{formatPrice(r.price)}</span>
@@ -140,9 +166,10 @@ export function WishlistScreen() {
           search.searching && <p className="muted">Buscando…</p>
         )}
         <details>
-          <summary>Cadastrar sem a Steam</summary>
+          <summary data-testid="wishlist-manual-open">Cadastrar sem a Steam</summary>
           <form className="manual" onSubmit={(e) => void addManual(e)}>
             <input
+              data-testid="wishlist-manual-name"
               aria-label="Nome"
               placeholder="Nome do jogo"
               value={manual.name}
@@ -150,6 +177,7 @@ export function WishlistScreen() {
               required
             />
             <select
+              data-testid="wishlist-manual-genre"
               aria-label="Gênero"
               value={manual.primaryGenre}
               onChange={(e) => setManual({ ...manual, primaryGenre: e.target.value })}
@@ -162,6 +190,7 @@ export function WishlistScreen() {
               ))}
             </select>
             <input
+              data-testid="wishlist-manual-hours"
               aria-label="Horas"
               type="number"
               min="0"
@@ -169,21 +198,29 @@ export function WishlistScreen() {
               value={manual.mainHours}
               onChange={(e) => setManual({ ...manual, mainHours: e.target.value })}
             />
-            <button className="button" disabled={busy || !manual.name.trim()}>
+            <button
+              data-testid="wishlist-manual-add"
+              className="button"
+              disabled={busy || !manual.name.trim()}
+            >
               Cadastrar
             </button>
           </form>
         </details>
         <details>
-          <summary>Importar minha lista de desejos da Steam</summary>
+          <summary data-testid="wishlist-import-open">
+            Importar minha lista de desejos da Steam
+          </summary>
           <div className="manual">
             <input
+              data-testid="wishlist-steam-profile"
               aria-label="Perfil da Steam"
               placeholder="SteamID64 ou URL do perfil (vazio = perfil configurado)"
               value={profile}
               onChange={(e) => setProfile(e.target.value)}
             />
             <button
+              data-testid="wishlist-steam-import"
               type="button"
               className="button primary"
               onClick={() => void importSteam()}
@@ -213,11 +250,16 @@ export function WishlistScreen() {
         <span>
           {sorted.length} desejados
           {onSale > 0 && <span className="muted"> · {onSale} em promoção</span>}
-          {wishlist.isFetching && <span className="muted"> · carregando</span>}
+          {Boolean(wishlist.data) && wishlist.isFetching && (
+            <span className="muted inline-flex items-center gap-1.5 ml-1">
+              · <AppLoader layout="inline" size="sm" label="carregando…" />
+            </span>
+          )}
         </span>
         <label>
           Ordenar
           <select
+            data-testid="wishlist-sort"
             aria-label="Ordenação"
             value={sort}
             onChange={(e) => setSort(e.target.value as WishlistSort)}
@@ -230,9 +272,10 @@ export function WishlistScreen() {
         </label>
       </div>
       <div className="game-grid">
-        {sorted.map((i) => (
+        {displayed.map((i) => (
           <article className="game-card" key={i.game.id}>
             <Link
+              data-testid={`wishlist-game-${i.game.id.toLowerCase()}`}
               to={`/jogos/${encodeURIComponent(i.game.id)}`}
               style={{ color: 'inherit', textDecoration: 'none' }}
               onClick={(e) => {
@@ -284,31 +327,75 @@ export function WishlistScreen() {
               </div>
             </Link>
             <button
+              data-testid={`wishlist-purchase-${i.game.id.toLowerCase()}`}
               type="button"
-              className="button"
+              className="wishlist-purchase-btn"
               disabled={busy}
-              onClick={() =>
-                void run(async () => {
-                  await actions.purchase.mutateAsync(i.game.id);
-                  return `${i.game.name} entrou na biblioteca.`;
-                })
-              }
+              aria-label={`Comprar ${i.game.name}`}
+              title="Marcar como comprado"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setPurchasingGame(i.game);
+              }}
             >
-              Comprei
+              <CircleDollarSign size={20} />
             </button>
           </article>
         ))}
+        {hasMore && (
+          <div
+            ref={sentinelRef}
+            data-testid="wishlist-load-more"
+            className="col-span-full py-4 flex items-center justify-center text-sm text-[var(--muted)]"
+          >
+            <AppLoader layout="inline" size="sm" label="Carregando mais desejos…" />
+          </div>
+        )}
       </div>
-      {!sorted.length && !wishlist.isFetching && (
-        <EmptyState
-          title="Nenhum desejo ainda"
-          description="Busque um jogo na Steam ou importe sua lista de desejos."
+      {wishlist.isPending ? (
+        <AppLoader
+          fill="block"
+          label="Carregando desejos…"
+          data-testid="loader-wishlist"
+          variant="sword"
         />
+      ) : wishlist.isError && !wishlist.data ? (
+        <ErrorState
+          data-testid="wishlist-error"
+          message={messageOf(wishlist.error, 'Não foi possível carregar a lista de desejos.')}
+          retryLabel="Tentar novamente"
+          onRetry={() => void wishlist.refetch()}
+        />
+      ) : (
+        !sorted.length && (
+          <EmptyState
+            title="Nenhum desejo ainda"
+            description="Busque um jogo na Steam ou importe sua lista de desejos."
+          />
+        )
       )}
       <GameDetailModal
         gameId={selectedGameId}
         open={Boolean(selectedGameId)}
         onOpenChange={(open) => !open && setSelectedGameId(null)}
+      />
+      <ConfirmDialog
+        data-testid="dialog-purchase"
+        open={Boolean(purchasingGame)}
+        title="Você comprou o jogo?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        onConfirm={() => {
+          if (!purchasingGame) return;
+          const game = purchasingGame;
+          setPurchasingGame(null);
+          void run(async () => {
+            await actions.purchase.mutateAsync(game.id);
+            return `${game.name} entrou na biblioteca.`;
+          });
+        }}
+        onCancel={() => setPurchasingGame(null)}
       />
     </div>
   );

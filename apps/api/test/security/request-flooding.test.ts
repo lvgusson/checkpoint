@@ -1,17 +1,16 @@
 // Testes de segurança: inundação de requisições (burst flooding), conexões lentas (slow-header/slow-body), rate limiting e latência.
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { connect } from 'node:net';
 import { startTestServer, testFetch, type TestServerContext } from './helper.ts';
 
 describe('Security: Request Flooding & Rate Limiting', () => {
   let ctx: TestServerContext;
 
-  before(async () => {
+  beforeAll(async () => {
     ctx = await startTestServer();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await ctx.close();
   });
 
@@ -67,15 +66,14 @@ describe('Security: Request Flooding & Rate Limiting', () => {
     console.log('[FLOOD TEST STATUSES]', statusCounts);
 
     // As primeiras 60 requisições são aceitas (202), acima disso 429
-    assert.ok(
+    expect(
       (statusCounts[429] ?? 0) > 0,
       'O rate limiter deve ter retornado 429 para requisições excedentes',
-    );
-    assert.equal(
+    ).toBeTruthy();
+    expect(
       statusCounts[202],
-      60,
       'Exatamente 60 requisições devem ter sido aceitas pelo rate limiter',
-    );
+    ).toBe(60);
   });
 
   it('responde a health com um cabeçalho incompleto em outra conexão', async () => {
@@ -95,7 +93,7 @@ describe('Security: Request Flooding & Rate Limiting', () => {
       // Enquanto a conexão lenta está aberta, uma requisição normal deve responder imediatamente
       const res = await testFetch(ctx.baseUrl, '/api/v1/health');
 
-      assert.equal(res.status, 200, 'Servidor deve responder normalmente na rota de health');
+      expect(res.status, 'Servidor deve responder normalmente na rota de health').toBe(200);
       await res.text();
     } finally {
       client.destroy();

@@ -1,17 +1,16 @@
 // Testes de segurança: corpos JSON superdimensionados, Content-Length ausente/falso, aninhamento profundo, prototype pollution e mass assignment.
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { request as httpRequest } from 'node:http';
 import { startTestServer, testFetch, type TestServerContext } from './helper.ts';
 
 describe('Security: Payload Injection & JSON Limits', () => {
   let ctx: TestServerContext;
 
-  before(async () => {
+  beforeAll(async () => {
     ctx = await startTestServer();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await ctx.close();
   });
 
@@ -26,9 +25,9 @@ describe('Security: Payload Injection & JSON Limits', () => {
       body: payload,
     });
 
-    assert.equal(res.status, 413, 'Deve retornar 413 Payload Too Large');
+    expect(res.status, 'Deve retornar 413 Payload Too Large').toBe(413);
     const body = await res.json();
-    assert.equal(body.code, 'payload_too_large');
+    expect(body.code).toBe('payload_too_large');
   });
 
   it('rejeita corpo JSON que mente sobre Content-Length ou excede em streaming chunked (413)', async () => {
@@ -58,7 +57,7 @@ describe('Security: Payload Injection & JSON Limits', () => {
       req.end('}');
     });
 
-    assert.equal(status, 413, 'Streaming que ultrapassa 100KB deve ser interrompido com 413');
+    expect(status, 'Streaming que ultrapassa 100KB deve ser interrompido com 413').toBe(413);
   });
 
   it('rejeita JSON com aninhamento excessivo sem vazar stack trace (400)', async () => {
@@ -74,18 +73,18 @@ describe('Security: Payload Injection & JSON Limits', () => {
       body: nested,
     });
 
-    assert.ok(
+    expect(
       res.status === 400 || res.status === 413,
       `Status esperado 400 ou 413, recebido ${res.status}`,
-    );
+    ).toBeTruthy();
     const text = await res.text();
-    assert.ok(!text.includes('at '), 'A resposta não deve conter stack trace do Node.js');
+    expect(!text.includes('at '), 'A resposta não deve conter stack trace do Node.js').toBeTruthy();
   });
 
   it('bloqueia poluição de protótipo (__proto__) em rotas de atualização', async () => {
     const games = await ctx.service.all();
     const targetGame = games[0];
-    assert.ok(targetGame, 'Deve haver ao menos um jogo no seed');
+    expect(targetGame, 'Deve haver ao menos um jogo no seed').toBeTruthy();
 
     // Envia string JSON explícita contendo a chave __proto__
     const payload = '{"__proto__": {"polluted": "true"}}';
@@ -96,12 +95,10 @@ describe('Security: Payload Injection & JSON Limits', () => {
       body: payload,
     });
 
-    assert.equal(res.status, 400, 'Deve rejeitar campo __proto__ com 400');
+    expect(res.status, 'Deve rejeitar campo __proto__ com 400').toBe(400);
     // Verifica que o protótipo global não foi poluído
-    assert.equal(
-      ({} as Record<string, unknown>).polluted,
+    expect(({} as Record<string, unknown>).polluted, 'Object.prototype não deve ser poluído').toBe(
       undefined,
-      'Object.prototype não deve ser poluído',
     );
   });
 
@@ -119,12 +116,11 @@ describe('Security: Payload Injection & JSON Limits', () => {
       body: payload,
     });
 
-    assert.equal(res.status, 400, 'Deve rejeitar campo constructor com 400');
-    assert.equal(
+    expect(res.status, 'Deve rejeitar campo constructor com 400').toBe(400);
+    expect(
       ({} as Record<string, unknown>).admin,
-      undefined,
       'Object.prototype não deve ter admin injetado',
-    );
+    ).toBe(undefined);
   });
 
   it('bloqueia mass assignment de campos protegidos (owner, role, id, user_id)', async () => {
@@ -146,15 +142,15 @@ describe('Security: Payload Injection & JSON Limits', () => {
       body: payload,
     });
 
-    assert.equal(res.status, 400, 'Deve rejeitar payload com campos protegidos');
+    expect(res.status, 'Deve rejeitar payload com campos protegidos').toBe(400);
     const body = await res.json();
-    assert.ok(
+    expect(
       body.detail.includes('Campo não editável'),
       'Deve informar que o campo não é editável',
-    );
+    ).toBeTruthy();
 
     // Confirma que o jogo original não teve seu id ou campos alterados
     const freshGame = await ctx.service.repository.get(targetGame.id);
-    assert.equal(freshGame?.id, targetGame.id, 'O ID do jogo não deve ter mudado');
+    expect(freshGame?.id, 'O ID do jogo não deve ter mudado').toBe(targetGame.id);
   });
 });

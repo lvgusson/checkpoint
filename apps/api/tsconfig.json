@@ -9,7 +9,12 @@
     "allowJs": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node", "../web/node_modules/vite/client"]
   },
-  "include": ["src/**/*.ts", "../../packages/core/src/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "../../packages/core/src/**/*.ts",
+    "test/**/*.ts",
+    "../../vitest.config.ts"
+  ]
 }

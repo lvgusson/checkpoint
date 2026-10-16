@@ -21,6 +21,7 @@ export interface GameWriter {
   save(id: string, patch: Record<string, unknown>): Promise<ScoredGame>;
   setDesire(id: string, desire: Desire): Promise<ScoredGame>;
   togglePlaying(game: ScoredGame): Promise<void>;
+  purchase(id: string): Promise<ScoredGame>;
   readonly pendingPlaying: number;
   /** Subscribe to playing outcomes; returns the unsubscribe function. */
   onPlaying(listener: (event: PlayingEvent) => void): () => void;
@@ -36,8 +37,21 @@ function createGameWriter(qc: QueryClient, userId: string): GameWriter {
   let applying: Promise<void> = Promise.resolve();
   const listeners = new Set<(event: PlayingEvent) => void>();
 
-  const invalidateDependents = (exceptGameId?: string) =>
-    Promise.all(
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const scheduleSettleInvalidation = () => {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      void Promise.all([
+        qc.invalidateQueries({ queryKey: [userId, 'queue'] }),
+        qc.invalidateQueries({ queryKey: k.catalog() }),
+      ]);
+    }, 300);
+  };
+
+  const invalidateDependents = (exceptGameId?: string) => {
+    clearTimeout(settleTimer);
+    return Promise.all(
       k.gameDependents().map((queryKey) =>
         qc.invalidateQueries({
           queryKey,
@@ -46,6 +60,7 @@ function createGameWriter(qc: QueryClient, userId: string): GameWriter {
         }),
       ),
     );
+  };
 
   const previousOf = (id: string): ScoredGame | undefined => {
     for (const [, page] of qc.getQueriesData<PageLike>({ queryKey: k.games() })) {
@@ -126,10 +141,12 @@ function createGameWriter(qc: QueryClient, userId: string): GameWriter {
   const playing = new PlayingUpdates(
     (id, patch) => chain(id, patch),
     (event) => {
-      // Events apply in order; listeners and invalidation run after the cache patch.
+      // Events apply in order; listeners run after the cache patch; failures invalidate dependents.
       applying = applying.then(async () => {
         await applyPlaying(event);
-        if (event.phase !== 'changed' && !playing.pending) void invalidateDependents();
+        if (event.phase === 'changed') clearTimeout(settleTimer);
+        if (event.phase === 'failed' && !playing.pending) void invalidateDependents();
+        if (event.phase === 'saved' && !playing.pending) scheduleSettleInvalidation();
         listeners.forEach((l) => l(event));
       });
     },
@@ -145,10 +162,22 @@ function createGameWriter(qc: QueryClient, userId: string): GameWriter {
     return game;
   }
 
+  async function purchase(id: string): Promise<ScoredGame> {
+    await playing.wait(id);
+    const game = await api.post<ScoredGame>(`games/${encodeURIComponent(id)}/purchase`, {
+      json: {},
+    });
+    await qc.cancelQueries({ queryKey: k.game(id) });
+    qc.setQueryData(k.game(id), game);
+    void invalidateDependents(id);
+    return game;
+  }
+
   return {
     save,
     setDesire: (id, desire) => save(id, { desire }),
     togglePlaying: (game) => playing.toggle(game),
+    purchase,
     get pendingPlaying() {
       return playing.pending;
     },

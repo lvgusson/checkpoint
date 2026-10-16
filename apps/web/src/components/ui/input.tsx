@@ -1,9 +1,14 @@
 import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+export function Input({
+  className,
+  type,
+  ...props
+}: React.ComponentProps<'input'> & { 'data-testid'?: string }) {
   return (
     <input
+      data-testid={props['data-testid']}
       type={type}
       data-slot="input"
       className={cn(

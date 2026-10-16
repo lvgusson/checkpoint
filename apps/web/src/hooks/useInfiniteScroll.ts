@@ -7,7 +7,7 @@ export interface UseInfiniteScrollOptions {
   hasMore: boolean;
   /** Whether a fetch is currently in flight. */
   isLoading: boolean;
-  /** Distance from viewport to start loading (default: '200px'). */
+  /** Distance from viewport to start loading (default: '100px'). */
   rootMargin?: string;
   /** Visibility threshold to trigger (default: 0). */
   threshold?: number;
@@ -15,6 +15,8 @@ export interface UseInfiniteScrollOptions {
   root?: Element | null;
   /** Whether the observer is enabled (default: true). */
   enabled?: boolean;
+  /** Change it after each slice renders: the observer restarts, so a sentinel still in view fires again. */
+  resetKey?: unknown;
 }
 
 /**
@@ -25,17 +27,18 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
   onLoadMore,
   hasMore,
   isLoading,
-  rootMargin = '200px',
+  rootMargin = '100px',
   threshold = 0,
   root = null,
   enabled = true,
+  resetKey,
 }: UseInfiniteScrollOptions) {
   const sentinelRef = useRef<T | null>(null);
   const onLoadMoreRef = useRef(onLoadMore);
 
   useEffect(() => {
     onLoadMoreRef.current = onLoadMore;
-  }, [onLoadMore]);
+  });
 
   useEffect(() => {
     if (!enabled || !hasMore || isLoading) return;
@@ -47,9 +50,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry?.isIntersecting) {
-          onLoadMoreRef.current();
-        }
+        if (entry?.isIntersecting) onLoadMoreRef.current();
       },
       { root, rootMargin, threshold },
     );
@@ -59,7 +60,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
     return () => {
       observer.disconnect();
     };
-  }, [enabled, hasMore, isLoading, rootMargin, threshold, root]);
+  }, [enabled, hasMore, isLoading, rootMargin, threshold, root, resetKey]);
 
   return sentinelRef;
 }

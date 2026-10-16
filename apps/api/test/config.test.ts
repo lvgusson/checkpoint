@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, it } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,14 +17,13 @@ const service = () =>
     new ConfigRepositoryImpl(new JsonConfigDriver(null, new JsonGamesDriver([], null))),
   );
 
-test('ordinary users cannot change shared options', async () => {
+it('ordinary users cannot change shared options', async () => {
   const config = service();
-  await assert.rejects(
+  await expect(
     runWithContext({ role: Role.User }, () => config.add('genres', { name: 'Private' })),
-    { code: 403 },
-  );
+  ).rejects.toMatchObject({ code: 403 });
 });
-test('admin adds and removes options through config route', async () => {
+it('admin adds and removes options through config route', async () => {
   const config = service();
   const url = new URL('http://localhost/api/v1/config/options/genres');
   const added = await admin(() =>
@@ -33,34 +31,30 @@ test('admin adds and removes options through config route', async () => {
       name: 'New genre',
     })),
   );
-  assert.equal(added?.status, 201);
-  assert.ok((await config.list()).genres.includes('New genre'));
+  expect(added && 'status' in added ? added.status : undefined).toBe(201);
+  expect((await config.list()).genres.includes('New genre')).toBeTruthy();
   await admin(() =>
     configRoute(config, { method: 'DELETE' } as IncomingMessage, url, async () => ({
       name: 'New genre',
     })),
   );
-  assert.ok(!(await config.list()).genres.includes('New genre'));
+  expect(!(await config.list()).genres.includes('New genre')).toBeTruthy();
 });
-test('validation rejects unknown categories, duplicate canonical names, extra fields and long names', async () => {
+it('validation rejects unknown categories, duplicate canonical names, extra fields and long names', async () => {
   const config = service();
   for (const [category, body] of [
     ['__proto__', { name: 'x' }],
     ['genres', { name: 'x', owner: 'other' }],
     ['genres', { name: 'x'.repeat(121) }],
   ] as const) {
-    await assert.rejects(
-      admin(() => config.add(category, body)),
-      { code: 400 },
-    );
+    await expect(admin(() => config.add(category, body))).rejects.toMatchObject({ code: 400 });
   }
   await admin(() => config.add('genres', { name: 'Example' }));
-  await assert.rejects(
-    admin(() => config.add('genres', { name: ' Éxample ' })),
-    { code: 409 },
-  );
+  await expect(admin(() => config.add('genres', { name: ' Éxample ' }))).rejects.toMatchObject({
+    code: 409,
+  });
 });
-test('local options persist after restarting the store', async () => {
+it('local options persist after restarting the store', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'checkpoint-config-'));
   try {
     const path = join(dir, 'options.json');
@@ -71,21 +65,20 @@ test('local options persist after restarting the store', async () => {
     const second = new ConfigService(
       new ConfigRepositoryImpl(new JsonConfigDriver(path, new JsonGamesDriver([], null))),
     );
-    assert.ok((await second.list()).genres.includes('Persisted option'));
+    expect((await second.list()).genres.includes('Persisted option')).toBeTruthy();
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
-test('options used by a game cannot be deleted', async () => {
+it('options used by a game cannot be deleted', async () => {
   const { seedGames } = await import('../src/data/seed.ts');
   const game = structuredClone(seedGames[0]);
   game.primaryGenre = 'Used genre';
   const config = new ConfigService(
     new ConfigRepositoryImpl(new JsonConfigDriver(null, new JsonGamesDriver([game], null))),
   );
-  await assert.rejects(
-    admin(() => config.remove('genres', { name: 'Used genre' })),
-    { code: 409 },
-  );
-  assert.ok((await config.list()).genres.includes('Used genre'));
+  await expect(admin(() => config.remove('genres', { name: 'Used genre' }))).rejects.toMatchObject({
+    code: 409,
+  });
+  expect((await config.list()).genres.includes('Used genre')).toBeTruthy();
 });

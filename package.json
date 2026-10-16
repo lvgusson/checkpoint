@@ -20,12 +20,18 @@
     "wishlist:import": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/main/wishlist-cli.ts",
     "wishlist:export": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/main/wishlist-cli.ts --export",
     "wishlist:seed": "node --env-file-if-exists=.env --env-file-if-exists=local-env.env apps/api/src/main/wishlist-cli.ts --from",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm build",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",
     "typecheck": "tsc -p apps/api/tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:up": "node apps/api/scripts/test-db.mjs up",
+    "db:down": "node apps/api/scripts/test-db.mjs down",
+    "db:reset": "node apps/api/scripts/test-db.mjs reset",
+    "test": "vitest run",
+    "test:db": "pnpm db:up && vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -36,6 +42,7 @@
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.1",
+    "vitest": "5.0.3"
   }
 }

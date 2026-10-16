@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EmptyState, ErrorState } from '@checkpoint/ui-react';
-import { useEffect, useState } from 'react';
+import { ConfirmDialog, EmptyState, ErrorState } from '@checkpoint/ui-react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { Catalog, Desire, ScoredGame } from '../../../../packages/core/src/models';
 import { api } from '../api/http';
 import { GameCard, useInfiniteCatalog, type LibraryFilters } from '../features/catalog';
+import { AppLoader } from '../features/loader/AppLoader';
 import { useGameWriter } from '../features/playing';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useQueryKeys } from '../query/keys';
@@ -14,6 +15,7 @@ export function LibraryPage() {
   const qc = useQueryClient();
   const writer = useGameWriter();
   const [error, setError] = useState('');
+  const [purchasingGame, setPurchasingGame] = useState<ScoredGame | null>(null);
 
   const catalog = useQuery({
     queryKey: k.catalog(),
@@ -44,7 +46,7 @@ export function LibraryPage() {
   const sentinelRef = useInfiniteScroll({
     onLoadMore: loadMore,
     hasMore,
-    isLoading: isFetchingNextPage || isLoading,
+    isLoading: isFetching || isFetchingNextPage || isLoading,
   });
 
   // Surface failed playing toggles (the writer already rolled the caches back and refetches).
@@ -58,14 +60,21 @@ export function LibraryPage() {
   );
 
   /** Optimistic desire on the card (the button already calls the API). */
-  const setDesire = async (id: string, desire: Desire) => {
-    await qc.cancelQueries({ queryKey: k.games() });
-    qc.setQueriesData<{ items: ScoredGame[] }>(
-      { queryKey: k.games() },
-      (page) =>
-        page && { ...page, items: page.items.map((g) => (g.id === id ? { ...g, desire } : g)) },
-    );
-  };
+  const setDesire = useCallback(
+    async (id: string, desire: Desire) => {
+      await qc.cancelQueries({ queryKey: k.games() });
+      qc.setQueriesData<{ items: ScoredGame[] }>(
+        { queryKey: k.games() },
+        (page) =>
+          page && { ...page, items: page.items.map((g) => (g.id === id ? { ...g, desire } : g)) },
+      );
+    },
+    [qc, k],
+  );
+
+  const handleError = useCallback((message: string) => {
+    setError(message);
+  }, []);
 
   const counts = catalog.data?.counts;
   const select = (
@@ -75,6 +84,7 @@ export function LibraryPage() {
     values: string[] = [],
   ) => (
     <select
+      data-testid={`library-filter-${name === 'primaryGenre' ? 'genre' : name}`}
       aria-label={label}
       value={filters[name]}
       onChange={(e) => setFilter(name, e.target.value)}
@@ -96,7 +106,7 @@ export function LibraryPage() {
           </h1>
           <p>Sua coleção inteira. A próxima história começa aqui.</p>
         </div>
-        <Link className="button primary" to="/ordem">
+        <Link data-testid="library-open-queue" className="button primary" to="/ordem">
           Ver ordem recomendada <span>↗</span>
         </Link>
       </div>
@@ -126,6 +136,7 @@ export function LibraryPage() {
         <label className="search">
           <span aria-hidden="true">⌕</span>
           <input
+            data-testid="library-search"
             type="search"
             aria-label="Buscar jogo"
             placeholder="Buscar um jogo ou subgênero…"
@@ -140,11 +151,20 @@ export function LibraryPage() {
       <div className="list-toolbar">
         <span>
           {total} jogos encontrados
-          {isFetching && <span className="muted"> · carregando</span>}
+          {hasData && isFetching && (
+            <span className="muted inline-flex items-center gap-1.5 ml-1">
+              · <AppLoader layout="inline" size="sm" label="carregando…" />
+            </span>
+          )}
         </span>
         <label>
           Ordenar
-          <select aria-label="Ordenação" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            data-testid="library-sort"
+            aria-label="Ordenação"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="name">Nome (A-Z)</option>
             <option value="score">Pontuação</option>
             <option value="desire">Vontade de jogar</option>
@@ -153,11 +173,22 @@ export function LibraryPage() {
       </div>
       {error && (
         <div className="error" role="alert">
-          {error} <button onClick={() => (setError(''), void refetch())}>Tentar novamente</button>
+          {error}{' '}
+          <button data-testid="library-retry" onClick={() => (setError(''), void refetch())}>
+            Tentar novamente
+          </button>
         </div>
       )}
-      {isInitialError && !hasData ? (
+      {isLoading && !hasData ? (
+        <AppLoader
+          fill="block"
+          label="Carregando jogos…"
+          data-testid="loader-library"
+          variant="sword"
+        />
+      ) : isInitialError && !hasData ? (
         <ErrorState
+          data-testid="library-error"
           message="Não foi possível carregar a biblioteca. Confira se a API está rodando."
           onRetry={() => void refetch()}
         />
@@ -165,7 +196,13 @@ export function LibraryPage() {
         <>
           <div className="game-grid">
             {items.map((g) => (
-              <GameCard key={g.id} game={g} onDesire={setDesire} onError={setError} />
+              <GameCard
+                key={g.id}
+                game={g}
+                onDesire={setDesire}
+                onError={handleError}
+                onPurchase={setPurchasingGame}
+              />
             ))}
           </div>
           <div
@@ -182,13 +219,16 @@ export function LibraryPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.5rem',
                 padding: '1.5rem',
-                color: 'var(--text-muted, #888)',
+                color: 'var(--muted)',
               }}
             >
-              <span className="spinner" aria-hidden="true" />
-              <span>Carregando mais jogos…</span>
+              <AppLoader
+                layout="inline"
+                size="sm"
+                label="Carregando mais jogos…"
+                data-testid="loader-library-more"
+              />
             </div>
           )}
           {nextPageError && (
@@ -204,7 +244,12 @@ export function LibraryPage() {
               }}
             >
               <span>Não foi possível carregar mais jogos.</span>
-              <button type="button" className="button outline" onClick={retryNextPage}>
+              <button
+                data-testid="library-load-more-retry"
+                type="button"
+                className="button outline"
+                onClick={retryNextPage}
+              >
                 Tentar novamente
               </button>
             </div>
@@ -217,6 +262,24 @@ export function LibraryPage() {
           description="Tente outro nome ou remova um filtro."
         />
       )}
+      <ConfirmDialog
+        data-testid="dialog-purchase"
+        open={Boolean(purchasingGame)}
+        title="Você comprou o jogo?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        onConfirm={async () => {
+          if (!purchasingGame) return;
+          const target = purchasingGame;
+          setPurchasingGame(null);
+          try {
+            await writer.purchase(target.id);
+          } catch {
+            setError(`Não foi possível marcar ${target.name} como comprado.`);
+          }
+        }}
+        onCancel={() => setPurchasingGame(null)}
+      />
     </>
   );
 }

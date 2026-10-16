@@ -47,6 +47,7 @@ export const gameJson = (sql: Sql): Fragment => sql`json_build_object(
   'coop', g.coop, 'mechanic', coalesce(me.name, ''), 'prerequisiteId', pre.code,
   'steamAppId', g.steam_app_id, 'steamHours', e.steam_hours,
   'steamUpdatedAt', ${isoTs(sql, sql`e.steam_updated_at`)}, 'updatedAt', ${isoTs(sql, sql`e.updated_at`)},
+  'coverUrl', g.card_cover_url,
   'imported', '{"plannedHours":null,"affinity":null,"baseScore":null,"queueScore":null,"previousPendingId":null}'::jsonb || e.imported
 )`;
 export const gameFrom = (sql: Sql): Fragment => sql`library_entry e

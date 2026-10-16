@@ -91,6 +91,8 @@ const median = (ns: number[]) => {
   return sorted.length % 2 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2;
 };
 const normalCache = new Map<string, string>();
+const ptBrCollator = new Intl.Collator('pt-BR');
+const defaultCollator = new Intl.Collator();
 const normal = (s: string) => {
   let n = normalCache.get(s);
   if (n === undefined) {
@@ -180,16 +182,54 @@ export function scoreGames(
     r.timeFactor && ratios.length
       ? clamp((2 + ratios.length * median(ratios)) / (2 + ratios.length), 0.5, 2)
       : 1;
-  const ratings = games.filter(
-    (g) => typeof g.rating === 'number' && g.rating >= 1 && g.rating <= 5,
-  );
+  const ratingStats = {
+    primaryGenre: new Map<string, { sum: number; count: number }>(),
+    pace: new Map<string, { sum: number; count: number }>(),
+    mechanic: new Map<string, { sum: number; count: number }>(),
+  };
+  for (const g of games) {
+    if (typeof g.rating === 'number' && g.rating >= 1 && g.rating <= 5) {
+      const pts = 25 * (g.rating - 1);
+      if (g.primaryGenre) {
+        const n = normal(g.primaryGenre);
+        const e = ratingStats.primaryGenre.get(n);
+        if (e) {
+          e.sum += pts;
+          e.count += 1;
+        } else ratingStats.primaryGenre.set(n, { sum: pts, count: 1 });
+      }
+      if (g.pace) {
+        const n = normal(g.pace);
+        const e = ratingStats.pace.get(n);
+        if (e) {
+          e.sum += pts;
+          e.count += 1;
+        } else ratingStats.pace.set(n, { sum: pts, count: 1 });
+      }
+      if (g.mechanic) {
+        const n = normal(g.mechanic);
+        const e = ratingStats.mechanic.get(n);
+        if (e) {
+          e.sum += pts;
+          e.count += 1;
+        } else ratingStats.mechanic.set(n, { sum: pts, count: 1 });
+      }
+    }
+  }
+  const prefCache = new Map<string, number>();
   const preference = (value: string, key: 'primaryGenre' | 'pace' | 'mechanic') => {
-    const matched = value ? ratings.filter((g) => normal(g[key]) === normal(value)) : [];
-    return (
-      (w.neutralAffinity * w.priorStrength +
-        matched.reduce((sum, g) => sum + 25 * (g.rating! - 1), 0)) /
-      (w.priorStrength + matched.length)
-    );
+    if (!value) return w.neutralAffinity;
+    const n = normal(value);
+    const ck = `${key}:${n}`;
+    let res = prefCache.get(ck);
+    if (res === undefined) {
+      const stats = ratingStats[key].get(n);
+      const sum = stats ? stats.sum : 0;
+      const count = stats ? stats.count : 0;
+      res = (w.neutralAffinity * w.priorStrength + sum) / (w.priorStrength + count);
+      prefCache.set(ck, res);
+    }
+    return res;
   };
   return {
     timeFactor,
@@ -223,9 +263,11 @@ export function scoreGames(
             (r.duration ? w.duration * duration : 0) +
             recentPurchase,
         ),
-        coverUrl: g.steamAppId
-          ? `https://cdn.akamai.steamstatic.com/steam/apps/${g.steamAppId}/header.jpg`
-          : null,
+        coverUrl:
+          g.coverUrl ??
+          (g.steamAppId
+            ? `https://cdn.akamai.steamstatic.com/steam/apps/${g.steamAppId}/header.jpg`
+            : null),
       };
     }),
   };
@@ -358,9 +400,9 @@ export function recommendGames(
     .filter((g) => g.status === GameStatus.Playing)
     .sort(
       (a, b) =>
-        (a.startedAt ?? '9999').localeCompare(b.startedAt ?? '9999') ||
-        a.name.localeCompare(b.name, 'pt-BR') ||
-        a.id.localeCompare(b.id),
+        defaultCollator.compare(a.startedAt ?? '9999', b.startedAt ?? '9999') ||
+        ptBrCollator.compare(a.name, b.name) ||
+        defaultCollator.compare(a.id, b.id),
     );
   const filtered: Recommendations['excluded'] = [];
   const reasonOf = contentFilter(config.filters);
@@ -376,10 +418,27 @@ export function recommendGames(
   const remaining = new Map(inQueue.filter((g) => !pinnedIds.has(g.id)).map((g) => [g.id, g]));
   // Fixados não bloqueiam continuações: a posição deles é decidida pelo usuário.
   const candidates = new Set(remaining.keys());
-  const played = scored.games
-    .filter((g) => g.status === GameStatus.Finished && g.finishedAt)
-    .sort((a, b) => a.finishedAt!.localeCompare(b.finishedAt!))
-    .slice(-3);
+  const finishedWithDate = scored.games.filter(
+    (g) => g.status === GameStatus.Finished && g.finishedAt,
+  );
+  let played: ScoredGame[];
+  if (finishedWithDate.length <= 3) {
+    played = finishedWithDate.sort((a, b) => defaultCollator.compare(a.finishedAt!, b.finishedAt!));
+  } else {
+    const top3: ScoredGame[] = [];
+    for (const g of finishedWithDate) {
+      if (top3.length < 3) {
+        top3.push(g);
+        if (top3.length === 3) {
+          top3.sort((a, b) => defaultCollator.compare(a.finishedAt!, b.finishedAt!));
+        }
+      } else if (defaultCollator.compare(g.finishedAt!, top3[0].finishedAt!) > 0) {
+        top3[0] = g;
+        top3.sort((a, b) => defaultCollator.compare(a.finishedAt!, b.finishedAt!));
+      }
+    }
+    played = top3;
+  }
   const selected = new Set<string>();
   type Pick = { game: ScoredGame; score: number; adjustments: QueueEntry['adjustments'] };
   const picks: (Pick & { pinned: boolean })[] = [];
@@ -400,21 +459,33 @@ export function recommendGames(
     return true;
   };
   while (remaining.size) {
-    const history = [...played, ...picks.map((i) => i.game)].slice(-3);
+    const history =
+      picks.length >= 3
+        ? [picks[picks.length - 3].game, picks[picks.length - 2].game, picks[picks.length - 1].game]
+        : [...played.slice(-(3 - picks.length)), ...picks.map((i) => i.game)];
     const open = [...remaining.values()].filter(available);
     if (!open.length) break;
     const urgent = open.filter((g) => g.desire === Desire.Immediate);
-    const options = (urgent.length ? urgent : open).map((game) => ({
-      game,
-      ...contextual(game, history, config),
-    }));
-    // Mesmo critério de antes (maior score, empate pelo ID), sem ordenar tudo.
-    let winner = options[0];
-    for (const c of options)
-      if ((c.score - winner.score || winner.game.id.localeCompare(c.game.id)) > 0) winner = c;
-    picks.push({ ...winner, pinned: false });
-    selected.add(winner.game.id);
-    remaining.delete(winner.game.id);
+    const pool = urgent.length ? urgent : open;
+    let winnerGame = pool[0];
+    let winnerCtx = contextual(winnerGame, history, config);
+    for (let i = 1; i < pool.length; i++) {
+      const g = pool[i];
+      const ctx = contextual(g, history, config);
+      const diff = ctx.score - winnerCtx.score;
+      if (diff > 0 || (diff === 0 && defaultCollator.compare(winnerGame.id, g.id) > 0)) {
+        winnerGame = g;
+        winnerCtx = ctx;
+      }
+    }
+    picks.push({
+      game: winnerGame,
+      score: winnerCtx.score,
+      adjustments: winnerCtx.adjustments,
+      pinned: false,
+    });
+    selected.add(winnerGame.id);
+    remaining.delete(winnerGame.id);
   }
   // (b) sobre (a): cada fixo entra em X (ou logo depois do fixo anterior, no empate).
   let last = 0;
@@ -495,7 +566,7 @@ export function filterOptions(games: Game[], config: ScoringConfig = defaultConf
       else m.set(key, { value: v.trim(), count: 1 });
     }
     return [...m.values()].sort(
-      (a, b) => b.count - a.count || a.value.localeCompare(b.value, 'pt-BR'),
+      (a, b) => b.count - a.count || ptBrCollator.compare(a.value, b.value),
     );
   };
   return {

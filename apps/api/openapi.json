@@ -1343,6 +1343,43 @@
           }
         }
       }
+    },
+    "/track": {
+      "post": {
+        "summary": "User navigation and click tracking collector",
+        "description": "Authenticated. Body limited to 16 KiB, at most 50 events, 30 requests per minute per user (429 with Retry-After). Records user screen views and element clicks asynchronously. Fire-and-forget, answers 202 immediately.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackBatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": {
+                      "const": "accepted"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2761,6 +2798,52 @@
                   }
                 }
               ]
+            }
+          }
+        }
+      },
+      "TrackEvent": {
+        "type": "object",
+        "required": ["kind", "screen", "occurredAt"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["page_view", "click"]
+          },
+          "screen": {
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "^/[a-z0-9/:_.-]*$"
+          },
+          "element": {
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "^[a-zA-Z0-9_.:-]+$"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrackBatch": {
+        "type": "object",
+        "required": ["sessionId", "automated", "events"],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "automated": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/TrackEvent"
             }
           }
         }

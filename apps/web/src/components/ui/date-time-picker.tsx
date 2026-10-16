@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 type DateTimeMode = 'date' | 'time' | 'datetime';
 
 interface DateTimePickerProps {
+  'data-testid': string;
   mode: DateTimeMode;
   /** `YYYY-MM-DD` (date), `HH:mm` (time) or `YYYY-MM-DDTHH:mm` (datetime); null = empty. */
   value: string | null;
@@ -56,6 +57,7 @@ function label(mode: DateTimeMode, value: string | null) {
 
 /** One picker for dates, times and both; stores plain strings so API formats never change. */
 export function DateTimePicker({
+  'data-testid': testId,
   mode,
   value,
   onChange,
@@ -83,6 +85,7 @@ export function DateTimePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          data-testid={testId}
           id={id}
           type="button"
           variant="outline"
@@ -101,6 +104,7 @@ export function DateTimePicker({
       <PopoverContent className="flex flex-col gap-3">
         {mode !== 'time' && (
           <Calendar
+            data-testid={`${testId}-calendar`}
             mode="single"
             selected={toDate(date)}
             defaultMonth={toDate(date)}
@@ -114,12 +118,16 @@ export function DateTimePicker({
         {mode !== 'date' && (
           <div className="flex items-center gap-2">
             <Select value={hour} onValueChange={(h) => emit(date, h, minute)}>
-              <SelectTrigger aria-label="Hora" className="h-11 flex-1">
+              <SelectTrigger
+                data-testid={`${testId}-hour`}
+                aria-label="Hora"
+                className="h-11 flex-1"
+              >
                 <SelectValue placeholder="HH" />
               </SelectTrigger>
               <SelectContent>
                 {HOURS.map((h) => (
-                  <SelectItem key={h} value={h}>
+                  <SelectItem data-testid={`${testId}-hour-${h}`} key={h} value={h}>
                     {h}
                   </SelectItem>
                 ))}
@@ -127,12 +135,16 @@ export function DateTimePicker({
             </Select>
             <span aria-hidden="true">:</span>
             <Select value={minute} onValueChange={(m) => emit(date, hour, m)}>
-              <SelectTrigger aria-label="Minuto" className="h-11 flex-1">
+              <SelectTrigger
+                data-testid={`${testId}-minute`}
+                aria-label="Minuto"
+                className="h-11 flex-1"
+              >
                 <SelectValue placeholder="mm" />
               </SelectTrigger>
               <SelectContent>
                 {MINUTES.map((m) => (
-                  <SelectItem key={m} value={m}>
+                  <SelectItem data-testid={`${testId}-minute-${m}`} key={m} value={m}>
                     {m}
                   </SelectItem>
                 ))}
@@ -143,6 +155,7 @@ export function DateTimePicker({
         <div className="flex justify-between gap-2">
           {clearable && value ? (
             <Button
+              data-testid={`${testId}-clear`}
               type="button"
               variant="ghost"
               size="sm"
@@ -157,7 +170,12 @@ export function DateTimePicker({
             <span />
           )}
           {mode !== 'date' && (
-            <Button type="button" size="sm" onClick={() => setOpen(false)}>
+            <Button
+              data-testid={`${testId}-done`}
+              type="button"
+              size="sm"
+              onClick={() => setOpen(false)}
+            >
               Concluir
             </Button>
           )}

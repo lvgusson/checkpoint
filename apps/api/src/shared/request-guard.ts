@@ -65,3 +65,20 @@ export function createRequestGuard(limit: number, windowMs: number, maxConcurren
     return promise;
   };
 }
+
+/** Request deadline in ms. Read per call so tests and operators can change it. */
+export const requestDeadlineMs = () => Number(process.env.API_DEADLINE_MS) || 15_000;
+
+/**
+ * Rejects with 504 when `work` does not settle in time. The work itself is not cancelled,
+ * but the caller (and any guard slot or coalesced entry around it) is released.
+ */
+export function withDeadline<T>(ms: number, work: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new AppError('Tempo de resposta esgotado', 504)), ms);
+    work().then(
+      (value) => (clearTimeout(timer), resolve(value)),
+      (error) => (clearTimeout(timer), reject(error)),
+    );
+  });
+}

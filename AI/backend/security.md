@@ -15,9 +15,9 @@ Private stores must use the same driver. Authenticated operation requires Postgr
 JSON stores support local development with one user. They do not provide ownership isolation.
 
 PostgreSQL drivers filter private records by the caller's account ID. Services return 404 for foreign resources.
-Shared game metadata and prices contain no private notes, hours, ratings, or library status.
+Shared game metadata and prices hold no per-user data. Per-user notes, ratings and status live in `library_entry`. The shared `game` row keeps review notes and play-time hours.
 The backend database role can bypass row security. API ownership filters remain necessary.
-Migration 017 limits direct account updates to `display_name` for authenticated database clients.
+Migration `20261015000000_app_user_identity.sql` limits direct account updates to `display_name` for authenticated database clients.
 
 ## Request boundaries
 
@@ -36,7 +36,7 @@ Migration 017 limits direct account updates to `display_name` for authenticated 
 Run the focused regressions:
 
 ```bash
-LOG_SINK=noop node --test apps/api/test/security-fixes.test.ts
+LOG_SINK=noop pnpm test apps/api/test/security-fixes.test.ts
 ```
 
 Run the HTTP attack suites:
@@ -46,7 +46,7 @@ pnpm --filter @checkpoint/api run test:security
 ```
 
 The test helper creates temporary JSON files for local HTTP tests. It does not inherit storage paths or credentials.
-Ownership and SQL suites require `SECURITY_TEST_DATABASE_URL`. They skip explicitly when this variable is absent.
+Ownership and SQL suites require `SECURITY_TEST_DATABASE_URL`. They fail when this variable is absent.
 The URL must select a local database whose name starts with `checkpoint_security_`.
 Never supply a production database. The orchestrator prepares the isolated database with migrations and seed data.
 
@@ -55,6 +55,8 @@ SQL tests exercise attack examples against PostgreSQL. They cannot prove that ev
 Review every query change for parameters and fixed identifiers.
 
 ## Related
+
+- [[AI/backend/testing]]: Unit test commands, Vitest configuration, and local database test requirements.
 
 - [[AI/backend/backend]]: Backend request flow and notes.
 - [[AI/backend/authorization]]: Roles and ownership rules.

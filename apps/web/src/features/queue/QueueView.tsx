@@ -1,7 +1,7 @@
 import { SortableList } from '@checkpoint/ui-react';
-import { useState, type MouseEvent } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
-import type { QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
+import type { Desire, QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -10,9 +10,10 @@ import { ImmediateButton } from '../immediate';
 import { ListPicker } from '../lists';
 import { MetadataBadge } from '../metadata';
 import { PlayingButton } from '../playing';
-import { SwordLoader } from '../loader/SwordLoader';
+import { AppLoader } from '../loader/AppLoader';
 import { GameDetailModal } from '../details';
-import { fold, PAGE_SIZE, displayDate, excludedReasons, shownRows } from './queue-model';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { fold, PAGE_SIZE, displayDate, excludedReasons } from './queue-model';
 import { useQueue } from './useQueue';
 import './queue.css';
 
@@ -54,48 +55,102 @@ function FinishIcon({ withFlagDetail }: { withFlagDetail?: boolean }) {
 /** The queue of one list: playing games, summary, search, sortable rows. Remount with `key={listId}`. */
 export function QueueView({ listId }: { listId: string }) {
   const q = useQueue(listId);
+  const qRef = useRef(q);
+  useEffect(() => {
+    qRef.current = q;
+  });
   const { data, busyId } = q;
   const [search, setSearch] = useState('');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [finishing, setFinishing] = useState<ScoredGame | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const searching = !!fold(search).trim();
-  const rows = shownRows(data, search, visible);
+
+  const hasMore = !searching && Boolean(data && visible < data.items.length);
+  const handleLoadMore = useCallback(() => {
+    setVisible((v) => Math.min(v + PAGE_SIZE, data?.items.length ?? 0));
+  }, [data?.items.length]);
+
+  const sentinelRef = useInfiniteScroll({
+    onLoadMore: handleLoadMore,
+    hasMore,
+    isLoading: false,
+    enabled: !searching,
+    resetKey: visible,
+  });
+
+  const haystacks = useMemo(() => {
+    const cache = new Map<string, string>();
+    for (const item of data?.items ?? []) {
+      const g = item.game;
+      cache.set(
+        g.id,
+        fold([g.name, g.primaryGenre, ...g.secondaryTags, g.mechanic, g.pace].join(' ')),
+      );
+    }
+    return cache;
+  }, [data]);
+
+  const rows = useMemo(() => {
+    const items = data?.items ?? [];
+    const q = fold(search).trim();
+    if (!q) {
+      return items.slice(0, visible).map((item, index) => ({ item, index }));
+    }
+    const words = q.split(/\s+/);
+    const result: { item: QueueEntry; index: number }[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
+      const hay = haystacks.get(item.game.id) ?? '';
+      if (words.every((w) => hay.includes(w))) {
+        result.push({ item, index: i });
+        if (result.length >= 100) break;
+      }
+    }
+    return result;
+  }, [data, search, visible, haystacks]);
+
   const firstGameId = !searching ? data?.items[0]?.game.id : undefined;
 
-  function finish(game: ScoredGame, e: MouseEvent) {
+  const handleFinish = useCallback((game: ScoredGame, e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setFinishing(game);
-  }
-  const rowActions = (game: ScoredGame) => (
-    <>
-      <PlayingButton game={game} />
-      <ImmediateButton
-        game={game}
-        onChanged={(desire) => q.setDesire(game.id, desire)}
-        onSaved={q.desireSaved}
-        onFailed={(message) => {
-          q.setError(message);
-          q.desireSaved();
-        }}
-      />
-      <button
-        type="button"
-        className="icon-button finish-btn"
-        aria-label={`Finalizar ${game.name}`}
-        title="Finalizar: nota, horas e avaliação"
-        onClick={(e) => finish(game, e)}
-      >
-        <FinishIcon withFlagDetail />
-      </button>
-    </>
+  }, []);
+
+  const handleSetDesire = useCallback((id: string, desire: Desire) => {
+    qRef.current.setDesire(id, desire);
+  }, []);
+
+  const handleDesireSaved = useCallback(() => {
+    qRef.current.desireSaved();
+  }, []);
+
+  const handleDesireFailed = useCallback((message: string) => {
+    qRef.current.setError(message);
+    qRef.current.desireSaved();
+  }, []);
+
+  const handleResetManual = useCallback((id: string) => {
+    void qRef.current.resetManual(id);
+  }, []);
+
+  const handleOpenDetails = useCallback((id: string) => {
+    setSelectedGameId(id);
+  }, []);
+
+  const handleMoveIntent = useCallback(
+    ({ id, fromIndex, toIndex }: { id: string; fromIndex: number; toIndex: number }) => {
+      qRef.current.move(id, fromIndex, toIndex);
+    },
+    [],
   );
 
   return (
     <>
       <ListPicker base="/ordem" current={listId}>
         <DropdownMenuItem
+          data-testid="queue-recalculate"
           className="min-h-11"
           disabled={q.isFetching}
           onSelect={() => void q.recalculate()}
@@ -107,6 +162,11 @@ export function QueueView({ listId }: { listId: string }) {
       {q.error && (
         <div className="error" role="alert">
           {q.error}
+          {!data && !q.isFetching && (
+            <button data-testid="queue-retry" type="button" onClick={() => void q.recalculate()}>
+              Tentar novamente
+            </button>
+          )}
         </div>
       )}
       {data ? (
@@ -126,6 +186,7 @@ export function QueueView({ listId }: { listId: string }) {
                 {data.playing.map((game) => (
                   <article className="playing-row" key={game.id}>
                     <Link
+                      data-testid={`queue-playing-detail-${game.id.toLowerCase()}`}
                       className="playing-link"
                       to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
                       onClick={(e) => {
@@ -155,7 +216,29 @@ export function QueueView({ listId }: { listId: string }) {
                         </p>
                       </div>
                     </Link>
-                    <div className="playing-actions">{rowActions(game)}</div>
+                    <div className="playing-actions">
+                      <PlayingButton
+                        data-testid={`queue-playing-${game.id.toLowerCase()}`}
+                        game={game}
+                      />
+                      <ImmediateButton
+                        data-testid={`queue-immediate-${game.id.toLowerCase()}`}
+                        game={game}
+                        onChanged={(desire) => handleSetDesire(game.id, desire)}
+                        onSaved={handleDesireSaved}
+                        onFailed={handleDesireFailed}
+                      />
+                      <button
+                        data-testid={`queue-finish-${game.id.toLowerCase()}`}
+                        type="button"
+                        className="icon-button finish-btn"
+                        aria-label={`Finalizar ${game.name}`}
+                        title="Finalizar: nota, horas e avaliação"
+                        onClick={(e) => handleFinish(game, e)}
+                      >
+                        <FinishIcon withFlagDetail />
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -190,11 +273,12 @@ export function QueueView({ listId }: { listId: string }) {
               </strong>
             </div>
           </div>
-          {data.items[0] && <NextGame entry={data.items[0]} onOpenDetails={setSelectedGameId} />}
+          {data.items[0] && <NextGame entry={data.items[0]} onOpenDetails={handleOpenDetails} />}
           <section className="filters queue-search" role="search">
             <label className="search">
               <span aria-hidden="true">⌕</span>
               <input
+                data-testid="queue-search"
                 type="search"
                 aria-label="Buscar na fila por nome, gênero ou tag"
                 placeholder="Buscar na fila por nome, gênero ou tag…"
@@ -204,7 +288,12 @@ export function QueueView({ listId }: { listId: string }) {
               />
             </label>
             {search && (
-              <Button type="button" variant="outline" onClick={() => setSearch('')}>
+              <Button
+                data-testid="queue-search-clear"
+                type="button"
+                variant="outline"
+                onClick={() => setSearch('')}
+              >
                 Limpar
               </Button>
             )}
@@ -235,7 +324,12 @@ export function QueueView({ listId }: { listId: string }) {
           {q.notice && (
             <div className="reorder-notice" role="status">
               <span>{q.notice}</span>
-              <button type="button" onClick={() => q.setNotice(null)} aria-label="Fechar aviso">
+              <button
+                data-testid="queue-notice-close"
+                type="button"
+                onClick={() => q.setNotice(null)}
+                aria-label="Fechar aviso"
+              >
                 ×
               </button>
             </div>
@@ -244,11 +338,12 @@ export function QueueView({ listId }: { listId: string }) {
             className={cn('queue-list', busyId !== null && 'is-busy', searching && 'is-searching')}
           >
             <SortableList
+              data-testid="queue-sortable-list"
               items={rows}
               getId={(row) => row.item.game.id}
               disabled={searching || busyId !== null}
               aria-label="Fila de jogos"
-              onMoveIntent={({ id, fromIndex, toIndex }) => q.move(id, fromIndex, toIndex)}
+              onMoveIntent={handleMoveIntent}
               renderItem={({ item, index: i }, { isDragging, handleProps }) => {
                 // The row is the pointer/touch target; only the invisible handle takes keyboard drags.
                 const {
@@ -270,9 +365,12 @@ export function QueueView({ listId }: { listId: string }) {
                     isDragging={isDragging}
                     pointerProps={{ onPointerDown, onTouchStart }}
                     handleProps={{ ...aria, onKeyDown }}
-                    onResetManual={() => void q.resetManual(item.game.id)}
-                    onOpenDetails={setSelectedGameId}
-                    actions={rowActions(item.game)}
+                    onResetManual={handleResetManual}
+                    onOpenDetails={handleOpenDetails}
+                    onFinish={handleFinish}
+                    onSetDesire={handleSetDesire}
+                    onDesireSaved={handleDesireSaved}
+                    onDesireFailed={handleDesireFailed}
                   />
                 );
               }}
@@ -281,14 +379,14 @@ export function QueueView({ listId }: { listId: string }) {
           {searching && !rows.length && (
             <div className="empty">Nenhum jogo da fila com “{search}”.</div>
           )}
-          {!searching && visible < data.items.length && (
-            <button
-              type="button"
-              className="button load-more"
-              onClick={() => setVisible(visible + PAGE_SIZE)}
+          {!searching && hasMore && (
+            <div
+              ref={sentinelRef}
+              data-testid="queue-load-more"
+              className="py-4 flex items-center justify-center text-sm text-[var(--muted)]"
             >
-              Mostrar mais {PAGE_SIZE} jogos
-            </button>
+              <AppLoader layout="inline" size="sm" label="Carregando mais jogos…" />
+            </div>
           )}
           {data.total === 0 && (
             <div className="empty">
@@ -298,7 +396,9 @@ export function QueueView({ listId }: { listId: string }) {
           )}
           {data.excluded.length > 0 && (
             <details className="method">
-              <summary>{data.excluded.length} jogos fora da fila</summary>
+              <summary data-testid="queue-excluded-open">
+                {data.excluded.length} jogos fora da fila
+              </summary>
               {excludedReasons(data).map((r) => (
                 <p key={r.reason}>
                   {r.reason}: {r.count}
@@ -310,7 +410,7 @@ export function QueueView({ listId }: { listId: string }) {
       ) : (
         q.isLoading && (
           <div className="empty flex flex-col items-center justify-center py-16">
-            <SwordLoader size={64} label="Calculando seu roteiro…" />
+            <AppLoader data-testid="loader-queue" size={64} label="Calculando seu roteiro…" />
           </div>
         )
       )}
@@ -342,6 +442,7 @@ function NextGame({
 }) {
   return (
     <Link
+      data-testid={`queue-next-${first.game.id.toLowerCase()}`}
       className="next-game"
       to={`/jogos/${encodeURIComponent(first.game.id)}${DETAIL_STATE}`}
       onClick={(e) => {
@@ -385,12 +486,34 @@ interface RowProps {
   isDragging: boolean;
   pointerProps: React.HTMLAttributes<HTMLElement>;
   handleProps: React.HTMLAttributes<HTMLElement>;
-  onResetManual(): void;
+  onResetManual(id: string): void;
   onOpenDetails?: (id: string) => void;
-  actions: React.ReactNode;
+  onFinish(game: ScoredGame, e: MouseEvent): void;
+  onSetDesire(id: string, desire: Desire): void;
+  onDesireSaved(): void;
+  onDesireFailed(message: string): void;
 }
 
-function QueueRow({
+function areRowPropsEqual(prev: RowProps, next: RowProps): boolean {
+  return (
+    prev.entry === next.entry &&
+    prev.index === next.index &&
+    prev.isNextGame === next.isNextGame &&
+    prev.searching === next.searching &&
+    prev.busy === next.busy &&
+    prev.anyBusy === next.anyBusy &&
+    prev.flash === next.flash &&
+    prev.isDragging === next.isDragging &&
+    prev.onResetManual === next.onResetManual &&
+    prev.onOpenDetails === next.onOpenDetails &&
+    prev.onFinish === next.onFinish &&
+    prev.onSetDesire === next.onSetDesire &&
+    prev.onDesireSaved === next.onDesireSaved &&
+    prev.onDesireFailed === next.onDesireFailed
+  );
+}
+
+const QueueRow = memo(function QueueRow({
   entry: item,
   index: i,
   isNextGame = false,
@@ -403,13 +526,16 @@ function QueueRow({
   handleProps,
   onResetManual,
   onOpenDetails,
-  actions,
+  onFinish,
+  onSetDesire,
+  onDesireSaved,
+  onDesireFailed,
 }: RowProps) {
   const { game } = item;
   const release = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onResetManual();
+    onResetManual(game.id);
   };
   return (
     <div
@@ -421,10 +547,12 @@ function QueueRow({
         isDragging && 'lifted',
       )}
       data-id={game.id}
+      data-testid={`queue-row-${game.id.toLowerCase()}`}
       {...pointerProps}
     >
       {!searching && (
         <button
+          data-testid={`queue-drag-${game.id.toLowerCase()}`}
           type="button"
           {...handleProps}
           className="drag-handle"
@@ -436,6 +564,7 @@ function QueueRow({
         </button>
       )}
       <Link
+        data-testid={`queue-game-${game.id.toLowerCase()}`}
         className="queue-link"
         draggable={false}
         to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
@@ -477,7 +606,7 @@ function QueueRow({
           <small>estimadas</small>
         </div>
         <div className="score">
-          {busy ? <span className="spinner" aria-hidden="true" /> : item.score}
+          {busy ? <AppLoader layout="inline" size={16} label="" /> : item.score}
           <small>pontos</small>
         </div>
         <span className="row-arrow">↗</span>
@@ -500,6 +629,7 @@ function QueueRow({
               )}
               Fixado
               <button
+                data-testid={`queue-release-${game.id.toLowerCase()}`}
                 type="button"
                 className="chip-remove"
                 disabled={anyBusy}
@@ -511,8 +641,25 @@ function QueueRow({
             </span>
           )
         )}
-        {actions}
+        <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
+        <ImmediateButton
+          data-testid={`queue-immediate-${game.id.toLowerCase()}`}
+          game={game}
+          onChanged={(desire) => onSetDesire(game.id, desire)}
+          onSaved={onDesireSaved}
+          onFailed={onDesireFailed}
+        />
+        <button
+          data-testid={`queue-finish-${game.id.toLowerCase()}`}
+          type="button"
+          className="icon-button finish-btn"
+          aria-label={`Finalizar ${game.name}`}
+          title="Finalizar: nota, horas e avaliação"
+          onClick={(e) => onFinish(game, e)}
+        >
+          <FinishIcon withFlagDetail />
+        </button>
       </div>
     </div>
   );
-}
+}, areRowPropsEqual);

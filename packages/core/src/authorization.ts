@@ -14,9 +14,9 @@ export const Permission = {
 export type Permission = (typeof Permission)[keyof typeof Permission];
 export const permissions = Object.values(Permission);
 
-const policy: Record<Role, readonly Permission[]> = {
-  [Role.Admin]: permissions,
-  [Role.User]: [Permission.GamesRead, Permission.GamesUpdate, Permission.SettingsUpdate],
+const policy: Record<Role, ReadonlySet<Permission>> = {
+  [Role.Admin]: new Set(permissions),
+  [Role.User]: new Set([Permission.GamesRead, Permission.GamesUpdate, Permission.SettingsUpdate]),
 };
 
 export const defaultRole: Role = Role.User;
@@ -28,5 +28,5 @@ export function roleFromAppMetadata(appMetadata: unknown): Role {
 }
 
 export function can(role: Role | undefined, permission: Permission): boolean {
-  return role !== undefined && policy[role].includes(permission);
+  return role !== undefined && (policy[role]?.has(permission) ?? false);
 }

@@ -12,6 +12,7 @@ import type {
 import type { MetadataCatalog, MetadataCategory } from '../../../../packages/core/src/metadata.ts';
 import type { ManualPin } from '../domain/scoring.ts';
 import type { DeployInput, Environment, NewRelease, Release } from '../domain/releases.ts';
+import type { GameBrowseQuery, GameBrowseResult } from './drivers/types.ts';
 
 export interface GameRepository {
   list(): Promise<Game[]>;
@@ -20,6 +21,7 @@ export interface GameRepository {
   /** `creator`: the caller just created the shared game row and may fill its catalog fields. */
   save(game: Game, options?: { creator?: boolean }): Promise<void>;
   metadataCatalog(): Promise<MetadataCatalog>;
+  browse(query: GameBrowseQuery): Promise<GameBrowseResult>;
 }
 
 /**

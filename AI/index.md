@@ -20,5 +20,6 @@ Start here, pick the area you change, then follow one link. Open Obsidian with t
 
 ## Related
 
+- [[AI/agent-reference]]: Detailed standards, evidence formats, and tool guidelines for coding agents.
 - [[AI/documentation-rules]]: When to edit or create an AI note, note types, frontmatter and linking rules.
 - [[AGENTS]]: Shared agent workflow that sends agents to this graph.

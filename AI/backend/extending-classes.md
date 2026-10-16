@@ -13,13 +13,13 @@ Extend by adding an implementation behind an existing interface. Change a call s
 
 1. Implement the interface in `apps/api/src/data/ports.ts` (`GameRepository`, or the list, settings and wishlist equivalents).
 2. Scope every query by the owner id. A missing owner returns nothing.
-3. Select it in `createService` (`apps/api/src/main/setup.ts`) from an environment condition.
+3. Select it in `createData` (`apps/api/src/main/data.ts`) from an environment condition. `setup.ts` only composes services.
 4. Check: run the API with the new mode and call `GET /api/v1/games`.
 
 ## Add a route
 
 1. Add the method to the service in `apps/api/src/services/`. Keep HTTP out of services.
-2. Wire the route in `apps/api/src/routes/`, check the permission first, and throw `AppError` for expected failures.
+2. Wire the route in `apps/api/src/routes/` and register it in the dispatch chain in `apps/api/src/main/server.ts` (an unregistered route is unreachable). Registered writes inherit `games:update`. Throw `AppError` for expected failures.
 3. Document it in `apps/api/openapi.json`.
 4. Check: call it with a valid and an invalid body; the error must be problem+json.
 

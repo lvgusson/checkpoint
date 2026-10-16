@@ -1,4 +1,4 @@
-import type { User } from '@supabase/supabase-js';
+import type { User } from '@supabase/auth-js';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,

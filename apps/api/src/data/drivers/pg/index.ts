@@ -6,3 +6,4 @@ export { PgQueueInputsDriver } from './queue.ts';
 export { PgScoringDriver } from './scoring.ts';
 export { PgWishlistDriver } from './wishlist.ts';
 export { PgConfigDriver } from './config.ts';
+export { PgTrackDriver } from './track.ts';

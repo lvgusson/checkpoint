@@ -22,13 +22,13 @@ area: frontend
 2. Style with Tailwind classes and `cn()` from `@/lib/utils`. Use theme tokens (`bg-card`, `text-muted-foreground`, `border-border`), never hex values. See [[AI/frontend/visual-identity]].
 3. Build on shadcn components from `components/ui`. A variant is a `cva` entry in that component, not a one-off class string.
 4. Read server data through TanStack Query with keys from `useQueryKeys()`. Follow [[AI/frontend/data-and-state]].
-5. Export through the feature's `index.ts` and import from there.
+5. Export through the feature's `index.ts` when it has one (appearance, loader, queue, settings and wishlist have none; pages import them by path).
 6. Give every interactive element an accessible name, keyboard operation and visible focus. Use the ui-react state components (`EmptyState`, `ErrorState`) for empty and error states.
 7. Check: `pnpm check`, then open the page in `pnpm dev` and use it with the keyboard.
 
 ## Rules
 
-- A component receives data and callbacks; it does not call `fetch` itself.
+- A component receives data and callbacks; it does not call `fetch` itself. Reads go through `api` in a query hook (`useQuery`).
 - Server state lives in the query cache; local UI state lives in `useState`.
 - A shared piece used in two features moves up to `components/ui` or `packages/ui-react`.
 

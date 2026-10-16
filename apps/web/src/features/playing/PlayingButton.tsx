@@ -3,11 +3,18 @@ import { cn } from '@/lib/utils';
 import { useGameWriter } from './gameWriter';
 
 /** Toggle the persisted playing status without changing the game's priority. */
-export function PlayingButton({ game }: { game: ScoredGame }) {
+export function PlayingButton({
+  game,
+  'data-testid': testId,
+}: {
+  game: ScoredGame;
+  'data-testid': string;
+}) {
   const writer = useGameWriter();
   const on = game.status === 'Jogando';
   return (
     <button
+      data-testid={testId}
       type="button"
       className={cn('icon-button min-h-11 min-w-11', on && 'bg-accent text-accent-foreground')}
       aria-pressed={on}

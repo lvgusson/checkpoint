@@ -11,6 +11,8 @@ import { Role } from '../../../../packages/core/src/authorization.ts';
 import { AppError } from '../../src/shared/errors.ts';
 import type { GameService } from '../../src/services/games.ts';
 import type { WishlistService } from '../../src/services/wishlist.ts';
+import type { ConfigService } from '../../src/services/config.ts';
+import type { TrackService } from '../../src/services/track.ts';
 import { SEED_APP_USER_ID } from '../../src/services/auth-user.ts';
 import { closeDb, db } from '../../src/data/db.ts';
 
@@ -21,6 +23,8 @@ export interface TestServerContext {
   dataDir: string;
   service: GameService;
   wishlist: WishlistService;
+  config?: ConfigService;
+  track?: TrackService | null;
   close: () => Promise<void>;
 }
 
@@ -90,14 +94,18 @@ export async function startTestServer(
       await sql`DELETE FROM library_entry WHERE user_id = ANY(${userIds}::uuid[])`;
       await sql`DELETE FROM game_list WHERE user_id = ANY(${userIds}::uuid[])`;
       await sql`DELETE FROM app_user WHERE id = ANY(${userIds}::uuid[])`;
+      await sql`DELETE FROM library_entry WHERE game_id IN (SELECT id FROM game WHERE name LIKE 'Private game %')`;
       await sql`DELETE FROM game WHERE name LIKE 'Private game %'`;
     }
-    for (const user of Object.values(options.initialUsers))
+    for (const user of Object.values(options.initialUsers)) {
       await sql`INSERT INTO auth.users (id, email) VALUES (${user.id}, ${user.email ?? null})
                 ON CONFLICT (id) DO NOTHING`;
+      await sql`INSERT INTO app_user (id, auth_user_id, email) VALUES (${user.id}, ${user.id}, ${user.email ?? null})
+                ON CONFLICT (id) DO NOTHING`;
+    }
   }
 
-  const { service, wishlist } = await createService({
+  const { service, wishlist, config, track } = await createService({
     dataDir,
     env: testEnv,
     devAppUserId: databaseUrl && !options.initialUsers ? SEED_APP_USER_ID : undefined,
@@ -113,7 +121,7 @@ export async function startTestServer(
         ? createMockAuthenticator(options.initialUsers)
         : null;
 
-  const server = makeServer(service, auth, wishlist, null);
+  const server = makeServer(service, auth, wishlist, null, config, track);
 
   await new Promise<void>((resolve, reject) => {
     server.listen(0, '127.0.0.1', () => resolve());
@@ -142,6 +150,8 @@ export async function startTestServer(
     dataDir,
     service,
     wishlist,
+    config,
+    track,
     close,
   };
 }

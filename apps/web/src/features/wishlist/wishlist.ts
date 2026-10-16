@@ -62,23 +62,29 @@ export function useSteamSearch(term: string) {
   };
 }
 
-/** Registrations change the library (games, catalog) as well as the wishlist. */
+/** Wishlist mutations. */
 export function useWishlistActions() {
   const k = useQueryKeys();
   const qc = useQueryClient();
-  const changed = () =>
+  const invalidateDependents = () =>
     Promise.all(k.gameDependents().map((queryKey) => qc.invalidateQueries({ queryKey })));
+
   return {
     add: useMutation({
       mutationFn: (json: Record<string, unknown>) =>
         api.post<WishlistItem & { created: boolean }>('wishlist', { json }),
-      onSuccess: changed,
+      onSuccess: invalidateDependents,
       onError: () => {},
     }),
     purchase: useMutation({
       mutationFn: (id: string) =>
         api.post<ScoredGame>(`games/${encodeURIComponent(id)}/purchase`, { json: {} }),
-      onSuccess: changed,
+      onSuccess: (_data, id) =>
+        Promise.all(
+          [k.wishlist(), k.games(), k.catalog(), [...k.all, 'queue'], k.game(id)].map((queryKey) =>
+            qc.invalidateQueries({ queryKey }),
+          ),
+        ),
       onError: () => {},
     }),
     importSteam: useMutation({
@@ -86,7 +92,7 @@ export function useWishlistActions() {
         api.post<WishlistImportResult>('wishlist/import-steam', {
           json: profile.trim() ? { profile: profile.trim() } : {},
         }),
-      onSuccess: changed,
+      onSuccess: invalidateDependents,
       onError: () => {},
     }),
     refreshPrices: useMutation({

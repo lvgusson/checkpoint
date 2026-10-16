@@ -31,7 +31,7 @@ launch() { # <pane> <title> <command>
 
 # Typed into each pane's interactive shell, so shell aliases and PATH apply.
 # Approval modes are the least permissive that do not stall on every edit; if a pane shows an
-# approval prompt, the orchestrator reports it instead of approving (see AGENTS.md, "Orchestration").
+# approval prompt, the orchestrator reports it instead of approving (see .agents/orchestration.md).
 launch 0 shell 'clear'
 launch 1 codex 'codex -a never -s workspace-write'
 # Drop this Claude Code session's variables so a nested claude starts as an independent session.

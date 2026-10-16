@@ -44,7 +44,7 @@ export default defineConfig({
             if (id.includes('@dnd-kit')) return 'dnd';
             if (id.includes('lucide-react')) return 'icons';
             if (id.includes('@tanstack')) return 'query';
-            if (id.includes('react')) return 'react';
+            if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
             return 'vendor';
           }
         },

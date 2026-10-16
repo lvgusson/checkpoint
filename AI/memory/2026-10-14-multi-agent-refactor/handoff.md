@@ -42,7 +42,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 
 - config_feature: checkpoint-9md. Implements metadata management, existing seven DB tables, admin add/delete unused options.
 - Config uses no new migration. It avoids a redundant config_option table and preserves public auth config.
-- Config tests: node --test apps/api/test/config.test.ts passes 5/5. Web tsc passes.
+- Config tests pass 5/5. Current command: `pnpm test apps/api/test/config.test.ts`. Web tsc passes.
 - Security_finish: checkpoint-0bn. Owns auth limiter, Steam client, logs, request guards, PG pins, security tests and migration017.
 - Purchase_feature: checkpoint-3r7 and checkpoint-2vy. Owns purchase, recency, sorting, models, game/wishlist services and routes, UI, migration019.
 - Purchase source edits are reported complete. Tests need final integration.
@@ -86,7 +86,7 @@ Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
 ## Validation and publication
 
 - Run pnpm install after manifest changes.
-- Run focused node:test suites, real local PostgreSQL ownership checks and browser tests.
+- Run focused Vitest suites, real local PostgreSQL ownership checks and browser tests.
 - Run pnpm check. It must pass before publication.
 - Review with Ponytail review and Matt code-review. Use a different model for independent review where available.
 - Review every staged file. Exclude credentials, logs, databases, scratch files and generated browser output.

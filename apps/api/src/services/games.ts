@@ -13,11 +13,18 @@ import {
   type ManualState,
   type Recommendations,
   type ReorderAccepted,
+  type ScoredGame,
   type ScoringConfig,
   type ScoringSettings,
   Desire,
   GameStatus,
 } from '../../../../packages/core/src/models.ts';
+
+export interface ScoredLibraryCacheEntry {
+  version: number;
+  data: readonly ScoredGame[];
+  updatedAt: number;
+}
 import type { GameRepository } from '../data/ports.ts';
 import type { ListRepository } from '../data/ports.ts';
 import type { ManualAdjustmentRepository } from '../data/ports.ts';
@@ -111,6 +118,57 @@ export class GameService {
   retryOptions: RetryOptions = {};
   /** Cadeia de operações da fila por usuário (movimentos rápidos aplicados em ordem). */
   private chains = new Map<string, Promise<unknown>>();
+  /** Cache de biblioteca pontuada em memória por ${userId}:${listId} (máx 50 entradas). */
+  readonly scoredCache = new Map<string, ScoredLibraryCacheEntry>();
+  static readonly MAX_CACHE_ENTRIES = 50;
+
+  private userKey(): string {
+    const ctx = getContext();
+    return ctx?.appUserId ?? ctx?.userId ?? '';
+  }
+
+  private getCache(key: string): ScoredLibraryCacheEntry | undefined {
+    const entry = this.scoredCache.get(key);
+    if (!entry) return undefined;
+    this.scoredCache.delete(key);
+    this.scoredCache.set(key, entry);
+    return entry;
+  }
+
+  private setCache(key: string, entry: ScoredLibraryCacheEntry): void {
+    if (this.scoredCache.has(key)) {
+      this.scoredCache.delete(key);
+    } else if (this.scoredCache.size >= GameService.MAX_CACHE_ENTRIES) {
+      const oldestKey = this.scoredCache.keys().next().value;
+      if (oldestKey !== undefined) this.scoredCache.delete(oldestKey);
+    }
+    this.scoredCache.set(key, entry);
+  }
+
+  invalidateUserCache(listId?: string): void {
+    const userId = this.userKey();
+    if (!userId) {
+      if (listId) {
+        for (const key of this.scoredCache.keys()) {
+          if (key.endsWith(`:${listId}`)) this.scoredCache.delete(key);
+        }
+      } else {
+        this.scoredCache.clear();
+      }
+      return;
+    }
+    if (listId) {
+      this.scoredCache.delete(`${userId}:${listId}`);
+      return;
+    }
+    const prefix = `${userId}:`;
+    for (const key of this.scoredCache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.scoredCache.delete(key);
+      }
+    }
+  }
+
   constructor(
     repository: GameRepository,
     manual: ManualAdjustmentRepository,
@@ -182,17 +240,27 @@ export class GameService {
     const result = UUID.test(listId) ? await this.lists.remove(listId) : 'missing';
     if (result === 'missing') throw listNotFound();
     if (result === 'last') throw new AppError('Não é possível apagar a única lista', 409);
+    this.invalidateUserCache(listId);
   }
 
   // ---------------------------------------------------------------- jogos e configuração
   /** Biblioteca pontuada com a configuração da lista (padrão: a lista padrão). */
-  async all(listId?: string) {
+  async all(listId?: string): Promise<readonly ScoredGame[]> {
     const list = await this.list(listId);
-    const [games, settings] = await Promise.all([
-      this.repository.list(),
-      this.settings.get(list.id),
-    ]);
-    return scoreGames(games, settings.config).games;
+    const key = `${this.userKey()}:${list.id}`;
+    const settings = await this.settings.get(list.id);
+    const cached = this.getCache(key);
+    if (cached && cached.version === settings.version) {
+      return cached.data;
+    }
+    const games = await this.repository.list();
+    const scored = Object.freeze(scoreGames(games, settings.config).games);
+    this.setCache(key, {
+      version: settings.version,
+      data: scored,
+      updatedAt: Date.now(),
+    });
+    return scored;
   }
   /** A biblioteca como está guardada, sem pontuação. */
   library(): Promise<Game[]> {
@@ -205,27 +273,40 @@ export class GameService {
     return game;
   }
   /** Biblioteca filtrada, ordenada e paginada (parâmetros crus da query string). */
-  async browse(query: GameQuery) {
+  async browse(query: GameQuery, listId?: string) {
     for (const [k, v] of Object.entries(query)) {
       if (typeof v === 'string' && v.includes('\0')) throw new AppError('Parâmetro inválido: ' + k);
     }
+    const page = Math.max(1, Number(query.page) || 1),
+      pageSize = Math.max(1, Math.min(100, Number(query.pageSize) || 24));
+
+    if (query.sort === 'name' || query.sort === 'desire') {
+      const result = await this.repository.browse({
+        q: query.q?.trim() || undefined,
+        status: query.status?.trim() || undefined,
+        primaryGenre: query.primaryGenre?.trim() || undefined,
+        store: query.store?.trim() || undefined,
+        sort: query.sort,
+        page,
+        pageSize,
+      });
+      return {
+        items: result.items,
+        total: result.total,
+        page,
+        pageSize,
+      };
+    }
+
     const q = normalizeText(query.q ?? '');
-    let games = (await this.all()).filter((g) =>
+    let games = (await this.all(listId)).filter((g) =>
       normalizeText(g.name + ' ' + g.secondaryTags.join(' ')).includes(q),
     );
     for (const field of ['status', 'primaryGenre', 'store'] as const) {
       const v = query[field];
       if (v) games = games.filter((g) => g[field] === v);
     }
-    games.sort(
-      query.sort === 'score'
-        ? (a, b) => b.baseScore - a.baseScore
-        : query.sort === 'desire'
-          ? (a, b) => desires.indexOf(a.desire) - desires.indexOf(b.desire)
-          : (a, b) => a.name.localeCompare(b.name, 'pt-BR'),
-    );
-    const page = Math.max(1, Number(query.page) || 1),
-      pageSize = Math.max(1, Math.min(100, Number(query.pageSize) || 24));
+    games.sort((a, b) => b.baseScore - a.baseScore);
     return {
       items: games.slice((page - 1) * pageSize, page * pageSize),
       total: games.length,
@@ -258,14 +339,15 @@ export class GameService {
       throw e;
     }
     const list = await this.list(listId);
-    return this.toSettings(list.id, await this.settings.save(list.id, config));
+    const saved = await this.settings.save(list.id, config);
+    this.invalidateUserCache(list.id);
+    return this.toSettings(list.id, saved);
   }
   async resetScoringSettings(listId?: string): Promise<ScoringSettings> {
     const list = await this.list(listId);
-    return this.toSettings(
-      list.id,
-      await this.settings.save(list.id, structuredClone(defaultConfig)),
-    );
+    const saved = await this.settings.save(list.id, structuredClone(defaultConfig));
+    this.invalidateUserCache(list.id);
+    return this.toSettings(list.id, saved);
   }
   async catalog(): Promise<Catalog> {
     const games = await this.repository.list();
@@ -425,7 +507,10 @@ export class GameService {
     const text = query.trim();
     if (text.length < 3) return [];
     if (text.length > 120) throw new AppError('Busque usando até 120 caracteres');
-    return scoreGames(await this.repository.searchByName(text, excludeId)).games;
+    const scored = await this.all();
+    const byId = new Map(scored.map((g) => [g.id, g]));
+    const found = await this.repository.searchByName(text, excludeId);
+    return found.map((g) => byId.get(g.id) ?? g);
   }
   async purchase(id: string) {
     return this.serial(async () => {
@@ -439,6 +524,7 @@ export class GameService {
         status: GameStatus.NotStarted,
         purchasedAt: game.purchasedAt ?? new Date().toISOString(),
       });
+      this.invalidateUserCache();
       return this.game(id);
     });
   }
@@ -596,6 +682,7 @@ export class GameService {
         throw new AppError('Somente administradores editam dados do catálogo', 403);
       next.updatedAt = new Date().toISOString();
       await this.repository.save(next);
+      this.invalidateUserCache();
       // Leaving the upcoming queue clears stale manual positions in every list.
       if (
         (next.status === GameStatus.Finished || next.status === GameStatus.Playing) &&
@@ -613,8 +700,7 @@ export class GameService {
             }),
           ),
         );
-      const inputs = await this.inputs();
-      return scoreGames(inputs.games, inputs.settings.config).games.find((g) => g.id === id)!;
+      return this.game(id);
     });
   }
 }

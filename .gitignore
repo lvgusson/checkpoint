@@ -54,3 +54,6 @@ apps/web/playwright-report/
 apps/web/test-results/
 .agents/logs/
 .serena/
+
+# local e2e login (never commit)
+playwrite-credentials.json

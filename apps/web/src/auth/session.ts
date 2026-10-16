@@ -1,10 +1,9 @@
 import {
-  createClient,
+  GoTrueClient,
   type AuthChangeEvent,
   type AuthError,
   type Session,
-  type SupabaseClient,
-} from '@supabase/supabase-js';
+} from '@supabase/auth-js';
 
 /** GET /api/v1/config response (URL + publishable key are public by design). */
 interface PublicConfig {
@@ -35,8 +34,8 @@ const USERNAME_DOMAIN = 'gps.dev.br';
  * so the HTTP client can read tokens without hooks; React subscribes via `subscribe/getState`.
  * supabase-js persists the session and refreshes access tokens itself.
  */
-class AuthSession {
-  private client?: SupabaseClient;
+export class AuthSession {
+  private client?: GoTrueClient;
   private refreshing?: Promise<string | null>;
   private initializing?: Promise<void>;
   private listeners = new Set<() => void>();
@@ -88,33 +87,70 @@ class AuthSession {
     }
     if (!config.auth) return this.set({ enabled: false });
     this.set({ githubEnabled: config.auth.providers.github });
-    this.client = createClient(config.auth.supabaseUrl, config.auth.supabasePublishableKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    const baseUrl = new URL(
+      config.auth.supabaseUrl.endsWith('/')
+        ? config.auth.supabaseUrl
+        : `${config.auth.supabaseUrl}/`,
+    );
+    const authUrl = new URL('auth/v1', baseUrl).href;
+    const storageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`;
+    this.client = new GoTrueClient({
+      url: authUrl,
+      headers: {
+        Authorization: `Bearer ${config.auth.supabasePublishableKey}`,
+        apikey: config.auth.supabasePublishableKey,
+      },
+      storageKey,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      fetch: (input, init) => {
+        const signal = init?.signal ?? AbortSignal.timeout(10_000);
+        return fetch(input, { ...init, signal });
+      },
     });
-    // Do not call other supabase.auth methods inside this callback (it can deadlock the lock).
-    this.client.auth.onAuthStateChange((event, session) => {
+    // Do not call other auth methods inside this callback (it can deadlock the lock).
+    this.client.onAuthStateChange((event, session) => {
       this.set({ session });
       this.eventListeners.forEach((l) => l(event));
     });
-    const { data } = await this.client.auth.getSession();
+    const { data } = await this.client.getSession();
     this.set({ session: data.session });
   }
 
   /** getSession() reads storage and renews an expired token before returning it. */
   async accessToken(): Promise<string | null> {
     if (!this.client) return null;
-    const { data } = await this.client.auth.getSession();
-    return data.session?.access_token ?? null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const getSessionPromise = this.client.getSession();
+      const fallbackPromise = new Promise<{ data: { session: Session | null } }>((resolve) => {
+        timer = setTimeout(() => resolve({ data: { session: this.state.session } }), 2500);
+      });
+      const { data } = await Promise.race([getSessionPromise, fallbackPromise]);
+      return data.session?.access_token ?? null;
+    } catch {
+      return this.state.session?.access_token ?? null;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   /** Forces a refresh after a 401; concurrent callers share one promise. */
   refreshToken(): Promise<string | null> {
     if (!this.client) return Promise.resolve(null);
-    this.refreshing ??= this.client.auth
-      .refreshSession()
+    if (this.refreshing) return this.refreshing;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<{ data: { session: null }; error: boolean }>((resolve) => {
+      timer = setTimeout(() => resolve({ data: { session: null }, error: true }), 5000);
+    });
+    this.refreshing = Promise.race([this.client.refreshSession(), timeoutPromise])
       .then(({ data, error }) => (error ? null : (data.session?.access_token ?? null)))
       .catch(() => null)
-      .finally(() => (this.refreshing = undefined));
+      .finally(() => {
+        if (timer) clearTimeout(timer);
+        this.refreshing = undefined;
+      });
     return this.refreshing;
   }
 
@@ -123,13 +159,13 @@ class AuthSession {
     if (!this.client) return this.unavailable();
     const id = login.trim();
     const email = id.includes('@') ? id : id.toLowerCase() + '@' + USERNAME_DOMAIN;
-    const { error } = await this.client.auth.signInWithPassword({ email, password });
+    const { error } = await this.client.signInWithPassword({ email, password });
     return error ? { ok: false, message: translate(error) } : { ok: true };
   }
 
   async signUp(email: string, password: string): Promise<AuthResult> {
     if (!this.client) return this.unavailable();
-    const { data, error } = await this.client.auth.signUp({
+    const { data, error } = await this.client.signUp({
       email,
       password,
       options: { emailRedirectTo: location.origin + '/jogos' },
@@ -143,7 +179,7 @@ class AuthSession {
 
   async resetPassword(email: string): Promise<AuthResult> {
     if (!this.client) return this.unavailable();
-    const { error } = await this.client.auth.resetPasswordForEmail(email, {
+    const { error } = await this.client.resetPasswordForEmail(email, {
       redirectTo: location.origin + '/redefinir-senha',
     });
     return error
@@ -156,7 +192,7 @@ class AuthSession {
 
   async updatePassword(password: string): Promise<AuthResult> {
     if (!this.client) return this.unavailable();
-    const { error } = await this.client.auth.updateUser({ password });
+    const { error } = await this.client.updateUser({ password });
     return error
       ? { ok: false, message: translate(error) }
       : { ok: true, message: 'Senha alterada.' };
@@ -164,7 +200,7 @@ class AuthSession {
 
   async signInWithGitHub(redirect = '/jogos'): Promise<AuthResult> {
     if (!this.client) return this.unavailable();
-    const { error } = await this.client.auth.signInWithOAuth({
+    const { error } = await this.client.signInWithOAuth({
       provider: 'github',
       options: { redirectTo: location.origin + redirect },
     });
@@ -173,7 +209,7 @@ class AuthSession {
 
   /** The SIGNED_OUT event drives the redirect to /login and the query cache reset. */
   async signOut(scope: 'global' | 'local' = 'local'): Promise<void> {
-    await this.client?.auth.signOut({ scope });
+    await this.client?.signOut({ scope });
   }
 
   private unavailable(): AuthResult {

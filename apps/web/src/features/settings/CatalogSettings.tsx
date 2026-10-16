@@ -1,3 +1,4 @@
+import { testIdValue } from '@/components/ui/test-id';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,6 +15,7 @@ import {
 import { useAuth } from '../../auth/AuthProvider';
 import { api } from '../../api/http';
 import { errorMessage } from '../../query/errors';
+import { AppLoader } from '../loader/AppLoader';
 
 const labels: Record<MetadataCategory, string> = {
   genres: 'Gêneros',
@@ -62,6 +64,7 @@ function CatalogEditor({ userId }: { userId: string }) {
       <label>
         Categoria{' '}
         <select
+          data-testid="settings-catalog-category"
           value={category}
           disabled={busy}
           onChange={(e) => setCategory(e.target.value as MetadataCategory)}
@@ -75,21 +78,26 @@ function CatalogEditor({ userId }: { userId: string }) {
       </label>
       {query.isError && <p role="alert">Não foi possível carregar as opções.</p>}
       {error && <p role="alert">{error}</p>}
-      <ul>
-        {query.data?.[category].map((value) => (
-          <li key={value}>
-            {value}{' '}
-            <button
-              type="button"
-              disabled={busy}
-              aria-label={'Excluir ' + value}
-              onClick={() => void change('delete', value)}
-            >
-              Excluir
-            </button>
-          </li>
-        ))}
-      </ul>
+      {query.isLoading && !query.data ? (
+        <AppLoader fill="block" label="Carregando opções…" data-testid="loader-catalog" />
+      ) : (
+        <ul>
+          {query.data?.[category].map((value) => (
+            <li key={value}>
+              {value}{' '}
+              <button
+                data-testid={`settings-catalog-remove-${category}-${testIdValue(value)}`}
+                type="button"
+                disabled={busy}
+                aria-label={'Excluir ' + value}
+                onClick={() => void change('delete', value)}
+              >
+                Excluir
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -99,13 +107,18 @@ function CatalogEditor({ userId }: { userId: string }) {
         <label>
           Nova opção{' '}
           <input
+            data-testid="settings-catalog-name"
             value={name}
             maxLength={category === 'tags' || category === 'stores' ? 80 : 120}
             disabled={busy}
             onChange={(e) => setName(e.target.value)}
           />
         </label>
-        <button type="submit" disabled={busy || !name.trim() || !query.data}>
+        <button
+          data-testid="settings-catalog-add"
+          type="submit"
+          disabled={busy || !name.trim() || !query.data}
+        >
           Adicionar
         </button>
       </form>

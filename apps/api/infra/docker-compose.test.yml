@@ -1,0 +1,17 @@
+# Throwaway Postgres for the database tests. Start it with `pnpm db:up`.
+# The password is a fixed test value: the port is bound to localhost and the data is tmpfs (RAM).
+services:
+  db:
+    image: postgres:18
+    container_name: checkpoint-test-db
+    environment:
+      POSTGRES_PASSWORD: checkpoint-test
+    ports:
+      - '127.0.0.1:54329:5432'
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 1s
+      timeout: 3s
+      retries: 30

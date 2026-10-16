@@ -1,6 +1,5 @@
 // Testes de segurança: injeção de SQL em query params, path params e campos JSON.
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { startTestServer, testFetch, type TestServerContext } from './helper.ts';
 
 const SQLI_PAYLOADS = [
@@ -26,20 +25,16 @@ const SQL_DRIVER_ERROR_PATTERNS = [
   /unhandled_error/i,
 ];
 
-describe(
+describe.skipIf(!process.env.SECURITY_TEST_DATABASE_URL)(
   'Security: PostgreSQL injection regression cases',
-  {
-    skip:
-      !process.env.SECURITY_TEST_DATABASE_URL && 'Requires an isolated SECURITY_TEST_DATABASE_URL',
-  },
   () => {
     let ctx: TestServerContext;
 
-    before(async () => {
+    beforeAll(async () => {
       ctx = await startTestServer({ postgres: true });
     });
 
-    after(async () => {
+    afterAll(async () => {
       await ctx?.close();
     });
 
@@ -51,12 +46,12 @@ describe(
         );
 
         const text = await res.text();
-        assert.notEqual(res.status, 500, `Query param não deve gerar 500 para payload: ${payload}`);
+        expect(res.status, `Query param não deve gerar 500 para payload: ${payload}`).not.toBe(500);
         for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(
+          expect(
             !pattern.test(text),
             `A resposta não deve vazar detalhes do driver SQL para payload: ${payload}`,
-          );
+          ).toBeTruthy();
         }
       }
     });
@@ -69,9 +64,9 @@ describe(
         );
 
         const text = await res.text();
-        assert.notEqual(res.status, 500, `Busca não deve gerar 500 para payload: ${payload}`);
+        expect(res.status, `Busca não deve gerar 500 para payload: ${payload}`).not.toBe(500);
         for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(!pattern.test(text), `Busca não deve vazar detalhes SQL: ${payload}`);
+          expect(!pattern.test(text), `Busca não deve vazar detalhes SQL: ${payload}`).toBeTruthy();
         }
       }
     });
@@ -83,10 +78,13 @@ describe(
           ctx.baseUrl,
           `/api/v1/games/${encodeURIComponent(payload)}`,
         );
-        assert.notEqual(resGame.status, 500, `Path param não deve gerar 500: ${payload}`);
+        expect(resGame.status, `Path param não deve gerar 500: ${payload}`).not.toBe(500);
         const textGame = await resGame.text();
         for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(!pattern.test(textGame), `Path param de jogo não deve vazar SQL: ${payload}`);
+          expect(
+            !pattern.test(textGame),
+            `Path param de jogo não deve vazar SQL: ${payload}`,
+          ).toBeTruthy();
         }
 
         // Rota de lista
@@ -94,10 +92,13 @@ describe(
           ctx.baseUrl,
           `/api/v1/lists/${encodeURIComponent(payload)}`,
         );
-        assert.notEqual(resList.status, 500, `Path param de lista não deve gerar 500: ${payload}`);
+        expect(resList.status, `Path param de lista não deve gerar 500: ${payload}`).not.toBe(500);
         const textList = await resList.text();
         for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(!pattern.test(textList), `Path param de lista não deve vazar SQL: ${payload}`);
+          expect(
+            !pattern.test(textList),
+            `Path param de lista não deve vazar SQL: ${payload}`,
+          ).toBeTruthy();
         }
 
         // Rota de recommendations da lista
@@ -105,10 +106,10 @@ describe(
           ctx.baseUrl,
           `/api/v1/lists/${encodeURIComponent(payload)}/recommendations`,
         );
-        assert.notEqual(resRec.status, 500);
+        expect(resRec.status).not.toBe(500);
         const textRec = await resRec.text();
         for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(!pattern.test(textRec), `Fila não deve vazar SQL: ${payload}`);
+          expect(!pattern.test(textRec), `Fila não deve vazar SQL: ${payload}`).toBeTruthy();
         }
       }
     });
@@ -116,36 +117,51 @@ describe(
     it('resiste a payloads SQL em campos JSON de escrita (PATCH game, POST list, POST reorder)', async () => {
       const games = await ctx.service.all();
       const game = games[0];
-      assert.ok(game);
+      expect(game).toBeTruthy();
+      const originalNotes = game.notes;
 
-      for (const payload of SQLI_PAYLOADS) {
-        // PATCH jogo
-        const resPatch = await testFetch(
-          ctx.baseUrl,
-          `/api/v1/games/${encodeURIComponent(game.id)}`,
-          {
-            method: 'PATCH',
+      try {
+        for (const payload of SQLI_PAYLOADS) {
+          // PATCH jogo: testa injeção SQL no campo notes sem alterar a ordenação ou contagem de jogos
+          const resPatch = await testFetch(
+            ctx.baseUrl,
+            `/api/v1/games/${encodeURIComponent(game.id)}`,
+            {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notes: payload }),
+            },
+          );
+          expect(resPatch.status, `PATCH não deve gerar 500: ${payload}`).not.toBe(500);
+          const textPatch = await resPatch.text();
+          for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
+            expect(
+              !pattern.test(textPatch),
+              `PATCH não deve vazar erro SQL: ${payload}`,
+            ).toBeTruthy();
+          }
+
+          // POST list
+          const resList = await testFetch(ctx.baseUrl, '/api/v1/lists', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: payload }),
-          },
-        );
-        assert.notEqual(resPatch.status, 500, `PATCH não deve gerar 500: ${payload}`);
-        const textPatch = await resPatch.text();
-        for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(!pattern.test(textPatch), `PATCH não deve vazar erro SQL: ${payload}`);
+            body: JSON.stringify({ name: payload.slice(0, 50) }),
+          });
+          expect(resList.status).not.toBe(500);
+          const textList = await resList.text();
+          for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
+            expect(
+              !pattern.test(textList),
+              `POST list não deve vazar erro SQL: ${payload}`,
+            ).toBeTruthy();
+          }
         }
-
-        // POST list
-        const resList = await testFetch(ctx.baseUrl, '/api/v1/lists', {
-          method: 'POST',
+      } finally {
+        await testFetch(ctx.baseUrl, `/api/v1/games/${encodeURIComponent(game.id)}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: payload.slice(0, 50) }),
+          body: JSON.stringify({ notes: originalNotes }),
         });
-        assert.notEqual(resList.status, 500);
-        const textList = await resList.text();
-        for (const pattern of SQL_DRIVER_ERROR_PATTERNS) {
-          assert.ok(!pattern.test(textList), `POST list não deve vazar erro SQL: ${payload}`);
-        }
       }
     });
   },

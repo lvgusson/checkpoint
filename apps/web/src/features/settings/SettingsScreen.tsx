@@ -1,3 +1,4 @@
+import { testIdKey, testIdValue } from '@/components/ui/test-id';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConfirmDialog } from '@checkpoint/ui-react';
 import { useMemo, useState } from 'react';
@@ -12,7 +13,8 @@ import type {
   ScoringSection,
 } from '../../../../../packages/core/src/models';
 import { errorMessage } from '../../query/errors';
-import { ListPicker, useRouteListId } from '../lists';
+import { ListPicker, RouteListState, useRouteListId } from '../lists';
+import { AppLoader } from '../loader/AppLoader';
 import { useResetScoringSettings, useSaveScoringSettings, useScoringSettings } from '../scoring';
 import { FormulaPanel } from './FormulaPanel';
 import {
@@ -31,23 +33,38 @@ type ListFilter = 'excludedGenres' | 'excludedTags' | 'stores' | 'paces';
 
 /** Per-list scoring configuration: weights, rules and content filters, saved as one config. */
 export function SettingsScreen() {
-  const listId = useRouteListId('/configuracoes');
+  const route = useRouteListId('/configuracoes');
+  const { listId } = route;
   const query = useScoringSettings(listId);
   const settings = query.data;
   if (!settings || !listId) {
     return (
       <div className="settings">
         <Heading />
-        {listId && <ListPicker base="/configuracoes" current={listId} />}
-        {query.isError ? (
-          <div className="error" role="alert">
-            Não foi possível carregar as configurações. Confira se a API está no ar.
-            <button type="button" onClick={() => void query.refetch()}>
-              Tentar novamente
-            </button>
-          </div>
+        {listId ? (
+          <>
+            <ListPicker base="/configuracoes" current={listId} />
+            {query.isError ? (
+              <div className="error" role="alert">
+                Não foi possível carregar as configurações. Confira se a API está no ar.
+                <button
+                  data-testid="settings-retry"
+                  type="button"
+                  onClick={() => void query.refetch()}
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : (
+              <AppLoader
+                fill="block"
+                label="Carregando configurações…"
+                data-testid="loader-settings"
+              />
+            )}
+          </>
         ) : (
-          <div className="empty">Carregando configurações…</div>
+          <RouteListState route={route} prefix="settings" />
         )}
       </div>
     );
@@ -77,14 +94,17 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
   });
   const { register, control, setValue, reset: resetForm, formState } = form;
   const { isDirty, errors } = formState;
-  const d = useWatch({ control }) as ScoringConfig;
+  const weights = useWatch({ control, name: 'weights' }) ?? settings.config.weights;
+  const filters = useWatch({ control, name: 'filters' }) ?? settings.config.filters;
+  const rules = useWatch({ control, name: 'rules' }) ?? settings.config.rules;
+  const d = useMemo(() => ({ weights, filters, rules }), [weights, filters, rules]);
 
   const invalid = Object.keys(errors).length > 0;
   const o = settings.filterOptions;
   const rows = (section: ScoringSection) =>
     settings.factors.filter((f) => f.section === section && f.id !== 'inProgress');
   const hoursInvalid = !!errors.filters;
-  const activeFilters = JSON.stringify(d.filters) !== JSON.stringify(settings.defaults.filters);
+  const activeFilters = JSON.stringify(filters) !== JSON.stringify(settings.defaults.filters);
   const setFilters = (patch: Partial<QueueFilters>) => {
     setSuccess('');
     return (
@@ -98,18 +118,19 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
   };
   const toggleIn = (key: ListFilter, value: string) =>
     setFilters({
-      [key]: hasValue(d.filters[key], value)
-        ? d.filters[key].filter(
+      [key]: hasValue(filters[key], value)
+        ? filters[key].filter(
             (x) => x.toLocaleLowerCase('pt-BR') !== value.toLocaleLowerCase('pt-BR'),
           )
-        : [...d.filters[key], value],
+        : [...filters[key], value],
     });
   const pick = (key: ListFilter, option: { value: string; count: number }, cls = '') => (
     <button
+      data-testid={`settings-filter-${testIdKey(key)}-${testIdValue(option.value)}`}
       key={option.value}
       type="button"
       className={'pick ' + cls}
-      aria-pressed={hasValue(d.filters[key], option.value)}
+      aria-pressed={hasValue(filters[key], option.value)}
       disabled={saving}
       onClick={() => toggleIn(key, option.value)}
     >
@@ -150,6 +171,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
       <>
         <label className={'number' + (bad ? ' invalid' : '')}>
           <input
+            data-testid={`settings-weight-${testIdKey(key)}`}
             type="number"
             min={f.min}
             max={f.max}
@@ -174,6 +196,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
     <label className={'number' + (hoursInvalid ? ' invalid' : '')}>
       {text}
       <input
+        data-testid={`settings-filter-${testIdKey(key)}`}
         type="number"
         min="0"
         max="10000"
@@ -203,9 +226,17 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
       {success && (
         <div className="reorder-notice" role="status">
           <span>
-            {success} <Link to={`/ordem/${listId}`}>Ver a fila ↗</Link>
+            {success}{' '}
+            <Link data-testid="settings-open-queue" to={`/ordem/${listId}`}>
+              Ver a fila ↗
+            </Link>
           </span>
-          <button type="button" onClick={() => setSuccess('')} aria-label="Fechar aviso">
+          <button
+            data-testid="settings-notice-close"
+            type="button"
+            onClick={() => setSuccess('')}
+            aria-label="Fechar aviso"
+          >
             ×
           </button>
         </div>
@@ -230,7 +261,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             </thead>
             <tbody>
               {rows(s.id).map((f) => (
-                <tr key={f.id} className={f.rule && !d.rules[f.rule] ? 'off' : undefined}>
+                <tr key={f.id} className={f.rule && !rules[f.rule] ? 'off' : undefined}>
                   <th scope="row">{f.label}</th>
                   <td className="desc">{f.description}</td>
                   <td className="weight">
@@ -240,6 +271,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
                     {f.rule ? (
                       <label className="switch">
                         <input
+                          data-testid={`settings-rule-${testIdKey(f.id)}`}
                           type="checkbox"
                           role="switch"
                           disabled={saving}
@@ -266,6 +298,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
           candidatos cada escolha tira da fila.
           {activeFilters && (
             <button
+              data-testid="settings-filters-clear"
               type="button"
               className="link"
               disabled={saving}
@@ -288,6 +321,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             {hoursInput('maxHours', 'Horas máximas', 'máx.')}
             <label className="check">
               <input
+                data-testid="settings-filter-exclude-unknown-hours"
                 type="checkbox"
                 disabled={saving}
                 {...register('filters.excludeUnknownHours')}
@@ -324,6 +358,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
           <label className="select">
             Vontade mínima
             <select
+              data-testid="settings-filter-min-desire"
               disabled={saving}
               {...register('filters.minDesire', {
                 setValueAs: (v) => (v || null) as Desire | null,
@@ -339,29 +374,39 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             <span className="removed">−{desireRemoved(d, o.desires)} jogos</span>
           </label>
           <label className="check">
-            <input type="checkbox" disabled={saving} {...register('filters.coopOnly')} />
+            <input
+              data-testid="settings-filter-coop-only"
+              type="checkbox"
+              disabled={saving}
+              {...register('filters.coopOnly')}
+            />
             Só jogos com coop (local ou online) <small>{o.coop} jogos</small>
           </label>
         </fieldset>
 
-        <details className="filter-group" open={d.filters.excludedTags.length > 0 || undefined}>
-          <summary>Excluir subgêneros/tags ({d.filters.excludedTags.length})</summary>
+        <details className="filter-group" open={filters.excludedTags.length > 0 || undefined}>
+          <summary data-testid="settings-filter-tags">
+            Excluir subgêneros/tags ({filters.excludedTags.length})
+          </summary>
           <div className="chips">{o.tags.map((t) => pick('excludedTags', t, 'exclude'))}</div>
         </details>
       </section>
 
       <div className="save-bar settings-actions">
         <span>
-          {saving
-            ? 'Salvando…'
-            : invalid
-              ? 'Corrija os valores destacados.'
-              : isDirty
-                ? 'Alterações não salvas.'
-                : `Versão ${settings.version} salva${settings.updatedAt ? ' em ' + formatDate(settings.updatedAt) : ' (padrão)'}.`}
+          {saving ? (
+            <AppLoader layout="inline" size="sm" label="Salvando…" />
+          ) : invalid ? (
+            'Corrija os valores destacados.'
+          ) : isDirty ? (
+            'Alterações não salvas.'
+          ) : (
+            `Versão ${settings.version} salva${settings.updatedAt ? ' em ' + formatDate(settings.updatedAt) : ' (padrão)'}.`
+          )}
         </span>
         <div className="actions">
           <button
+            data-testid="settings-reset"
             type="button"
             className="button"
             onClick={() => setConfirmReset(true)}
@@ -370,6 +415,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             Restaurar padrão
           </button>
           <button
+            data-testid="settings-discard"
             type="button"
             className="button"
             onClick={() => resetForm(settings.config)}
@@ -378,6 +424,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
             Descartar
           </button>
           <button
+            data-testid="settings-save"
             type="button"
             className="button primary"
             onClick={() => void onSave()}
@@ -388,6 +435,7 @@ function SettingsForm({ listId, settings }: { listId: string; settings: ScoringS
         </div>
       </div>
       <ConfirmDialog
+        data-testid="dialog-settings-reset"
         open={confirmReset}
         title="Restaurar o padrão?"
         description="Voltar todos os pesos, regras e filtros desta lista para o padrão?"

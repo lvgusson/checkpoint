@@ -10,6 +10,8 @@ import {
   type SteamClient,
 } from '../integrations/steam/client.ts';
 
+import { TrackService } from '../services/track.ts';
+
 type Env = Record<string, string | undefined>;
 
 export interface ServiceOptions {
@@ -31,6 +33,7 @@ export async function createService({
   service: GameService;
   wishlist: WishlistService;
   config: ConfigService;
+  track: TrackService | null;
   storage: 'postgres' | 'json' | 'mixed';
 }> {
   const data = await createData({ env, dataDir, devAppUserId });
@@ -42,5 +45,6 @@ export async function createService({
       defaultProfile: steamProfileFromEnv(env),
     }),
     config: new ConfigService(data.config),
+    track: data.track ? new TrackService(data.track) : null,
   };
 }

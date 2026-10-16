@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import type { Catalog, ScoredGame } from '../../../../packages/core/src/models';
 import { api, isApiError } from '../api/http';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { FinishDialog } from '../features/finish-dialog';
-import { SwordLoader } from '../features/loader/SwordLoader';
+import { AppLoader } from '../features/loader/AppLoader';
 import { MetadataBadge, MetadataSelect } from '../features/metadata';
 import { useGameWriter } from '../features/playing';
 import { PrerequisiteSearch } from '../features/prerequisite-search';
@@ -72,7 +72,7 @@ export function DetailPage() {
   const [saveError, setSaveError] = useState('');
   const [finishing, setFinishing] = useState(false);
 
-  const isLoading = Boolean(id) && (gameQuery.isLoading || catalogQuery.isLoading);
+  const isLoading = Boolean(id) && gameQuery.isLoading && !game;
   const isNotFound = !isLoading && Boolean(id) && !gameQuery.isError && !game;
   const isGameError = gameQuery.isError && !game;
   const isCatalogError = catalogQuery.isError && !catalog;
@@ -130,9 +130,10 @@ export function DetailPage() {
   }
 
   const g = game;
+  const formattedJson = useMemo(() => (g ? JSON.stringify(g, null, 2) : ''), [g]);
   return (
     <div className="detail-page">
-      <Link className="back-link" to={back}>
+      <Link data-testid="detail-back" className="back-link" to={back}>
         ← {back === '/ordem' ? 'Voltar para a ordem de jogos' : 'Voltar para a biblioteca'}
       </Link>
       {error && (
@@ -170,6 +171,7 @@ export function DetailPage() {
               </p>
               {g.status !== 'Finalizado' && g.status !== 'Desejado' && (
                 <button
+                  data-testid="detail-finish"
                   type="button"
                   className="button primary finish-open"
                   onClick={() => setFinishing(true)}
@@ -179,7 +181,7 @@ export function DetailPage() {
               )}
             </div>
           </div>
-          <form onSubmit={save}>
+          <form data-testid="detail-form" className="detail-form" onSubmit={save}>
             <div className="detail-layout">
               <div>
                 <section className="panel">
@@ -193,6 +195,7 @@ export function DetailPage() {
                   <div className="stars" role="group" aria-labelledby="rating-label">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
+                        data-testid={`detail-rating-${n}`}
                         key={n}
                         type="button"
                         className={(form.rating ?? 0) >= n ? 'selected' : undefined}
@@ -204,6 +207,7 @@ export function DetailPage() {
                       </button>
                     ))}
                     <button
+                      data-testid="detail-rating-clear"
                       className="clear-rating"
                       type="button"
                       onClick={() => set('rating', null)}
@@ -213,6 +217,7 @@ export function DetailPage() {
                   </div>
                   <label className="checkbox">
                     <input
+                      data-testid="detail-auto-finish"
                       type="checkbox"
                       name="autoFinish"
                       checked={autoFinish}
@@ -222,6 +227,7 @@ export function DetailPage() {
                   </label>
                   <div className="form-grid">
                     <MetadataSelect
+                      data-testid="detail-status"
                       label="Status"
                       kind="status"
                       options={catalog?.statuses ?? []}
@@ -232,6 +238,7 @@ export function DetailPage() {
                       }
                     />
                     <MetadataSelect
+                      data-testid="detail-desire"
                       label="Vontade de jogar"
                       kind="desire"
                       options={catalog?.desires ?? []}
@@ -244,6 +251,7 @@ export function DetailPage() {
                     <label>
                       Horas para finalizar
                       <input
+                        data-testid="detail-actual-hours"
                         type="number"
                         name="actual"
                         min={0}
@@ -256,6 +264,7 @@ export function DetailPage() {
                     <label>
                       Data de conclusão
                       <DateTimePicker
+                        data-testid="detail-finished-at"
                         id="game-finish"
                         mode="date"
                         placeholder="dd/mm/aaaa"
@@ -266,6 +275,7 @@ export function DetailPage() {
                     <label>
                       Data de início
                       <DateTimePicker
+                        data-testid="detail-started-at"
                         id="game-start"
                         mode="date"
                         placeholder="dd/mm/aaaa"
@@ -277,6 +287,7 @@ export function DetailPage() {
                   <label>
                     O que você achou?
                     <textarea
+                      data-testid="detail-notes"
                       name="notes"
                       value={form.notes}
                       onChange={(e) => set('notes', e.target.value)}
@@ -292,6 +303,7 @@ export function DetailPage() {
                     <label>
                       Nome
                       <input
+                        data-testid="detail-name"
                         name="name"
                         value={form.name}
                         onChange={(e) => set('name', e.target.value)}
@@ -299,6 +311,7 @@ export function DetailPage() {
                       />
                     </label>
                     <MetadataSelect
+                      data-testid="detail-genre"
                       label="Gênero principal"
                       kind="genre"
                       options={catalog?.genres ?? []}
@@ -306,6 +319,7 @@ export function DetailPage() {
                       onValueChange={(v) => set('primaryGenre', v)}
                     />
                     <MetadataSelect
+                      data-testid="detail-tags"
                       multiple
                       label="Tags secundárias"
                       kind="tag"
@@ -314,6 +328,7 @@ export function DetailPage() {
                       onValuesChange={(v) => set('secondaryTags', v)}
                     />
                     <MetadataSelect
+                      data-testid="detail-pace"
                       label="Ritmo"
                       kind="pace"
                       options={catalog?.paces ?? []}
@@ -321,6 +336,7 @@ export function DetailPage() {
                       onValueChange={(v) => set('pace', v)}
                     />
                     <MetadataSelect
+                      data-testid="detail-mechanic"
                       label="Mecânica"
                       kind="mechanic"
                       options={catalog?.mechanics ?? []}
@@ -328,6 +344,7 @@ export function DetailPage() {
                       onValueChange={(v) => set('mechanic', v)}
                     />
                     <MetadataSelect
+                      data-testid="detail-structure"
                       label="Estrutura"
                       kind="structure"
                       options={catalog?.structures ?? []}
@@ -335,6 +352,7 @@ export function DetailPage() {
                       onValueChange={(v) => set('structure', v)}
                     />
                     <MetadataSelect
+                      data-testid="detail-store"
                       label="Loja"
                       kind="store"
                       options={catalog?.stores ?? []}
@@ -342,6 +360,7 @@ export function DetailPage() {
                       onValueChange={(v) => set('store', v)}
                     />
                     <MetadataSelect
+                      data-testid="detail-platform"
                       label="Plataforma"
                       kind="platform"
                       options={catalog?.platforms ?? []}
@@ -350,15 +369,30 @@ export function DetailPage() {
                     />
                     <label>
                       Campanha principal (h)
-                      <input type="number" name="main" min={0} step={0.1} {...num('mainHours')} />
+                      <input
+                        data-testid="detail-main-hours"
+                        type="number"
+                        name="main"
+                        min={0}
+                        step={0.1}
+                        {...num('mainHours')}
+                      />
                     </label>
                     <label>
                       Campanha + extras (h)
-                      <input type="number" name="extra" min={0} step={0.1} {...num('extraHours')} />
+                      <input
+                        data-testid="detail-extra-hours"
+                        type="number"
+                        name="extra"
+                        min={0}
+                        step={0.1}
+                        {...num('extraHours')}
+                      />
                     </label>
                     <label>
                       100% (h)
                       <input
+                        data-testid="detail-completionist-hours"
                         type="number"
                         name="complete"
                         min={0}
@@ -374,13 +408,22 @@ export function DetailPage() {
                   </div>
                 </section>
                 <div className="save-bar">
-                  <span role="status">
+                  <span role="status" data-testid="detail-save-status">
                     {saved
                       ? 'Salvo. A ordem já foi recalculada.'
                       : 'Salvar recalcula a ordem de todas as listas.'}
                   </span>
-                  <button className="button primary" type="submit" disabled={saving}>
-                    {saving ? 'Salvando…' : 'Salvar avaliação'}
+                  <button
+                    data-testid="detail-notes-save"
+                    className="button primary"
+                    type="submit"
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <AppLoader layout="inline" size="sm" label="Salvando…" />
+                    ) : (
+                      'Salvar avaliação'
+                    )}
                   </button>
                 </div>
               </div>
@@ -413,7 +456,7 @@ export function DetailPage() {
                     A posição final inclui o contexto dos jogos anteriores; ela pode variar em
                     relação à pontuação de base.
                   </p>
-                  <Link className="button full" to="/ordem">
+                  <Link data-testid="detail-open-queue" className="button full" to="/ordem">
                     Ver ordem de jogos →
                   </Link>
                 </section>
@@ -423,14 +466,19 @@ export function DetailPage() {
                     {g.timeVerification || 'Estimativa sem verificação'} · {g.size}
                   </p>
                   {/^https?:\/\//.test(g.timeSource) && (
-                    <a href={g.timeSource} target="_blank" rel="noopener">
+                    <a
+                      data-testid="detail-time-source"
+                      href={g.timeSource}
+                      target="_blank"
+                      rel="noopener"
+                    >
                       Fonte dos tempos ↗
                     </a>
                   )}
                   <p className="small">{g.reviewNotes}</p>
                   <details>
-                    <summary>Todos os dados importados</summary>
-                    <pre>{JSON.stringify(g, null, 2)}</pre>
+                    <summary data-testid="detail-imported-data">Todos os dados importados</summary>
+                    <pre>{formattedJson}</pre>
                   </details>
                 </section>
               </aside>
@@ -451,7 +499,7 @@ export function DetailPage() {
         </>
       ) : isLoading ? (
         <div className="empty" role="status">
-          <SwordLoader size={48} label="Carregando jogo…" />
+          <AppLoader data-testid="loader-detail" size={48} label="Carregando jogo…" fill="block" />
         </div>
       ) : !error ? (
         <div className="empty">Jogo não encontrado.</div>

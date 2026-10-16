@@ -42,13 +42,13 @@ AI/memory/<YYYY-MM-DD>-<slug>/
 
 Every file has `name`, `description`, `type: memory`, `area: memory`, `session`, `agent` and `status`.
 
-- `status: active` while the file can change. `status: compacted` when its content is in `state.md` and nobody writes to it.
+- `status: active` while the file can change. `status: compacted` when its content is in `state.md` and nobody writes to it. `status: completed` for a finished session summary.
 - `state.md` also has `updated: <YYYY-MM-DD HH:MM ±zz>`.
 
 ## Entry IDs
 
-- Log entry: a heading `## E<n>`, with `n` = previous number + 1. Link one entry with `[[AI/memory/<session>/log-<writer>#E3]]`.
-- Decision: a heading `## D<n>`. Link it with `[[AI/memory/<session>/decisions#D2]]`.
+- Log entry: a heading `## E<n>`, with `n` = previous number + 1. Link one entry with the path form `AI/memory/<session>/log-<writer>#E3` inside a wikilink.
+- Decision: a heading `## D<n>`. Link it with the path form `AI/memory/<session>/decisions#D2` inside a wikilink.
 - Never edit or delete an entry. To correct one, append a new entry that names the old ID.
 - Times are local and have the offset: `2026-10-14 22:40 -03`. Beads shows UTC.
 
