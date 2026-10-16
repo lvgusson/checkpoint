@@ -37,6 +37,7 @@ import {
 } from '../observability/timing.ts';
 import { createRequestGuard, requestDeadlineMs, withDeadline } from '../shared/request-guard.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
+const EXPENSIVE_DEADLINE_FACTOR = 4;
 const MAX_BODY_BYTES = 100_000;
 const REQUEST_ID = /^[\w.-]{8,64}$/;
 const SECURITY_HEADERS = {
@@ -204,7 +205,7 @@ export function makeServer(
           // Steam and recommendation routes retry upstream calls, so they get 4x the time.
           const dispatch = () =>
             withDeadline(
-              requestDeadlineMs() * (isExpensive ? 4 : 1),
+              requestDeadlineMs() * (isExpensive ? EXPENSIVE_DEADLINE_FACTOR : 1),
               async () =>
                 (await gamesRoute(service, req, url, readJson)) ??
                 (await listsRoute(service, req, url, readJson)) ??

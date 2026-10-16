@@ -65,6 +65,7 @@ The API loads metadata vocabularies through `ConfigRepository`.
 `.env.example` lists the main variables.
 Search `process.env` and `env.` in `apps/api` for other variables.
 Variable groups include Supabase (`SUPABASE_URL`), database (`DATABASE_URL`), storage drivers (`GAMES_STORE`), logging (`LOG_SINK`), and release tooling.
+`API_DEADLINE_MS` (default 15000) sets the request deadline; see "Pooler and deadlines" below.
 
 ## Hosting
 
