@@ -535,11 +535,13 @@ textarea {
 .card-link {
   display: block;
 }
+.card-actions,
 .card-immediate {
-  position: absolute;
-  z-index: 3;
-  top: 8px;
-  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 10px 10px;
 }
 /* Row icon actions for immediate desire and completion. */
 .immediate-btn,
@@ -597,9 +599,10 @@ textarea {
   border-color: var(--border);
   background: var(--surface);
 }
+.card-actions .immediate-btn,
 .card-immediate .immediate-btn {
-  background: var(--surface);
-  box-shadow: 0 2px 8px var(--shadow-mid);
+  background: none;
+  box-shadow: none;
 }
 .cover {
   aspect-ratio: 460/215;
@@ -1664,19 +1667,13 @@ pre {
     font-size: 12px;
     min-height: 44px;
   }
-  /* Library cards keep room for the floating play and bonfire buttons; wishlist cards do not. */
   .card-link .card-bottom {
     justify-content: flex-start;
     flex-wrap: wrap;
-    padding-right: 104px;
   }
+  .card-actions,
   .card-immediate {
-    top: auto;
-    right: 10px;
-    bottom: 10px;
-  }
-  .card-immediate .immediate-btn {
-    box-shadow: none;
+    padding: 0 10px 8px;
   }
   .next-game {
     display: block;
