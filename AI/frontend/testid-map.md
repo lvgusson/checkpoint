@@ -62,6 +62,7 @@ area: frontend
 | `<picker>-calendar-{previous,next,day-YYYY-MM-DD}`                            | Change month or select a date.                  | no           |
 | `<picker>-clear`                                                              | Clear the form date.                            | no           |
 | `detail-finish`, `detail-notes-save`                                          | Open completion or save all edited game fields. | yes          |
+| `detail-save-status`                                                          | Save message: "Salvo..." after a save.          | no           |
 
 ## Queue
 
