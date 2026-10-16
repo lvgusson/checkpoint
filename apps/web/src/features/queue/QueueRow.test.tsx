@@ -10,11 +10,13 @@ vi.mock('react-router', () => ({
 }));
 
 vi.mock('../playing', () => ({
-  PlayingButton: () => React.createElement('button', { 'data-testid': 'mock-playing-btn' }),
+  PlayingButton: ({ 'data-testid': testId }: { 'data-testid': string }) =>
+    React.createElement('button', { 'data-testid': testId }),
 }));
 
 vi.mock('../immediate', () => ({
-  ImmediateButton: () => React.createElement('button', { 'data-testid': 'mock-immediate-btn' }),
+  ImmediateButton: ({ 'data-testid': testId }: { 'data-testid': string }) =>
+    React.createElement('button', { 'data-testid': testId }),
 }));
 
 describe('QueueRow mobile score and tags popover', () => {
@@ -115,10 +117,13 @@ describe('QueueRow mobile score and tags popover', () => {
       }),
     );
 
-    expect(html).toContain('queue-mobile-tags flex items-center gap-1 min-w-0 mr-auto sm:hidden');
+    expect(html).toContain(
+      'queue-mobile-tags flex items-center gap-1 min-w-0 mr-auto sm:hidden pl-2',
+    );
     expect(html).toContain('truncate max-w-[90px] whitespace-nowrap');
     expect(html).toContain('Plataforma 3D');
     expect(html).toContain('data-testid="queue-tags-popover-mario-odyssey"');
+    expect(html).toContain('+2');
   });
 
   it('falls back to first secondary tag when primaryGenre is empty', () => {
@@ -154,5 +159,97 @@ describe('QueueRow mobile score and tags popover', () => {
     expect(html).toContain('Roguelike');
     expect(html).toContain('truncate max-w-[90px] whitespace-nowrap');
     expect(html).toContain('data-testid="queue-tags-popover-indie-game"');
+    expect(html).toContain('+1');
+  });
+
+  it('does not render overflow popover button when otherTags is empty', () => {
+    const entryNoOtherTags: QueueEntry = {
+      ...mockEntry,
+      game: {
+        ...mockEntry.game,
+        id: 'single-tag-game',
+        primaryGenre: 'Ação',
+        secondaryTags: [],
+      },
+    };
+
+    const html = renderToString(
+      React.createElement(QueueRow, {
+        entry: entryNoOtherTags,
+        index: 0,
+        searching: false,
+        busy: false,
+        anyBusy: false,
+        flash: false,
+        isDragging: false,
+        pointerProps: {},
+        handleProps: {},
+        onResetManual: () => {},
+        onFinish: () => {},
+        onSetDesire: () => {},
+        onDesireSaved: () => {},
+        onDesireFailed: () => {},
+      }),
+    );
+
+    expect(html).not.toContain('queue-tags-popover-single-tag-game');
+  });
+
+  it('renders all 4 action icons grouped on the right', () => {
+    const html = renderToString(
+      React.createElement(QueueRow, {
+        entry: mockEntry,
+        index: 0,
+        searching: false,
+        busy: false,
+        anyBusy: false,
+        flash: false,
+        isDragging: false,
+        pointerProps: {},
+        handleProps: {},
+        onResetManual: () => {},
+        onFinish: () => {},
+        onSetDesire: () => {},
+        onDesireSaved: () => {},
+        onDesireFailed: () => {},
+      }),
+    );
+
+    expect(html).toContain('data-testid="queue-immediate-mario-odyssey"');
+    expect(html).toContain('data-testid="queue-playing-mario-odyssey"');
+    expect(html).toContain('data-testid="queue-finish-mario-odyssey"');
+    expect(html).toContain('data-testid="queue-unpurchase-mario-odyssey"');
+  });
+
+  it('renders money button as queue-purchase when game is on wishlist', () => {
+    const wishlistEntry: QueueEntry = {
+      ...mockEntry,
+      game: {
+        ...mockEntry.game,
+        id: 'wishlist-game',
+        status: 'Desejado',
+      },
+    };
+
+    const html = renderToString(
+      React.createElement(QueueRow, {
+        entry: wishlistEntry,
+        index: 0,
+        searching: false,
+        busy: false,
+        anyBusy: false,
+        flash: false,
+        isDragging: false,
+        pointerProps: {},
+        handleProps: {},
+        onResetManual: () => {},
+        onFinish: () => {},
+        onSetDesire: () => {},
+        onDesireSaved: () => {},
+        onDesireFailed: () => {},
+      }),
+    );
+
+    expect(html).toContain('data-testid="queue-purchase-wishlist-game"');
   });
 });

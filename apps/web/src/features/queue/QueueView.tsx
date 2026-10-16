@@ -1,4 +1,5 @@
-import { SortableList } from '@checkpoint/ui-react';
+import { ConfirmDialog, SortableList } from '@checkpoint/ui-react';
+import { CircleDollarSign } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 import type { Desire, QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
@@ -6,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { FinishDialog } from '../finish-dialog';
+import { FinishDialog, FinishIcon } from '../finish-dialog';
 import { ImmediateButton } from '../immediate';
 import { ListPicker } from '../lists';
 import { MetadataBadge } from '../metadata';
-import { PlayingButton } from '../playing';
+import { PlayingButton, useGameWriter } from '../playing';
 import { AppLoader } from '../loader/AppLoader';
 import { GameDetailModal } from '../details';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
@@ -37,22 +38,6 @@ function Cover({ game, lazy = true }: { game: ScoredGame; lazy?: boolean }) {
   );
 }
 
-function FinishIcon({ withFlagDetail }: { withFlagDetail?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M5 21V4m0 0h13l-2.5 4L18 12H5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {withFlagDetail && <path d="M8 4h3v4H8zm3 4h3v4h-3z" fill="currentColor" />}
-    </svg>
-  );
-}
-
 /** The queue of one list: playing games, summary, search, sortable rows. Remount with `key={listId}`. */
 export function QueueView({ listId }: { listId: string }) {
   const q = useQueue(listId);
@@ -60,10 +45,13 @@ export function QueueView({ listId }: { listId: string }) {
   useEffect(() => {
     qRef.current = q;
   });
+  const writer = useGameWriter();
   const { data, busyId } = q;
   const [search, setSearch] = useState('');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [finishing, setFinishing] = useState<ScoredGame | null>(null);
+  const [purchasingGame, setPurchasingGame] = useState<ScoredGame | null>(null);
+  const [unpurchasingGame, setUnpurchasingGame] = useState<ScoredGame | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const searching = !!fold(search).trim();
 
@@ -138,6 +126,14 @@ export function QueueView({ listId }: { listId: string }) {
 
   const handleOpenDetails = useCallback((id: string) => {
     setSelectedGameId(id);
+  }, []);
+
+  const handlePurchase = useCallback((game: ScoredGame) => {
+    setPurchasingGame(game);
+  }, []);
+
+  const handleUnpurchase = useCallback((game: ScoredGame) => {
+    setUnpurchasingGame(game);
   }, []);
 
   const handleMoveIntent = useCallback(
@@ -372,6 +368,8 @@ export function QueueView({ listId }: { listId: string }) {
                     onSetDesire={handleSetDesire}
                     onDesireSaved={handleDesireSaved}
                     onDesireFailed={handleDesireFailed}
+                    onPurchase={handlePurchase}
+                    onUnpurchase={handleUnpurchase}
                   />
                 );
               }}
@@ -425,6 +423,44 @@ export function QueueView({ listId }: { listId: string }) {
           }}
         />
       )}
+      <ConfirmDialog
+        data-testid="dialog-purchase"
+        open={Boolean(purchasingGame)}
+        title="Você comprou o jogo?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        defaultFocus="confirm"
+        onConfirm={async () => {
+          if (!purchasingGame) return;
+          const target = purchasingGame;
+          setPurchasingGame(null);
+          try {
+            await writer.purchase(target.id);
+          } catch {
+            qRef.current.setError(`Não foi possível marcar ${target.name} como comprado.`);
+          }
+        }}
+        onCancel={() => setPurchasingGame(null)}
+      />
+      <ConfirmDialog
+        data-testid="dialog-unpurchase"
+        open={Boolean(unpurchasingGame)}
+        title="Deseja marcar o jogo como não comprado?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        defaultFocus="confirm"
+        onConfirm={async () => {
+          if (!unpurchasingGame) return;
+          const target = unpurchasingGame;
+          setUnpurchasingGame(null);
+          try {
+            await writer.unpurchase(target.id);
+          } catch {
+            qRef.current.setError(`Não foi possível marcar ${target.name} como não comprado.`);
+          }
+        }}
+        onCancel={() => setUnpurchasingGame(null)}
+      />
       <GameDetailModal
         gameId={selectedGameId}
         open={Boolean(selectedGameId)}
@@ -493,6 +529,8 @@ interface RowProps {
   onSetDesire(id: string, desire: Desire): void;
   onDesireSaved(): void;
   onDesireFailed(message: string): void;
+  onPurchase?(game: ScoredGame): void;
+  onUnpurchase?(game: ScoredGame): void;
 }
 
 function areRowPropsEqual(prev: RowProps, next: RowProps): boolean {
@@ -510,7 +548,9 @@ function areRowPropsEqual(prev: RowProps, next: RowProps): boolean {
     prev.onFinish === next.onFinish &&
     prev.onSetDesire === next.onSetDesire &&
     prev.onDesireSaved === next.onDesireSaved &&
-    prev.onDesireFailed === next.onDesireFailed
+    prev.onDesireFailed === next.onDesireFailed &&
+    prev.onPurchase === next.onPurchase &&
+    prev.onUnpurchase === next.onUnpurchase
   );
 }
 
@@ -531,8 +571,11 @@ export const QueueRow = memo(function QueueRow({
   onSetDesire,
   onDesireSaved,
   onDesireFailed,
+  onPurchase,
+  onUnpurchase,
 }: RowProps) {
   const { game } = item;
+  const isPurchased = game.status !== 'Desejado';
   const primaryTag = game.primaryGenre || game.secondaryTags[0];
   const otherTags = game.primaryGenre ? game.secondaryTags : game.secondaryTags.slice(1);
   const release = (e: MouseEvent) => {
@@ -618,7 +661,7 @@ export const QueueRow = memo(function QueueRow({
         <span className="row-arrow">↗</span>
       </Link>
       <div className="queue-actions">
-        <div className="queue-mobile-tags flex items-center gap-1 min-w-0 mr-auto sm:hidden">
+        <div className="queue-mobile-tags flex items-center gap-1 min-w-0 mr-auto sm:hidden pl-2">
           {primaryTag && (
             <MetadataBadge
               kind={game.primaryGenre ? 'genre' : 'tag'}
@@ -626,40 +669,41 @@ export const QueueRow = memo(function QueueRow({
               className="truncate max-w-[90px] whitespace-nowrap [&>span]:truncate [&>span]:break-normal"
             />
           )}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                data-testid={`queue-tags-popover-${game.id.toLowerCase()}`}
-                type="button"
-                className="inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-[var(--surface-2)] text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)]"
-                aria-label={`Mais detalhes de ${game.name}`}
+          {otherTags.length > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  data-testid={`queue-tags-popover-${game.id.toLowerCase()}`}
+                  type="button"
+                  className="inline-flex h-5 min-w-5 px-1 shrink-0 items-center justify-center rounded-full border border-border bg-[var(--surface-2)] text-[11px] font-semibold text-[var(--muted)] hover:text-[var(--text)]"
+                  aria-label={`Mais detalhes de ${game.name}`}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  {`+${otherTags.length}`}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-64 p-3 flex flex-col gap-2 z-50 bg-[var(--surface)] border border-border rounded-lg shadow-lg"
+                align="start"
                 onClick={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
               >
-                +
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-64 p-3 flex flex-col gap-2 z-50 bg-[var(--surface)] border border-border rounded-lg shadow-lg"
-              align="start"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {game.status && <MetadataBadge kind="status" value={game.status} />}
-                {game.desire && <MetadataBadge kind="desire" value={game.desire} />}
-                {game.primaryGenre && <MetadataBadge kind="genre" value={game.primaryGenre} />}
-                {otherTags.map((t) => (
-                  <MetadataBadge key={t} kind="tag" value={t} />
-                ))}
-                {game.pace && <MetadataBadge kind="pace" value={game.pace} />}
-                {game.structure && <MetadataBadge kind="structure" value={game.structure} />}
-                {game.coop && <span className="badge gray">Coop: {game.coop}</span>}
-              </div>
-            </PopoverContent>
-          </Popover>
+                <div className="flex flex-wrap gap-1.5">
+                  {game.status && <MetadataBadge kind="status" value={game.status} />}
+                  {game.desire && <MetadataBadge kind="desire" value={game.desire} />}
+                  {game.primaryGenre && <MetadataBadge kind="genre" value={game.primaryGenre} />}
+                  {otherTags.map((t) => (
+                    <MetadataBadge key={t} kind="tag" value={t} />
+                  ))}
+                  {game.pace && <MetadataBadge kind="pace" value={game.pace} />}
+                  {game.structure && <MetadataBadge kind="structure" value={game.structure} />}
+                  {game.coop && <span className="badge gray">Coop: {game.coop}</span>}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
         {busy ? (
           <span className="saving-pill">Recalculando…</span>
@@ -690,7 +734,6 @@ export const QueueRow = memo(function QueueRow({
             </span>
           )
         )}
-        <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
         <ImmediateButton
           data-testid={`queue-immediate-${game.id.toLowerCase()}`}
           game={game}
@@ -698,6 +741,7 @@ export const QueueRow = memo(function QueueRow({
           onSaved={onDesireSaved}
           onFailed={onDesireFailed}
         />
+        <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
         <button
           data-testid={`queue-finish-${game.id.toLowerCase()}`}
           type="button"
@@ -707,6 +751,41 @@ export const QueueRow = memo(function QueueRow({
           onClick={(e) => onFinish(game, e)}
         >
           <FinishIcon withFlagDetail />
+        </button>
+        <button
+          data-testid={
+            isPurchased
+              ? `queue-unpurchase-${game.id.toLowerCase()}`
+              : `queue-purchase-${game.id.toLowerCase()}`
+          }
+          type="button"
+          className={cn(
+            'icon-button',
+            isPurchased
+              ? 'text-emerald-400 hover:text-emerald-300'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+          aria-label={
+            isPurchased
+              ? `Marcar ${game.name} como não comprado`
+              : `Marcar ${game.name} como comprado`
+          }
+          title={
+            isPurchased
+              ? 'Marcar como não comprado (devolver à lista de desejos)'
+              : 'Marcar como comprado'
+          }
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isPurchased) {
+              onUnpurchase?.(game);
+            } else {
+              onPurchase?.(game);
+            }
+          }}
+        >
+          <CircleDollarSign className="size-5" />
         </button>
       </div>
     </div>
