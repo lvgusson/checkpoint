@@ -142,7 +142,7 @@ export class WishlistService {
   }
 
   /** Jogos desejados com preço (busca preços vencidos; se a Steam falhar, usa os antigos). */
-  async list(sort: string = 'name'): Promise<WishlistItem[]> {
+  async list(sort: string = 'recommendation'): Promise<WishlistItem[]> {
     if (!(wishlistSorts as readonly string[]).includes(sort))
       throw new AppError('Ordenação inválida');
     const wished = (await this.games.all()).filter((g) => g.status === GameStatus.Wishlist);
