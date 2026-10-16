@@ -65,6 +65,7 @@ The API loads metadata vocabularies through `ConfigRepository`.
 `.env.example` lists the main variables.
 Search `process.env` and `env.` in `apps/api` for other variables.
 Variable groups include Supabase (`SUPABASE_URL`), database (`DATABASE_URL`), storage drivers (`GAMES_STORE`), logging (`LOG_SINK`), and release tooling.
+`API_DEADLINE_MS` (default 15000) sets the request deadline; see "Pooler and deadlines" below.
 
 ## Hosting
 
@@ -85,6 +86,15 @@ Run them from the repository root. They read `.env` and need `DATABASE_URL`.
 | `pnpm master:create`                         | Creates an ordinary account and writes its credentials to `local-env.env`. `--reset` clears only that account |
 
 `vercel-build` runs `apps/api/scripts/record-release.mjs` after the web build to register the deployed commit.
+
+## Pooler and deadlines (lesson from the catalog hang)
+
+- `DATABASE_URL` uses the Supavisor transaction pooler (port 6543). The `postgres` pool has `max: 5`.
+- Never fire more queries in parallel than the pool has slots. Seven parallel option queries stalled `GET /api/v1/catalog` and `PATCH /api/v1/games/:id` for 20 s or more on Vercel. The SQL itself ran in under 1 ms.
+- Read related rows with ONE statement (`json_build_object`). `PgConfigDriver.list()` does this and caches the result for 10 s. `add` and `remove` clear the cache.
+- Every request has a deadline: `withDeadline` in `apps/api/src/shared/request-guard.ts` returns 504 after `API_DEADLINE_MS` (default 15000). It sits inside `createRequestGuard`, so a hung route frees its guard slot.
+- Do not rely on `statement_timeout` here. A session-level `SET` does not work in transaction mode (Supabase "Timeouts" guide), and a stalled client read is not a slow statement.
+- Proven: the catalog SQL is fast and the old code issued 7 parallel statements with no deadline. Inferred: the exact Supavisor stall mechanism.
 
 ## Related
 

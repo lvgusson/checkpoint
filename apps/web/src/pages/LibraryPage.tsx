@@ -151,7 +151,7 @@ export function LibraryPage() {
       <div className="list-toolbar">
         <span>
           {total} jogos encontrados
-          {isFetching && (
+          {hasData && isFetching && (
             <span className="muted inline-flex items-center gap-1.5 ml-1">
               · <AppLoader layout="inline" size="sm" label="carregando…" />
             </span>
@@ -180,7 +180,12 @@ export function LibraryPage() {
         </div>
       )}
       {isLoading && !hasData ? (
-        <AppLoader fill="block" label="Carregando jogos…" data-testid="loader-library" />
+        <AppLoader
+          fill="block"
+          label="Carregando jogos…"
+          data-testid="loader-library"
+          variant="sword"
+        />
       ) : isInitialError && !hasData ? (
         <ErrorState
           data-testid="library-error"

@@ -133,7 +133,7 @@ async function executeCleanup(cleanup: PendingCleanup, context: BrowserContext):
         .getByTestId('detail-notes-save')
         .or(freshPage.getByRole('button', { name: /Salvar avaliação/i }));
       await saveBtn.click();
-      await expect(freshPage.getByRole('status').filter({ hasText: /Salvo/i })).toBeVisible({
+      await expect(freshPage.getByTestId('detail-save-status')).toContainText(/Salvo/i, {
         timeout: 30000,
       });
       restored = true;
@@ -486,7 +486,9 @@ test.describe('Route Map E2E Spec', () => {
       .getByTestId('detail-notes-save')
       .or(page.getByRole('button', { name: /Salvar avaliação/i }));
     await saveBtn.click();
-    await expect(page.getByRole('status')).toContainText(/Salvo/i, { timeout: 30000 });
+    await expect(page.getByTestId('detail-save-status')).toContainText(/Salvo/i, {
+      timeout: 30000,
+    });
 
     await timings.collect(page, 'screen-4-detail', href!);
 

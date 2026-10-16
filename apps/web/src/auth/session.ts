@@ -104,6 +104,10 @@ export class AuthSession {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      fetch: (input, init) => {
+        const signal = init?.signal ?? AbortSignal.timeout(10_000);
+        return fetch(input, { ...init, signal });
+      },
     });
     // Do not call other auth methods inside this callback (it can deadlock the lock).
     this.client.onAuthStateChange((event, session) => {
@@ -117,18 +121,36 @@ export class AuthSession {
   /** getSession() reads storage and renews an expired token before returning it. */
   async accessToken(): Promise<string | null> {
     if (!this.client) return null;
-    const { data } = await this.client.getSession();
-    return data.session?.access_token ?? null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const getSessionPromise = this.client.getSession();
+      const fallbackPromise = new Promise<{ data: { session: Session | null } }>((resolve) => {
+        timer = setTimeout(() => resolve({ data: { session: this.state.session } }), 2500);
+      });
+      const { data } = await Promise.race([getSessionPromise, fallbackPromise]);
+      return data.session?.access_token ?? null;
+    } catch {
+      return this.state.session?.access_token ?? null;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   /** Forces a refresh after a 401; concurrent callers share one promise. */
   refreshToken(): Promise<string | null> {
     if (!this.client) return Promise.resolve(null);
-    this.refreshing ??= this.client
-      .refreshSession()
+    if (this.refreshing) return this.refreshing;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<{ data: { session: null }; error: boolean }>((resolve) => {
+      timer = setTimeout(() => resolve({ data: { session: null }, error: true }), 5000);
+    });
+    this.refreshing = Promise.race([this.client.refreshSession(), timeoutPromise])
       .then(({ data, error }) => (error ? null : (data.session?.access_token ?? null)))
       .catch(() => null)
-      .finally(() => (this.refreshing = undefined));
+      .finally(() => {
+        if (timer) clearTimeout(timer);
+        this.refreshing = undefined;
+      });
     return this.refreshing;
   }
 

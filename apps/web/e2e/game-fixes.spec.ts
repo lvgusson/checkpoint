@@ -195,4 +195,39 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
       await expect(confirmModal).not.toBeVisible();
     }
   });
+
+  test('7. Combobox keyboard navigation and focus management in modal', async () => {
+    await page.goto('/ordem');
+
+    const queueRow = page.locator('.queue-row-main a, .next-game').first();
+    await expect(queueRow).toBeVisible({ timeout: 10000 });
+    await queueRow.click();
+
+    const modal = page.locator('dialog[data-testid^="modal-game-"]');
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    const statusCombobox = modal.getByTestId('modal-status');
+    await expect(statusCombobox).toBeVisible();
+
+    // Open via keyboard ArrowDown
+    await statusCombobox.focus();
+    await page.keyboard.press('ArrowDown');
+
+    const searchInput = modal.getByTestId('modal-status-search');
+    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toBeFocused();
+
+    // Verify aria-activedescendant is populated
+    await expect(searchInput).toHaveAttribute('aria-activedescendant', /-option-/);
+
+    // Escape closes listbox and restores focus to the trigger
+    await page.keyboard.press('Escape');
+    await expect(searchInput).not.toBeVisible();
+    await expect(statusCombobox).toBeFocused();
+
+    // Close modal
+    const closeBtn = page.getByTestId('modal-close');
+    await closeBtn.click();
+    await expect(modal).not.toBeVisible();
+  });
 });

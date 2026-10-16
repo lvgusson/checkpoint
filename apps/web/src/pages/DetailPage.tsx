@@ -408,7 +408,7 @@ export function DetailPage() {
                   </div>
                 </section>
                 <div className="save-bar">
-                  <span role="status">
+                  <span role="status" data-testid="detail-save-status">
                     {saved
                       ? 'Salvo. A ordem já foi recalculada.'
                       : 'Salvar recalcula a ordem de todas as listas.'}

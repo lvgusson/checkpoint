@@ -46,6 +46,7 @@ export function WishlistScreen() {
     onLoadMore: handleLoadMore,
     hasMore,
     isLoading: false,
+    resetKey: visibleCount,
   });
   const onSale = useMemo(() => sorted.filter((i) => i.price?.discountPercent).length, [sorted]);
   const busy =
@@ -249,7 +250,7 @@ export function WishlistScreen() {
         <span>
           {sorted.length} desejados
           {onSale > 0 && <span className="muted"> · {onSale} em promoção</span>}
-          {wishlist.isFetching && (
+          {Boolean(wishlist.data) && wishlist.isFetching && (
             <span className="muted inline-flex items-center gap-1.5 ml-1">
               · <AppLoader layout="inline" size="sm" label="carregando…" />
             </span>
@@ -353,7 +354,12 @@ export function WishlistScreen() {
         )}
       </div>
       {wishlist.isPending ? (
-        <AppLoader fill="block" label="Carregando desejos…" data-testid="loader-wishlist" />
+        <AppLoader
+          fill="block"
+          label="Carregando desejos…"
+          data-testid="loader-wishlist"
+          variant="sword"
+        />
       ) : wishlist.isError && !wishlist.data ? (
         <ErrorState
           data-testid="wishlist-error"

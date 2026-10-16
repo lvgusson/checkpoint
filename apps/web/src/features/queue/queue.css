@@ -57,3 +57,22 @@
   color: var(--accent);
   font-weight: 700;
 }
+
+/* Maintain full artwork visibility and neutral background for queue covers */
+.queue-cover,
+.next-cover {
+  background: var(--surface-2);
+}
+.queue-cover:not(:has(img)),
+.queue-cover:has(img[style*='none']) {
+  background: var(--cover-a);
+}
+.next-cover:not(:has(img)),
+.next-cover:has(img[style*='none']) {
+  background: linear-gradient(135deg, var(--cover-a), var(--cover-b));
+}
+.queue-cover img,
+.next-cover img {
+  object-fit: contain;
+  object-position: center;
+}
