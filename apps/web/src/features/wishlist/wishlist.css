@@ -112,7 +112,7 @@
   .wishlist-purchase-btn {
     position: absolute;
     right: 14px;
-    bottom: 12px;
+    bottom: 10px;
     z-index: 3;
     display: inline-grid;
     place-items: center;
@@ -138,6 +138,12 @@
   }
   .card-bottom {
     padding-right: 44px;
+    margin-top: 20px;
+    padding-top: 14px;
+  }
+  .score {
+    font-family: inherit;
+    min-width: auto;
   }
   .cover {
     background: var(--surface-2);

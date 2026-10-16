@@ -224,23 +224,10 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="eyebrow">
-                    {game.store} · {game.platform}
-                  </span>
-                  <h2
-                    id="modal-game-title"
-                    className="my-1 break-words text-xl font-bold sm:text-2xl"
-                  >
-                    {game.name}
-                  </h2>
-                  <GameDetailTags game={game} testIdPrefix="modal-badge" className="my-2" />
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <GameActionIcons
-                      game={game}
-                      onFinish={() => setFinishing(true)}
-                      testIdPrefix="modal"
-                      className="my-0 max-w-[280px]"
-                    />
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="eyebrow m-0">
+                      {game.store} · {game.platform}
+                    </span>
                     <Link
                       data-testid="modal-open-detail"
                       to={`/jogos/${encodeURIComponent(game.id)}`}
@@ -249,6 +236,21 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                     >
                       Abrir página completa →
                     </Link>
+                  </div>
+                  <h2
+                    id="modal-game-title"
+                    className="my-1 break-words text-xl font-bold sm:text-2xl"
+                  >
+                    {game.name}
+                  </h2>
+                  <GameDetailTags game={game} testIdPrefix="modal-badge" className="my-2" />
+                  <div className="mt-3 w-full">
+                    <GameActionIcons
+                      game={game}
+                      onFinish={() => setFinishing(true)}
+                      testIdPrefix="modal"
+                      className="my-0 w-full"
+                    />
                   </div>
                 </div>
               </div>
@@ -318,42 +320,35 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="panel p-4">
-                  <span className="eyebrow">GÊNERO PRINCIPAL</span>
-                  <div className="mt-2">
-                    <MetadataSelect
-                      data-testid="modal-genre"
-                      label="Gênero principal"
-                      kind="genre"
-                      options={catalog?.genres ?? []}
-                      value={game.primaryGenre}
-                      onValueChange={handleGenreChange}
-                      isLoading={catalogQuery.isLoading}
-                      isError={catalogQuery.isError}
-                      disabled={isCatalogDisabled}
-                      onRetry={() => void catalogQuery.refetch()}
-                    />
-                  </div>
-                </div>
-                <div className="panel p-4">
-                  <span className="eyebrow">TAGS SECUNDÁRIAS</span>
-                  <div className="mt-2">
-                    <MetadataSelect
-                      data-testid="modal-tags"
-                      multiple
-                      max={3}
-                      label="Tags secundárias"
-                      kind="tag"
-                      options={catalog?.tags ?? []}
-                      values={game.secondaryTags ?? []}
-                      onValuesChange={handleTagsChange}
-                      isLoading={catalogQuery.isLoading}
-                      isError={catalogQuery.isError}
-                      disabled={isCatalogDisabled}
-                      onRetry={() => void catalogQuery.refetch()}
-                    />
-                  </div>
+              <div className="panel p-4">
+                <span className="eyebrow">GÊNERO</span>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <MetadataSelect
+                    data-testid="modal-genre"
+                    label="Principal"
+                    kind="genre"
+                    options={catalog?.genres ?? []}
+                    value={game.primaryGenre}
+                    onValueChange={handleGenreChange}
+                    isLoading={catalogQuery.isLoading}
+                    isError={catalogQuery.isError}
+                    disabled={isCatalogDisabled}
+                    onRetry={() => void catalogQuery.refetch()}
+                  />
+                  <MetadataSelect
+                    data-testid="modal-tags"
+                    multiple
+                    max={3}
+                    label="Secundárias"
+                    kind="tag"
+                    options={catalog?.tags ?? []}
+                    values={game.secondaryTags ?? []}
+                    onValuesChange={handleTagsChange}
+                    isLoading={catalogQuery.isLoading}
+                    isError={catalogQuery.isError}
+                    disabled={isCatalogDisabled}
+                    onRetry={() => void catalogQuery.refetch()}
+                  />
                 </div>
               </div>
 

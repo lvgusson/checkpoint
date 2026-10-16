@@ -322,7 +322,7 @@ export function WishlistScreen() {
                     )}
                     <strong>{formatPrice(i.price)}</strong>
                   </span>
-                  <span className="hidden sm:inline-flex score font-mono text-xs text-muted-foreground">
+                  <span className="score text-sm font-semibold text-foreground">
                     {`Pontuação: ${Math.round(i.game.score ?? i.game.baseScore)}`}
                   </span>
                   <span className={'badge ' + badgeColor(i.game.desire)}>{i.game.desire}</span>

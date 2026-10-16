@@ -31,10 +31,7 @@ export function GameActionIcons({
   return (
     <>
       <div
-        className={cn(
-          'grid grid-cols-4 items-center justify-items-center w-full max-w-sm my-3',
-          className,
-        )}
+        className={cn('grid grid-cols-4 items-center justify-items-center w-full my-3', className)}
       >
         <ImmediateButton data-testid={`${testIdPrefix}-immediate`} game={game} />
         <PlayingButton data-testid={`${testIdPrefix}-playing`} game={game} />

@@ -39,13 +39,12 @@ area: frontend
 
 ## Library
 
-| Test ID                                                                 | Action                                     | Destructive? |
-| ----------------------------------------------------------------------- | ------------------------------------------ | ------------ |
-| `library-open-queue`, `library-game-<code>`                             | Open the queue or game page.               | no           |
-| `library-search`, `library-filter-{status,genre,store}`, `library-sort` | Search, filter, or sort games.             | no           |
-| `library-retry`, `library-error-retry`, `library-load-more-retry`       | Retry a failed request.                    | no           |
-| `library-playing-<code>`, `library-immediate-<code>`                    | Change playing status or priority.         | yes          |
-| `library-purchase-<code>`                                               | Open the purchase dialog (wishlist cards). | no           |
+| Test ID                                                                       | Action                                           | Destructive? |
+| ----------------------------------------------------------------------------- | ------------------------------------------------ | ------------ |
+| `library-open-queue`, `library-game-<code>`                                   | Open the queue or game page.                     | no           |
+| `library-search`, `library-filter-{status,genre,store}`, `library-sort`       | Search, filter, or sort games.                   | no           |
+| `library-playing-<code>`, `library-immediate-<code>`, `library-finish-<code>` | Change status, priority, or open completion.     | yes          |
+| `library-purchase-<code>`, `library-unpurchase-<code>`                        | Open purchase or unpurchase confirmation dialog. | no           |
 
 ## Detail
 
@@ -66,19 +65,19 @@ area: frontend
 
 ## Queue
 
-| Test ID                                                                    | Action                                            | Destructive? |
-| -------------------------------------------------------------------------- | ------------------------------------------------- | ------------ |
-| `queue-{search,search-clear,notice-close,excluded-open}`                   | Search, dismiss notices, or show exclusions.      | no           |
-| `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`    | Open game details.                                | no           |
-| `queue-load-more`                                                          | Infinite scroll sentinel (not a button).          | no           |
-| `queue-recalculate`                                                        | Recalculate recommendations.                      | no           |
-| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                   | Retry the queue or the lists request.             | no           |
-| `queue-tags-popover-<code>`                                                | Open metadata popover (mobile).                   | no           |
-| `queue-{playing,immediate,finish}-<code>`                                  | Change game status, priority, or open completion. | yes          |
-| `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`            | Reorder games or remove a fixed position.         | yes          |
-| `queue-list-{trigger,actions}`, `queue-list-select-<id>`                   | Open list menus or select a list.                 | no           |
-| `queue-list-rename-<id>`, `queue-list-{rename-current,create,name,cancel}` | Edit a list name or cancel editing.               | no           |
-| `queue-list-{save,remove}`                                                 | Save a list or request its deletion.              | yes          |
+| Test ID                                                                         | Action                                                 | Destructive? |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------ |
+| `queue-{search,search-clear,notice-close,excluded-open}`                        | Search, dismiss notices, or show exclusions.           | no           |
+| `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`         | Open game details.                                     | no           |
+| `queue-load-more`                                                               | Infinite scroll sentinel (not a button).               | no           |
+| `queue-recalculate`                                                             | Recalculate recommendations.                           | no           |
+| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                        | Retry the queue or the lists request.                  | no           |
+| `queue-tags-popover-<code>`                                                     | Open metadata popover (mobile).                        | no           |
+| `queue-{playing,immediate,finish}-<code>`, `queue-{purchase,unpurchase}-<code>` | Change status, priority, purchase, or open completion. | yes          |
+| `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`                 | Reorder games or remove a fixed position.              | yes          |
+| `queue-list-{trigger,actions}`, `queue-list-select-<id>`                        | Open list menus or select a list.                      | no           |
+| `queue-list-rename-<id>`, `queue-list-{rename-current,create,name,cancel}`      | Edit a list name or cancel editing.                    | no           |
+| `queue-list-{save,remove}`                                                      | Save a list or request its deletion.                   | yes          |
 
 ## Wishlist
 
