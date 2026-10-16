@@ -3,7 +3,6 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
-import type { Server } from 'node:http';
 import { makeServer } from '../../src/main/server.ts';
 import { createService } from '../../src/main/setup.ts';
 import type { Authenticator, AuthUser } from '../../src/auth/auth.ts';
@@ -17,7 +16,6 @@ import { SEED_APP_USER_ID } from '../../src/services/auth-user.ts';
 import { closeDb, db } from '../../src/data/db.ts';
 
 export interface TestServerContext {
-  server: Server;
   baseUrl: string;
   port: number;
   dataDir: string;
@@ -121,30 +119,20 @@ export async function startTestServer(
         ? createMockAuthenticator(options.initialUsers)
         : null;
 
-  const server = makeServer(service, auth, wishlist, null, config, track);
+  const app = makeServer(service, auth, wishlist, null, config, track);
 
-  await new Promise<void>((resolve, reject) => {
-    server.listen(0, '127.0.0.1', () => resolve());
-    server.once('error', reject);
-  });
-
-  const address = server.address() as AddressInfo;
-  const port = address.port;
+  await app.listen({ port: 0, host: '127.0.0.1' });
+  const port = (app.server.address() as AddressInfo).port;
   const baseUrl = `http://127.0.0.1:${port}`;
 
   const close = async () => {
-    if (typeof server.closeAllConnections === 'function') {
-      server.closeAllConnections();
-    }
-    await new Promise<void>((resolve, reject) => {
-      server.close((err) => (err ? reject(err) : resolve()));
-    });
+    app.server.closeAllConnections();
+    await app.close();
     if (databaseUrl) await closeDb();
     await rm(dataDir, { recursive: true, force: true }).catch(() => {});
   };
 
   return {
-    server,
     baseUrl,
     port,
     dataDir,
