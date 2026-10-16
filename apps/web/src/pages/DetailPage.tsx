@@ -160,7 +160,7 @@ export function DetailPage() {
                 {g.store} · {g.platform}
               </span>
               <h1>{g.name}</h1>
-              <GameDetailTags game={g} testIdPrefix="detail" className="my-2" />
+              <GameDetailTags game={g} testIdPrefix="detail-badge" className="my-2" />
               <GameActionIcons
                 game={g}
                 onFinish={() => setFinishing(true)}

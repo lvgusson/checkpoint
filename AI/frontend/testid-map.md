@@ -115,14 +115,15 @@ area: frontend
 
 The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focused.
 
-| Test ID                                                 | Action                                              | Destructive? |
-| ------------------------------------------------------- | --------------------------------------------------- | ------------ |
-| `modal-game-<code>`, `modal-close`, `modal-open-detail` | Dismiss the backdrop, close, or open the full page. | no           |
-| `modal-game-retry`, `modal-catalog-retry`               | Retry loading game details or metadata catalog.     | no           |
-| `modal-catalog-{error,loading}`                         | Read catalog error alert or loading status.         | no           |
-| `modal-{status,desire,tags}`                            | Open metadata selector or tag combobox.             | no           |
-| `modal-{status,desire,tags}-option-<key>`               | Choose or persist status, desire, or tag changes.   | yes          |
-| `modal-notes`, `modal-notes-save`, `modal-finish`       | Edit notes, save notes, or open game completion.    | yes          |
+| Test ID                                                  | Action                                              | Destructive? |
+| -------------------------------------------------------- | --------------------------------------------------- | ------------ |
+| `modal-game-<code>`, `modal-close`, `modal-open-detail`  | Dismiss the backdrop, close, or open the full page. | no           |
+| `modal-game-retry`, `modal-catalog-retry`                | Retry loading game details or metadata catalog.     | no           |
+| `modal-catalog-{error,loading}`                          | Read catalog error alert or loading status.         | no           |
+| `modal-{status,desire,genre,tags}`                       | Open metadata selector or tag combobox.             | no           |
+| `modal-{status,desire,genre,tags}-option-<key>`          | Choose or persist status, desire, or tag changes.   | yes          |
+| `modal-badge-tags`, `modal-badge-tags-{mobile,overflow}` | Display game tag badges or open mobile overflow.    | no           |
+| `modal-notes`, `modal-notes-save`, `modal-finish`        | Edit notes, save notes, or open game completion.    | yes          |
 
 ## Dialog
 

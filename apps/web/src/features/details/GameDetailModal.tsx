@@ -233,7 +233,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                   >
                     {game.name}
                   </h2>
-                  <GameDetailTags game={game} testIdPrefix="modal" className="my-2" />
+                  <GameDetailTags game={game} testIdPrefix="modal-badge" className="my-2" />
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <GameActionIcons
                       game={game}

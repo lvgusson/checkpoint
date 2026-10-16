@@ -173,7 +173,7 @@ describe('GameDetailModal', () => {
     expect(out).toContain('Não');
 
     // Overflow pill on mobile when total tags > 3
-    expect(out).toContain('data-testid="modal-tags-overflow"');
+    expect(out).toContain('data-testid="modal-badge-tags-overflow"');
   });
 
   it('renders modal game loader when game query is in flight', () => {
