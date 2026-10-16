@@ -5,25 +5,10 @@ import { api } from '../../api/http';
 import { useQueryKeys } from '../../query/keys';
 import { AppLoader } from '../loader/AppLoader';
 
+import { Cover } from '@/components/Cover';
+
 const MIN_CHARS = 3;
 const DEBOUNCE_MS = 300;
-
-function GameCover({ game }: { game: ScoredGame }) {
-  const [broken, setBroken] = useState(false);
-  return (
-    <span className="relative grid h-9 w-[54px] shrink-0 place-items-center overflow-hidden rounded-[5px] bg-secondary text-foreground">
-      {game.coverUrl && !broken && (
-        <img
-          src={game.coverUrl}
-          alt=""
-          className="absolute inset-0 z-[1] size-full object-cover"
-          onError={() => setBroken(true)}
-        />
-      )}
-      <span>{game.name.slice(0, 1)}</span>
-    </span>
-  );
-}
 
 const rowClass =
   'flex min-h-[50px] w-full min-w-0 items-center gap-2.5 rounded-md border-0 bg-transparent p-1.5 text-left text-foreground';
@@ -104,7 +89,10 @@ export function PrerequisiteSearch({
         <div className={`${rowClass} mt-2 bg-secondary`}>
           {selected.data ? (
             <>
-              <GameCover game={selected.data} />
+              <Cover
+                game={selected.data}
+                className="h-9 w-[54px] aspect-auto shrink-0 rounded-[5px]"
+              />
               <span className={nameClass} title={selected.data.name}>
                 {selected.data.name}
               </span>
@@ -163,7 +151,7 @@ export function PrerequisiteSearch({
                 className={`${rowClass} hover:bg-secondary`}
                 onClick={() => choose(game)}
               >
-                <GameCover game={game} />
+                <Cover game={game} className="h-9 w-[54px] aspect-auto shrink-0 rounded-[5px]" />
                 <span className={nameClass} title={game.name}>
                   {game.name}
                 </span>
