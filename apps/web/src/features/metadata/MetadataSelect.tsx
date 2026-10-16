@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Desire, GameStatus } from '../../../../../packages/core/src/models';
 import { testIdKey, testIdValue } from '@/components/ui/test-id';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,9 @@ type Common = {
   isError?: boolean;
   onRetry?: () => void;
   disabled?: boolean;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  className?: string;
 };
 
 function metadataOptionKey(kind: MetadataKind, value: string) {
@@ -48,6 +52,7 @@ export function MetadataSelect(props: Props) {
   const optionsListRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const max = props.multiple ? (props.max ?? 3) : 0;
   const selectedValues = props.multiple ? props.values : props.value ? [props.value] : [];
@@ -55,15 +60,21 @@ export function MetadataSelect(props: Props) {
   const unavailable = (item: string) =>
     props.multiple === true && !selected(item) && props.values.length >= max;
 
+  const filteredOptions =
+    props.searchable && searchQuery.trim()
+      ? options.filter((item) => item.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+      : options;
+
   const close = (restoreFocus = true) => {
     setOpen(false);
+    setSearchQuery('');
     if (restoreFocus) {
       root.current?.querySelector<HTMLButtonElement>('.select-trigger')?.focus();
     }
   };
 
   const openList = () => {
-    const idx = !props.multiple && props.value ? options.indexOf(props.value) : -1;
+    const idx = !props.multiple && props.value ? filteredOptions.indexOf(props.value) : -1;
     setHighlightedIndex(idx >= 0 ? idx : 0);
     setOpen(true);
   };
@@ -125,34 +136,37 @@ export function MetadataSelect(props: Props) {
       close(false);
       return;
     }
-    if (options.length === 0) return;
+    if (filteredOptions.length === 0) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev + 1) % options.length);
+      setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev - 1 + options.length) % options.length);
+      setHighlightedIndex((prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length);
     } else if (event.key === 'Home') {
       event.preventDefault();
       setHighlightedIndex(0);
     } else if (event.key === 'End') {
       event.preventDefault();
-      setHighlightedIndex(options.length - 1);
+      setHighlightedIndex(filteredOptions.length - 1);
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      const item = options[highlightedIndex];
+      const item = filteredOptions[highlightedIndex];
       if (item) choose(item);
     }
   }
 
-  const highlightedItem = options[highlightedIndex];
+  const highlightedItem = filteredOptions[highlightedIndex];
   const activeDescendantId =
     open && highlightedItem
       ? `${id}-option-${metadataOptionKey(kind, highlightedItem)}`
       : undefined;
 
   return (
-    <div ref={root} className={cn('relative mt-[17px] block min-w-0', open && 'z-30')}>
+    <div
+      ref={root}
+      className={cn('relative block min-w-0', props.className ?? 'mt-[17px]', open && 'z-30')}
+    >
       <span className="block text-[11px] font-semibold max-sm:text-[13px]" id={id + '-label'}>
         {label}
       </span>
@@ -163,7 +177,7 @@ export function MetadataSelect(props: Props) {
         disabled={disabled}
         aria-disabled={disabled || undefined}
         className={cn(
-          'select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-[11px] py-2 text-left text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30',
+          'select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-3 pr-3.5 py-2 text-left text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30',
           disabled && 'cursor-not-allowed opacity-50',
         )}
         aria-labelledby={`${id}-label ${id}-value`}
@@ -194,7 +208,13 @@ export function MetadataSelect(props: Props) {
             </span>
           )}
         </span>
-        <span aria-hidden="true">⌄</span>
+        <ChevronDown
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            open && 'rotate-180',
+          )}
+          aria-hidden="true"
+        />
       </button>
 
       {open && (
@@ -206,6 +226,21 @@ export function MetadataSelect(props: Props) {
           aria-labelledby={id + '-label'}
           aria-multiselectable={props.multiple || undefined}
         >
+          {props.searchable && (
+            <div className="border-b border-border p-2">
+              <input
+                type="search"
+                role="searchbox"
+                data-testid={`${props['data-testid']}-search`}
+                className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                placeholder={props.searchPlaceholder ?? 'Buscar…'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
           <div ref={optionsListRef} className="flex-1 overflow-auto overscroll-contain p-1.5">
             {isLoading ? (
               <div
@@ -233,7 +268,7 @@ export function MetadataSelect(props: Props) {
                   </button>
                 )}
               </div>
-            ) : options.length === 0 ? (
+            ) : filteredOptions.length === 0 ? (
               <div
                 data-testid={`${props['data-testid']}-empty`}
                 className="py-4 text-center text-xs text-muted-foreground"
@@ -241,7 +276,7 @@ export function MetadataSelect(props: Props) {
                 Nenhuma opção disponível
               </div>
             ) : (
-              options.map((item, index) => {
+              filteredOptions.map((item, index) => {
                 const isSelected = selected(item);
                 const isUnavailable = unavailable(item);
                 const isHighlighted = index === highlightedIndex;

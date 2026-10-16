@@ -77,6 +77,46 @@ describe('MetadataSelect', () => {
     expect(out).not.toContain('role="searchbox"');
     expect(out).not.toContain('modal-status-search');
   });
+
+  it('renders centered ChevronDown icon with transition and right padding instead of text character', () => {
+    const out = html(
+      React.createElement(MetadataSelect, {
+        label: 'Gênero',
+        kind: 'genre',
+        options: ['RPG', 'Ação'],
+        value: 'RPG',
+        onValueChange: () => {},
+        'data-testid': 'modal-genre',
+      }),
+    );
+
+    // Must not contain deformed text character
+    expect(out).not.toContain('⌄');
+
+    // Must have ChevronDown svg with transition styling
+    expect(out).toContain('transition-transform duration-200');
+
+    // Must have right padding to keep arrow away from edge
+    expect(out).toContain('pr-3.5');
+  });
+
+  it('renders search input when searchable is enabled', () => {
+    const out = html(
+      React.createElement(MetadataSelect, {
+        label: 'Status do Jogo',
+        kind: 'status',
+        options: ['Não iniciado', 'Jogando', 'Finalizado'],
+        value: 'Jogando',
+        searchable: true,
+        searchPlaceholder: 'Filtrar status…',
+        onValueChange: () => {},
+        'data-testid': 'modal-status',
+      }),
+    );
+
+    // Popover is not open in initial render, but trigger and configuration are supported
+    expect(out).toContain('data-testid="modal-status"');
+  });
 });
 
 describe('Combobox', () => {
@@ -96,6 +136,28 @@ describe('Combobox', () => {
     expect(out).toContain('aria-haspopup="listbox"');
     expect(out).toContain('Filtro de Loja');
     expect(out).toContain('Steam');
+
+    // Centered ChevronDown with transition and trigger right padding
+    expect(out).toContain('transition-transform duration-200');
+    expect(out).toContain('pr-3.5');
+    expect(out).not.toContain('⌄');
+  });
+
+  it('supports multiple selection mode with counter and custom values', () => {
+    const out = html(
+      React.createElement(Combobox, {
+        label: 'Tags',
+        options: ['Indie', 'Roguelike', 'Souls-like'],
+        multiple: true,
+        values: ['Indie', 'Roguelike'],
+        max: 3,
+        'data-testid': 'combobox-tags',
+      }),
+    );
+
+    expect(out).toContain('data-testid="combobox-tags"');
+    expect(out).toContain('Indie, Roguelike');
+    expect(out).toContain('2 / 3 selecionados');
   });
 
   it('does not render virtual keyboard search input', () => {

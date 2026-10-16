@@ -16,7 +16,12 @@ export interface ComboboxProps {
   options: (string | ComboboxOption)[];
   value?: string;
   onValueChange?: (value: string) => void;
+  multiple?: boolean;
+  values?: string[];
+  max?: number;
+  onValuesChange?: (values: string[]) => void;
   placeholder?: string;
+  searchable?: boolean;
   searchPlaceholder?: string;
   emptyText?: string;
   disabled?: boolean;
@@ -26,6 +31,7 @@ export interface ComboboxProps {
   className?: string;
   'data-testid'?: string;
   renderOption?: (option: ComboboxOption, selected: boolean) => React.ReactNode;
+  renderValue?: (selectedOptions: ComboboxOption[]) => React.ReactNode;
 }
 
 export function Combobox({
@@ -34,8 +40,13 @@ export function Combobox({
   options,
   value,
   onValueChange,
+  multiple = false,
+  values,
+  max = 0,
+  onValuesChange,
   placeholder = 'Selecionar…',
-  searchPlaceholder: _searchPlaceholder,
+  searchable = false,
+  searchPlaceholder,
   emptyText = 'Nenhuma opção encontrada',
   disabled = false,
   isLoading = false,
@@ -44,6 +55,7 @@ export function Combobox({
   className,
   'data-testid': testId,
   renderOption,
+  renderValue,
 }: ComboboxProps) {
   const generatedId = useId();
   const id = customId || generatedId;
@@ -51,10 +63,27 @@ export function Combobox({
   const optionsListRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const normalizedOptions: ComboboxOption[] = React.useMemo(
     () => options.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt)),
     [options],
+  );
+
+  const filteredOptions = React.useMemo(() => {
+    if (!searchable || !searchQuery.trim()) return normalizedOptions;
+    const q = searchQuery.trim().toLowerCase();
+    return normalizedOptions.filter((opt) => opt.label.toLowerCase().includes(q));
+  }, [normalizedOptions, searchable, searchQuery]);
+
+  const selectedValues = React.useMemo(
+    () => (multiple ? (values ?? []) : value ? [value] : []),
+    [multiple, values, value],
+  );
+
+  const selectedOptions = React.useMemo(
+    () => normalizedOptions.filter((opt) => selectedValues.includes(opt.value)),
+    [normalizedOptions, selectedValues],
   );
 
   const selectedOption = React.useMemo(
@@ -62,18 +91,37 @@ export function Combobox({
     [normalizedOptions, value],
   );
 
+  const isSelected = (val: string) => selectedValues.includes(val);
+  const isUnavailable = (val: string) =>
+    Boolean(multiple && max > 0 && !isSelected(val) && selectedValues.length >= max);
+
   const close = (restoreFocus = true) => {
     setOpen(false);
+    setSearchQuery('');
     if (restoreFocus) {
       rootRef.current?.querySelector<HTMLButtonElement>('.combobox-trigger')?.focus();
     }
   };
 
   const openList = () => {
-    const idx = normalizedOptions.findIndex((opt) => opt.value === value);
+    const idx = !multiple && value ? filteredOptions.findIndex((opt) => opt.value === value) : -1;
     setHighlightedIndex(idx >= 0 ? idx : 0);
     setOpen(true);
   };
+
+  function choose(option: ComboboxOption) {
+    if (option.disabled || isUnavailable(option.value)) return;
+    if (multiple) {
+      const selected = isSelected(option.value);
+      const next = selected
+        ? selectedValues.filter((v) => v !== option.value)
+        : [...selectedValues, option.value];
+      onValuesChange?.(next);
+    } else {
+      onValueChange?.(option.value);
+      close(true);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -120,32 +168,27 @@ export function Combobox({
       close(false);
       return;
     }
-    if (normalizedOptions.length === 0) return;
+    if (filteredOptions.length === 0) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev + 1) % normalizedOptions.length);
+      setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setHighlightedIndex(
-        (prev) => (prev - 1 + normalizedOptions.length) % normalizedOptions.length,
-      );
+      setHighlightedIndex((prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length);
     } else if (event.key === 'Home') {
       event.preventDefault();
       setHighlightedIndex(0);
     } else if (event.key === 'End') {
       event.preventDefault();
-      setHighlightedIndex(normalizedOptions.length - 1);
+      setHighlightedIndex(filteredOptions.length - 1);
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      const option = normalizedOptions[highlightedIndex];
-      if (option && !option.disabled) {
-        onValueChange?.(option.value);
-        close(true);
-      }
+      const option = filteredOptions[highlightedIndex];
+      if (option) choose(option);
     }
   }
 
-  const highlightedOption = normalizedOptions[highlightedIndex];
+  const highlightedOption = filteredOptions[highlightedIndex];
   const activeDescendantId =
     open && highlightedOption ? `${id}-opt-${highlightedIndex}` : undefined;
 
@@ -173,19 +216,33 @@ export function Combobox({
         onClick={() => !disabled && (open ? close() : openList())}
         onKeyDown={handleKeyDown}
         className={cn(
-          'combobox-trigger flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-[11px] py-2 text-left text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50',
+          'combobox-trigger flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-3 pr-3.5 py-2 text-left text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50',
         )}
       >
         <span id={`${id}-value`} className="truncate">
-          {isLoading && !selectedOption ? (
+          {isLoading && selectedValues.length === 0 ? (
             <span className="text-muted-foreground">Carregando…</span>
+          ) : renderValue ? (
+            renderValue(selectedOptions)
+          ) : multiple ? (
+            selectedOptions.length ? (
+              selectedOptions.map((o) => o.label).join(', ')
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )
           ) : selectedOption ? (
             selectedOption.label
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
         </span>
-        <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden="true" />
+        <ChevronDown
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            open && 'rotate-180',
+          )}
+          aria-hidden="true"
+        />
       </button>
 
       {open && (
@@ -194,8 +251,24 @@ export function Combobox({
           role="listbox"
           tabIndex={-1}
           aria-labelledby={label ? `${id}-label` : undefined}
+          aria-multiselectable={multiple || undefined}
           className="absolute inset-x-0 top-full z-[30] mt-[5px] flex max-h-[280px] flex-col overflow-hidden rounded-[10px] border border-border bg-card shadow-lg"
         >
+          {searchable && (
+            <div className="border-b border-border p-2">
+              <input
+                type="search"
+                role="searchbox"
+                data-testid={testId ? `${testId}-search` : undefined}
+                className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                placeholder={searchPlaceholder ?? 'Buscar…'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
           <div
             ref={optionsListRef}
             className="max-h-[280px] flex-1 overflow-auto overscroll-contain p-1.5"
@@ -226,7 +299,7 @@ export function Combobox({
                   </button>
                 )}
               </div>
-            ) : normalizedOptions.length === 0 ? (
+            ) : filteredOptions.length === 0 ? (
               <div
                 data-testid={testId ? `${testId}-empty` : undefined}
                 className="py-4 text-center text-xs text-muted-foreground"
@@ -234,8 +307,9 @@ export function Combobox({
                 {emptyText}
               </div>
             ) : (
-              normalizedOptions.map((opt, index) => {
-                const isSelected = opt.value === value;
+              filteredOptions.map((opt, index) => {
+                const optSelected = isSelected(opt.value);
+                const optDisabled = opt.disabled || isUnavailable(opt.value);
                 const isHighlighted = index === highlightedIndex;
                 return (
                   <button
@@ -244,26 +318,21 @@ export function Combobox({
                     data-testid={testId ? `${testId}-option-${opt.value}` : undefined}
                     type="button"
                     role="option"
-                    aria-selected={isSelected}
-                    aria-disabled={opt.disabled}
-                    disabled={opt.disabled}
-                    tabIndex={isSelected ? 0 : -1}
+                    aria-selected={optSelected}
+                    aria-disabled={optDisabled}
+                    disabled={optDisabled}
+                    tabIndex={optSelected ? 0 : -1}
                     onMouseEnter={() => setHighlightedIndex(index)}
-                    onClick={() => {
-                      if (!opt.disabled) {
-                        onValueChange?.(opt.value);
-                        close(true);
-                      }
-                    }}
+                    onClick={() => choose(opt)}
                     className={cn(
                       'flex min-h-10 w-full items-center justify-between gap-2 rounded-md bg-transparent p-2 text-left text-xs text-foreground transition-colors',
                       isHighlighted && 'bg-secondary',
-                      isSelected && 'font-medium',
-                      opt.disabled && 'cursor-not-allowed opacity-45',
+                      optSelected && 'font-medium',
+                      optDisabled && 'cursor-not-allowed opacity-45',
                     )}
                   >
-                    {renderOption ? renderOption(opt, isSelected) : <span>{opt.label}</span>}
-                    {isSelected && (
+                    {renderOption ? renderOption(opt, optSelected) : <span>{opt.label}</span>}
+                    {optSelected && (
                       <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />
                     )}
                   </button>
@@ -272,6 +341,12 @@ export function Combobox({
             )}
           </div>
         </div>
+      )}
+
+      {multiple && max > 0 && (
+        <small className="mt-1.5 block text-xs text-muted-foreground">
+          {`${selectedValues.length} / ${max} selecionados`}
+        </small>
       )}
     </div>
   );

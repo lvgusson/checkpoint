@@ -285,6 +285,28 @@ export function DetailPage() {
                     />
                   </label>
                 </section>
+                <section className="panel">
+                  <span className="eyebrow">GÊNERO</span>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <MetadataSelect
+                      data-testid="detail-genre"
+                      label="Principal"
+                      kind="genre"
+                      options={catalog?.genres ?? []}
+                      value={form.primaryGenre}
+                      onValueChange={(v) => set('primaryGenre', v)}
+                    />
+                    <MetadataSelect
+                      data-testid="detail-tags"
+                      multiple
+                      label="Secundárias"
+                      kind="tag"
+                      options={catalog?.tags ?? []}
+                      values={form.secondaryTags}
+                      onValuesChange={(v) => set('secondaryTags', v)}
+                    />
+                  </div>
+                </section>
                 <section className="panel metadata">
                   <span className="eyebrow">CLASSIFICAÇÃO</span>
                   <h2>Metadados do jogo</h2>
@@ -299,23 +321,6 @@ export function DetailPage() {
                         required
                       />
                     </label>
-                    <MetadataSelect
-                      data-testid="detail-genre"
-                      label="Gênero principal"
-                      kind="genre"
-                      options={catalog?.genres ?? []}
-                      value={form.primaryGenre}
-                      onValueChange={(v) => set('primaryGenre', v)}
-                    />
-                    <MetadataSelect
-                      data-testid="detail-tags"
-                      multiple
-                      label="Tags secundárias"
-                      kind="tag"
-                      options={catalog?.tags ?? []}
-                      values={form.secondaryTags}
-                      onValuesChange={(v) => set('secondaryTags', v)}
-                    />
                     <MetadataSelect
                       data-testid="detail-pace"
                       label="Ritmo"
