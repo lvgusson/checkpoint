@@ -91,9 +91,10 @@ describe('GameDetailModal', () => {
     expect(out).toContain('object-contain');
     expect(out).not.toContain('object-cover');
 
-    // Comboboxes for status, desire and tags must be present
+    // Comboboxes for status, desire, genre and tags must be present
     expect(out).toContain('data-testid="modal-status"');
     expect(out).toContain('data-testid="modal-desire"');
+    expect(out).toContain('data-testid="modal-genre"');
     expect(out).toContain('data-testid="modal-tags"');
 
     // Tags control must display selected tags count and tags
@@ -123,6 +124,7 @@ describe('GameDetailModal', () => {
     // Controls must be disabled
     expect(out).toMatch(/data-testid="modal-status"[^>]*disabled/);
     expect(out).toMatch(/data-testid="modal-desire"[^>]*disabled/);
+    expect(out).toMatch(/data-testid="modal-genre"[^>]*disabled/);
     expect(out).toMatch(/data-testid="modal-tags"[^>]*disabled/);
   });
 
@@ -142,6 +144,36 @@ describe('GameDetailModal', () => {
     expect(out).toContain('role="status"');
     expect(out).toContain('Carregando opções de catálogo…');
     expect(out).toMatch(/data-testid="modal-status"[^>]*disabled/);
+    expect(out).toMatch(/data-testid="modal-genre"[^>]*disabled/);
+  });
+
+  it('renders 4 action icons and renders metadata tags as badges with mobile overflow', () => {
+    mockCatalogState = { data: mockCatalog, isLoading: false, isError: false };
+    mockGameState = { data: mockGame, isLoading: false, isError: false };
+
+    const out = html(
+      React.createElement(GameDetailModal, {
+        gameId: 'game-1',
+        open: true,
+        onOpenChange: () => {},
+      }),
+    );
+
+    // 4 action buttons evenly spaced
+    expect(out).toContain('data-testid="modal-immediate"');
+    expect(out).toContain('data-testid="modal-playing"');
+    expect(out).toContain('data-testid="modal-finish"');
+    expect(out).toContain('data-testid="modal-purchase"');
+
+    // Tags instead of plain words: pace, structure, coop as badges
+    expect(out).not.toContain('Moderado · Linear · Não');
+    expect(out).toContain('data-testid="modal-tags"');
+    expect(out).toContain('Moderado');
+    expect(out).toContain('Linear');
+    expect(out).toContain('Não');
+
+    // Overflow pill on mobile when total tags > 3
+    expect(out).toContain('data-testid="modal-tags-overflow"');
   });
 
   it('renders modal game loader when game query is in flight', () => {

@@ -57,8 +57,11 @@ export class GameRepositoryImpl implements GameRepository {
   }
   async save(game: Game, { creator = false } = {}) {
     const owner = await this.user();
-    // `game` and `game_tag` are shared by every library: only admins may write them.
-    const writeCatalog = creator || can(getContext()?.role, Permission.CatalogUpdate);
+    // `game` and `game_tag` are shared by every library: admins or users updating their games may write them.
+    const writeCatalog =
+      creator ||
+      can(getContext()?.role, Permission.CatalogUpdate) ||
+      can(getContext()?.role, Permission.GamesUpdate);
     await this.driver.save(owner, game, { writeCatalog }).catch(toAppError);
   }
 }
