@@ -5,12 +5,18 @@ import { AppLoader } from './AppLoader';
 const html = (node: React.ReactNode) => renderToString(node);
 
 describe('AppLoader', () => {
-  it('renders standard circular spinner by default', () => {
+  it('renders bonfire sword art by default for stacked loaders', () => {
     const out = html(<AppLoader data-testid="loader-default" label="Carregando…" />);
-    expect(out).toContain('class="ckl__spinner"');
-    expect(out).not.toContain('sword-loader-svg');
+    expect(out).toContain('sword-loader-svg');
+    expect(out).not.toContain('class="ckl__spinner"');
     expect(out).toContain('data-testid="loader-default"');
     expect(out).toContain('Carregando…');
+  });
+
+  it('renders standard circular spinner when layout="inline"', () => {
+    const out = html(<AppLoader layout="inline" size="sm" label="Aguarde…" />);
+    expect(out).toContain('class="ckl__spinner"');
+    expect(out).not.toContain('sword-loader-svg');
   });
 
   it('renders standard circular spinner when explicitly passed variant="spinner"', () => {
