@@ -16,6 +16,7 @@ Start here, pick the area you change, then follow one link. Open Obsidian with t
 - [[AI/core/core]]: `packages/core` contracts and the `packages/ui-react` kit.
 - [[AI/patterns/design-patterns]]: the design patterns this project uses and where.
 - [[AI/decisions/0001-monorepo-and-stack]]: why the stack and layout are what they are.
+- [[AI/jobs/index]]: Table of role checklists. Run each checklist of your task before you report done.
 - [[AI/memory/memory]]: Hub of session memory: when to use it, the notes, the sessions.
 
 ## Related

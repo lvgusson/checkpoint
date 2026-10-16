@@ -38,7 +38,7 @@ Update 14:50 (lead agy):
 | Perf SQL, cache, scoring, import | 0j1, 4mw, 3vo              | closed                         |
 | Perf SQL browse/search           | 34o                        | closed                         |
 | Perf wishlist / steam import     | ehg, thu, 3i1              | closed                         |
-| Game fixes (purchase, scroll)    | ad7                        | in progress, uncommitted       |
+| Game fixes (purchase, scroll)    | ad7                        | closed (PR #1 merged)          |
 
 ## Open handoffs and questions
 
@@ -66,3 +66,14 @@ Update 14:50 (lead agy):
 ## Sources compacted
 
 - No logs yet. Prompts: `.agents/logs/handoff-2026-10-15/`.
+
+## Handoff 2026-10-15 (Claude to next agent)
+
+Update 2026-10-16: other agents work on s5f, afc, 4bq, tests and the DB timeout. Results are not yet recorded here. Check `bd show <id>` for each.
+
+- `homologacao` is at `2015a26` (PR #1 merged: ad7 game fixes). Vercel preview succeeded for `checkpoint` and `checkpoint-v2`. Bd issue `checkpoint-ad7` is closed.
+- Playwright ran against the homologacao preview (sha 2015a26, 2026-10-15 21:3x): FAILED. route-map 4-7 and smoke login tests fail, game-fixes test 2 (`loader-modal` still visible after 5 s; passed timing only if raised) and test 1 (library cards not found, flaky) fail. Cause not yet found; not a verified regression (no baseline run). `main` merge NOT done.
+- Old note: Playwright against the homologacao preview. Run `pnpm --filter @checkpoint/web exec playwright test e2e/game-fixes.spec.ts e2e/route-map.spec.ts` with the homologacao URL (`https://checkpoint-git-homologacao-lucasgusson99-4673s-projects.vercel.app`, bypass headers per `AI/frontend/e2e-testing.md`). Use long timeouts: Supabase latency is about 200 ms.
+- NOT DONE: `main` still lags `homologacao`. The owner decides the PR `homologacao` to `main` after e2e passes.
+- Fastify refactor (bd `checkpoint-4bq`, open): done in worktree `~/.local/state/checkpoint-worktrees/fastify`, branch `worktree-agent-ad854d122fd031225`, uncommitted. It branches from `main`, not `homologacao`: rebase first. `pnpm check` and security tests passed there. Not tested on Vercel (`app.server.emit` entry). axios not adopted on purpose (one `fetch` call).
+- Known gaps: no unit tests for `useInfiniteScroll`, `gameWriter.purchase`, the `scoring` cover fallback. Queue and Wishlist pass `isLoading: false`, so a tall screen may not reload.
