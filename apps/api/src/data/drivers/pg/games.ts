@@ -3,7 +3,7 @@
 // library_entry.user_id = owner. Toda operação é UMA instrução SQL (atômica por si, sem
 // BEGIN/COMMIT): com `prepare: false` cada query parametrizada custa 2 round trips, e
 // transações explícitas somariam mais 2; por isso evitamos múltiplos statements.
-import type { Game, GameStatus } from '../../../../../../packages/core/src/models.ts';
+import { GameStatus, type Game } from '../../../../../../packages/core/src/models.ts';
 import type { MetadataCatalog } from '../../../../../../packages/core/src/metadata.ts';
 import { normalizeMetadata } from '../../../../../../packages/core/src/metadata.ts';
 import type { Sql } from '../../db.ts';
@@ -190,7 +190,7 @@ export class PgGamesDriver implements GamesDriver {
                       store_id = ${vocabId('store', game.store)},
                       platform = ${game.platform}::text,
                       actual_hours = ${game.actualHours}::numeric,
-                      purchased_at = coalesce(e.purchased_at, ${game.purchasedAt ?? null}::timestamptz),
+                      purchased_at = CASE WHEN ${game.status === GameStatus.Wishlist}::boolean THEN NULL ELSE coalesce(e.purchased_at, ${game.purchasedAt ?? null}::timestamptz) END,
                       started_at = ${game.startedAt}::date,
                       finished_at = ${game.finishedAt}::date,
                       rating = ${game.rating}::numeric,

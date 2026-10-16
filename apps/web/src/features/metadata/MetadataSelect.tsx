@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Desire, GameStatus } from '../../../../../packages/core/src/models';
 import { testIdKey, testIdValue } from '@/components/ui/test-id';
 import { cn } from '@/lib/utils';
@@ -23,13 +23,6 @@ function metadataOptionKey(kind: MetadataKind, value: string) {
   return code ? testIdKey(code) : testIdValue(value);
 }
 
-const normalize = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-
 type Props =
   | (Common & { multiple?: false; value: string; onValueChange(value: string): void })
   | (Common & {
@@ -39,7 +32,7 @@ type Props =
       onValuesChange(values: string[]): void;
     });
 
-/** Searchable combobox of metadata badges; single or multiple (limited by `max`). Keyboard: arrows, Home/End, Enter, Escape, Tab. */
+/** Combobox of metadata badges; single or multiple (limited by `max`). Keyboard: arrows, Home/End, Enter/Space, Escape, Tab. */
 export function MetadataSelect(props: Props) {
   const {
     label,
@@ -52,10 +45,8 @@ export function MetadataSelect(props: Props) {
   } = props;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const max = props.multiple ? (props.max ?? 3) : 0;
@@ -64,15 +55,8 @@ export function MetadataSelect(props: Props) {
   const unavailable = (item: string) =>
     props.multiple === true && !selected(item) && props.values.length >= max;
 
-  const filteredOptions = useMemo(() => {
-    const q = normalize(search);
-    if (!q) return options;
-    return options.filter((item) => normalize(item).includes(q));
-  }, [options, search]);
-
   const close = (restoreFocus = true) => {
     setOpen(false);
-    setSearch('');
     if (restoreFocus) {
       root.current?.querySelector<HTMLButtonElement>('.select-trigger')?.focus();
     }
@@ -83,10 +67,6 @@ export function MetadataSelect(props: Props) {
     setHighlightedIndex(idx >= 0 ? idx : 0);
     setOpen(true);
   };
-
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -115,7 +95,6 @@ export function MetadataSelect(props: Props) {
       props.onValuesChange(
         selected(item) ? props.values.filter((v) => v !== item) : [...props.values, item],
       );
-      searchInputRef.current?.focus();
     } else {
       props.onValueChange(item);
       close(true);
@@ -123,6 +102,20 @@ export function MetadataSelect(props: Props) {
   }
 
   function navigate(event: React.KeyboardEvent) {
+    if (disabled) return;
+    if (!open) {
+      if (
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'Enter' ||
+        event.key === ' '
+      ) {
+        event.preventDefault();
+        openList();
+      }
+      return;
+    }
+
     if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
@@ -132,40 +125,27 @@ export function MetadataSelect(props: Props) {
       close(false);
       return;
     }
-    if (filteredOptions.length === 0) return;
+    if (options.length === 0) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
+      setHighlightedIndex((prev) => (prev + 1) % options.length);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length);
+      setHighlightedIndex((prev) => (prev - 1 + options.length) % options.length);
     } else if (event.key === 'Home') {
       event.preventDefault();
       setHighlightedIndex(0);
     } else if (event.key === 'End') {
       event.preventDefault();
-      setHighlightedIndex(filteredOptions.length - 1);
-    } else if (event.key === 'Enter') {
+      setHighlightedIndex(options.length - 1);
+    } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      const item = filteredOptions[highlightedIndex];
+      const item = options[highlightedIndex];
       if (item) choose(item);
     }
   }
 
-  function handleTriggerKeyDown(event: React.KeyboardEvent) {
-    if (disabled) return;
-    if (
-      event.key === 'ArrowDown' ||
-      event.key === 'ArrowUp' ||
-      event.key === 'Enter' ||
-      event.key === ' '
-    ) {
-      event.preventDefault();
-      openList();
-    }
-  }
-
-  const highlightedItem = filteredOptions[highlightedIndex];
+  const highlightedItem = options[highlightedIndex];
   const activeDescendantId =
     open && highlightedItem
       ? `${id}-option-${metadataOptionKey(kind, highlightedItem)}`
@@ -190,8 +170,9 @@ export function MetadataSelect(props: Props) {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
+        aria-activedescendant={activeDescendantId}
         onClick={() => !disabled && (open ? close() : openList())}
-        onKeyDown={handleTriggerKeyDown}
+        onKeyDown={navigate}
       >
         <span className="flex min-w-0 flex-wrap gap-[5px]" id={id + '-value'}>
           {selectedValues.length ? (
@@ -225,26 +206,6 @@ export function MetadataSelect(props: Props) {
           aria-labelledby={id + '-label'}
           aria-multiselectable={props.multiple || undefined}
         >
-          <div className="border-b border-border p-1.5">
-            <input
-              ref={searchInputRef}
-              data-testid={`${props['data-testid']}-search`}
-              type="text"
-              role="searchbox"
-              aria-autocomplete="list"
-              aria-controls={id}
-              aria-activedescendant={activeDescendantId}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setHighlightedIndex(0);
-              }}
-              onKeyDown={navigate}
-              placeholder={`Buscar ${label.toLowerCase()}…`}
-              className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-
           <div ref={optionsListRef} className="flex-1 overflow-auto overscroll-contain p-1.5">
             {isLoading ? (
               <div
@@ -272,15 +233,15 @@ export function MetadataSelect(props: Props) {
                   </button>
                 )}
               </div>
-            ) : filteredOptions.length === 0 ? (
+            ) : options.length === 0 ? (
               <div
                 data-testid={`${props['data-testid']}-empty`}
                 className="py-4 text-center text-xs text-muted-foreground"
               >
-                {options.length === 0 ? 'Nenhuma opção disponível' : 'Nenhuma opção encontrada'}
+                Nenhuma opção disponível
               </div>
             ) : (
-              filteredOptions.map((item, index) => {
+              options.map((item, index) => {
                 const isSelected = selected(item);
                 const isUnavailable = unavailable(item);
                 const isHighlighted = index === highlightedIndex;

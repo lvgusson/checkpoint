@@ -23,7 +23,11 @@ export async function staticRoute(path: string): Promise<RouteResult> {
     content = await readFile(target);
   } catch {
     target = resolve(base, 'index.html');
-    content = await readFile(target);
+    content = await readFile(target).catch(() =>
+      Buffer.from(
+        '<!doctype html><html lang="pt-BR"><head><title>Checkpoint</title></head><body><div id="root"></div></body></html>',
+      ),
+    );
   }
   return { raw: content, contentType: mime[extname(target)] ?? ContentType.OctetStream };
 }

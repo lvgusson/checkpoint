@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import type { Desire, QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { FinishDialog } from '../finish-dialog';
 import { ImmediateButton } from '../immediate';
@@ -513,7 +514,7 @@ function areRowPropsEqual(prev: RowProps, next: RowProps): boolean {
   );
 }
 
-const QueueRow = memo(function QueueRow({
+export const QueueRow = memo(function QueueRow({
   entry: item,
   index: i,
   isNextGame = false,
@@ -532,6 +533,8 @@ const QueueRow = memo(function QueueRow({
   onDesireFailed,
 }: RowProps) {
   const { game } = item;
+  const primaryTag = game.primaryGenre || game.secondaryTags[0];
+  const otherTags = game.primaryGenre ? game.secondaryTags : game.secondaryTags.slice(1);
   const release = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -591,6 +594,9 @@ const QueueRow = memo(function QueueRow({
         </div>
         <div className="queue-title">
           <h3>{game.name}</h3>
+          <span className="sm:hidden text-xs text-muted-foreground font-medium">
+            {`Pontuação: ${Math.round(item.score)}`}
+          </span>
           <div className="tags">
             <MetadataBadge kind="genre" value={game.primaryGenre} />
             {game.secondaryTags.map((t) => (
@@ -612,6 +618,49 @@ const QueueRow = memo(function QueueRow({
         <span className="row-arrow">↗</span>
       </Link>
       <div className="queue-actions">
+        <div className="queue-mobile-tags flex items-center gap-1 min-w-0 mr-auto sm:hidden">
+          {primaryTag && (
+            <MetadataBadge
+              kind={game.primaryGenre ? 'genre' : 'tag'}
+              value={primaryTag}
+              className="truncate max-w-[90px] whitespace-nowrap [&>span]:truncate [&>span]:break-normal"
+            />
+          )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                data-testid={`queue-tags-popover-${game.id.toLowerCase()}`}
+                type="button"
+                className="inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-border bg-[var(--surface-2)] text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)]"
+                aria-label={`Mais detalhes de ${game.name}`}
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+              >
+                +
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-64 p-3 flex flex-col gap-2 z-50 bg-[var(--surface)] border border-border rounded-lg shadow-lg"
+              align="start"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {game.status && <MetadataBadge kind="status" value={game.status} />}
+                {game.desire && <MetadataBadge kind="desire" value={game.desire} />}
+                {game.primaryGenre && <MetadataBadge kind="genre" value={game.primaryGenre} />}
+                {otherTags.map((t) => (
+                  <MetadataBadge key={t} kind="tag" value={t} />
+                ))}
+                {game.pace && <MetadataBadge kind="pace" value={game.pace} />}
+                {game.structure && <MetadataBadge kind="structure" value={game.structure} />}
+                {game.coop && <span className="badge gray">Coop: {game.coop}</span>}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         {busy ? (
           <span className="saving-pill">Recalculando…</span>
         ) : (

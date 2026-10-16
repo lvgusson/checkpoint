@@ -33,3 +33,45 @@ it('wishlist shares stable price, discount and recommendation ordering with unkn
   expect(names('discount')).toStrictEqual(['Alpha', 'Beta', 'Free', 'Unknown']);
   expect(names('recommendation')).toStrictEqual(['Alpha', 'Beta', 'Unknown', 'Free']);
 });
+
+it('WishlistService.list defaults to recommendation sort', async () => {
+  const { WishlistService } = await import('../../src/services/wishlist.ts');
+  const { GameService } = await import('../../src/services/games.ts');
+  const { SteamClient } = await import('../../src/integrations/steam/client.ts');
+  const { createData } = await import('../../src/main/data.ts');
+  const { GameStatus, Desire } = await import('../../../../packages/core/src/models.ts');
+
+  const data = await createData({
+    dataDir: '/tmp',
+    env: {
+      DATA_FILE: '',
+      LISTS_FILE: '',
+      MANUAL_FILE: '',
+      SETTINGS_FILE: '',
+      WISHLIST_FILE: '',
+    },
+  });
+  const g1 = {
+    ...emptyGame('Game Low Desire'),
+    id: 'game-low',
+    status: GameStatus.Wishlist,
+    desire: Desire.Low,
+  };
+  const g2 = {
+    ...emptyGame('Game High Desire'),
+    id: 'game-high',
+    status: GameStatus.Wishlist,
+    desire: Desire.VeryHigh,
+  };
+  await data.games.save(g1);
+  await data.games.save(g2);
+  const games = new GameService(data.games, data.manual, data.queue, data.scoring, data.lists);
+  const steam = new SteamClient({
+    fetch: async () => {
+      throw new Error('No external calls');
+    },
+  });
+  const wishes = new WishlistService(games, data.wishlist, steam);
+  const list = await wishes.list();
+  expect(list.map((i) => i.game.id)).toEqual(['game-high', 'game-low']);
+});

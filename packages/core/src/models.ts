@@ -188,6 +188,7 @@ export interface ScoredGame extends Game {
   plannedHours: number | null;
   affinity: number;
   baseScore: number;
+  score?: number;
   coverUrl: string | null;
 }
 export interface QueueEntry {

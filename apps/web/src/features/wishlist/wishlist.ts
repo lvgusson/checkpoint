@@ -87,6 +87,17 @@ export function useWishlistActions() {
         ),
       onError: () => {},
     }),
+    unpurchase: useMutation({
+      mutationFn: (id: string) =>
+        api.post<ScoredGame>(`games/${encodeURIComponent(id)}/unpurchase`, { json: {} }),
+      onSuccess: (_data, id) =>
+        Promise.all(
+          [k.wishlist(), k.games(), k.catalog(), [...k.all, 'queue'], k.game(id)].map((queryKey) =>
+            qc.invalidateQueries({ queryKey }),
+          ),
+        ),
+      onError: () => {},
+    }),
     importSteam: useMutation({
       mutationFn: (profile: string) =>
         api.post<WishlistImportResult>('wishlist/import-steam', {

@@ -44,6 +44,15 @@ export async function gamesRoute(
     if (Object.keys(body).length) throw new AppError('A compra não aceita campos');
     return { data: await service.purchase(decodeURIComponent(purchase[1])) };
   }
+  const unpurchase = path.match(/^\/api\/v1\/games\/([^/]+)\/unpurchase$/);
+  if (unpurchase && method === HttpMethod.Post) {
+    const body =
+      Number(req.headers['content-length'] ?? 0) > 0 || req.headers['transfer-encoding']
+        ? await readJson()
+        : {};
+    if (Object.keys(body).length) throw new AppError('A desmarcação de compra não aceita campos');
+    return { data: await service.unpurchase(decodeURIComponent(unpurchase[1])) };
+  }
   const match = path.match(/^\/api\/v1\/games\/([^/]+)$/);
   if (match) {
     const id = decodeURIComponent(match[1]);

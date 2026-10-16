@@ -28,13 +28,6 @@ export interface ComboboxProps {
   renderOption?: (option: ComboboxOption, selected: boolean) => React.ReactNode;
 }
 
-const normalize = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-
 export function Combobox({
   id: customId,
   label,
@@ -42,7 +35,7 @@ export function Combobox({
   value,
   onValueChange,
   placeholder = 'Selecionar…',
-  searchPlaceholder = 'Buscar…',
+  searchPlaceholder: _searchPlaceholder,
   emptyText = 'Nenhuma opção encontrada',
   disabled = false,
   isLoading = false,
@@ -55,22 +48,14 @@ export function Combobox({
   const generatedId = useId();
   const id = customId || generatedId;
   const rootRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const normalizedOptions: ComboboxOption[] = React.useMemo(
     () => options.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt)),
     [options],
   );
-
-  const filteredOptions = React.useMemo(() => {
-    const q = normalize(search);
-    if (!q) return normalizedOptions;
-    return normalizedOptions.filter((opt) => normalize(opt.label).includes(q));
-  }, [normalizedOptions, search]);
 
   const selectedOption = React.useMemo(
     () => normalizedOptions.find((opt) => opt.value === value),
@@ -79,7 +64,6 @@ export function Combobox({
 
   const close = (restoreFocus = true) => {
     setOpen(false);
-    setSearch('');
     if (restoreFocus) {
       rootRef.current?.querySelector<HTMLButtonElement>('.combobox-trigger')?.focus();
     }
@@ -90,10 +74,6 @@ export function Combobox({
     setHighlightedIndex(idx >= 0 ? idx : 0);
     setOpen(true);
   };
-
-  useEffect(() => {
-    if (open) searchInputRef.current?.focus();
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -117,6 +97,20 @@ export function Combobox({
   }, [highlightedIndex, open]);
 
   function handleKeyDown(event: React.KeyboardEvent) {
+    if (disabled) return;
+    if (!open) {
+      if (
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'Enter' ||
+        event.key === ' '
+      ) {
+        event.preventDefault();
+        openList();
+      }
+      return;
+    }
+
     if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
@@ -126,22 +120,24 @@ export function Combobox({
       close(false);
       return;
     }
-    if (filteredOptions.length === 0) return;
+    if (normalizedOptions.length === 0) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
+      setHighlightedIndex((prev) => (prev + 1) % normalizedOptions.length);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setHighlightedIndex((prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length);
+      setHighlightedIndex(
+        (prev) => (prev - 1 + normalizedOptions.length) % normalizedOptions.length,
+      );
     } else if (event.key === 'Home') {
       event.preventDefault();
       setHighlightedIndex(0);
     } else if (event.key === 'End') {
       event.preventDefault();
-      setHighlightedIndex(filteredOptions.length - 1);
-    } else if (event.key === 'Enter') {
+      setHighlightedIndex(normalizedOptions.length - 1);
+    } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      const option = filteredOptions[highlightedIndex];
+      const option = normalizedOptions[highlightedIndex];
       if (option && !option.disabled) {
         onValueChange?.(option.value);
         close(true);
@@ -149,20 +145,7 @@ export function Combobox({
     }
   }
 
-  function handleTriggerKeyDown(event: React.KeyboardEvent) {
-    if (disabled) return;
-    if (
-      event.key === 'ArrowDown' ||
-      event.key === 'ArrowUp' ||
-      event.key === 'Enter' ||
-      event.key === ' '
-    ) {
-      event.preventDefault();
-      openList();
-    }
-  }
-
-  const highlightedOption = filteredOptions[highlightedIndex];
+  const highlightedOption = normalizedOptions[highlightedIndex];
   const activeDescendantId =
     open && highlightedOption ? `${id}-opt-${highlightedIndex}` : undefined;
 
@@ -179,14 +162,16 @@ export function Combobox({
       <button
         data-testid={testId}
         type="button"
+        role="combobox"
         disabled={disabled}
         aria-labelledby={label ? `${id}-label ${id}-value` : undefined}
         aria-label={label ? undefined : placeholder}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id}-listbox` : undefined}
+        aria-activedescendant={activeDescendantId}
         onClick={() => !disabled && (open ? close() : openList())}
-        onKeyDown={handleTriggerKeyDown}
+        onKeyDown={handleKeyDown}
         className={cn(
           'combobox-trigger flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-[11px] py-2 text-left text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50',
         )}
@@ -211,29 +196,9 @@ export function Combobox({
           aria-labelledby={label ? `${id}-label` : undefined}
           className="absolute inset-x-0 top-full z-[30] mt-[5px] flex max-h-[280px] flex-col overflow-hidden rounded-[10px] border border-border bg-card shadow-lg"
         >
-          <div className="border-b border-border p-1.5">
-            <input
-              ref={searchInputRef}
-              data-testid={testId ? `${testId}-search` : undefined}
-              type="text"
-              role="searchbox"
-              aria-autocomplete="list"
-              aria-controls={`${id}-listbox`}
-              aria-activedescendant={activeDescendantId}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setHighlightedIndex(0);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={searchPlaceholder}
-              className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-
           <div
             ref={optionsListRef}
-            className="max-h-[220px] flex-1 overflow-auto overscroll-contain p-1.5"
+            className="max-h-[280px] flex-1 overflow-auto overscroll-contain p-1.5"
           >
             {isLoading ? (
               <div
@@ -261,7 +226,7 @@ export function Combobox({
                   </button>
                 )}
               </div>
-            ) : filteredOptions.length === 0 ? (
+            ) : normalizedOptions.length === 0 ? (
               <div
                 data-testid={testId ? `${testId}-empty` : undefined}
                 className="py-4 text-center text-xs text-muted-foreground"
@@ -269,7 +234,7 @@ export function Combobox({
                 {emptyText}
               </div>
             ) : (
-              filteredOptions.map((opt, index) => {
+              normalizedOptions.map((opt, index) => {
                 const isSelected = opt.value === value;
                 const isHighlighted = index === highlightedIndex;
                 return (

@@ -24,6 +24,11 @@
   letter-spacing: -1px;
   margin-bottom: 30px;
 }
+.auth-page .brand-mark {
+  display: inline-flex;
+  align-items: center;
+  --bonfire-size: 32px;
+}
 .auth-page .auth-brand small {
   display: block;
   font:
@@ -82,6 +87,31 @@
   padding: 11px 12px;
   font-size: 14px;
   background: var(--surface);
+}
+.auth-page .password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.auth-page .password-input-wrap input {
+  width: 100%;
+  padding-right: 38px;
+}
+.auth-page .password-toggle {
+  position: absolute;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.auth-page .password-toggle:hover {
+  color: var(--text);
 }
 .auth-page .field input[aria-invalid='true'] {
   border-color: var(--danger-line);

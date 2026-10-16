@@ -25,7 +25,7 @@ export function WishlistScreen() {
   const [q, setQ] = useState('');
   const [desire, setDesire] = useState<Desire>('Média');
   const [profile, setProfile] = useState('');
-  const [sort, setSort] = useState<WishlistSort>('name');
+  const [sort, setSort] = useState<WishlistSort>('recommendation');
   const [visibleCount, setVisibleCount] = useState(24);
   const [manual, setManual] = useState({ name: '', primaryGenre: '', mainHours: '' });
   const [notice, setNotice] = useState('');
@@ -322,6 +322,9 @@ export function WishlistScreen() {
                     )}
                     <strong>{formatPrice(i.price)}</strong>
                   </span>
+                  <span className="hidden sm:inline-flex score font-mono text-xs text-muted-foreground">
+                    {`Pontuação: ${Math.round(i.game.score ?? i.game.baseScore)}`}
+                  </span>
                   <span className={'badge ' + badgeColor(i.game.desire)}>{i.game.desire}</span>
                 </div>
               </div>
@@ -386,6 +389,7 @@ export function WishlistScreen() {
         title="Você comprou o jogo?"
         confirmLabel="Sim"
         cancelLabel="Não"
+        defaultFocus="confirm"
         onConfirm={() => {
           if (!purchasingGame) return;
           const game = purchasingGame;

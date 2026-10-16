@@ -14,6 +14,28 @@ test.describe('Checkpoint E2E Smoke Tests', () => {
 
     await expect(emailInput).toBeVisible({ timeout: 10000 });
     await expect(passwordInput).toBeVisible({ timeout: 10000 });
+
+    // Verify sword brand mark is displayed
+    const brandMark = page.locator('.brand-mark .bonfire');
+    await expect(brandMark).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should toggle password visibility on login page', async ({ page }) => {
+    await page.goto('/login');
+
+    const passwordInput = page.getByTestId('login-password');
+    const toggleBtn = page.getByTestId('login-password-toggle');
+
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleBtn).toHaveAttribute('aria-label', 'Mostrar');
+
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+    await expect(toggleBtn).toHaveAttribute('aria-label', 'Ocultar');
+
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleBtn).toHaveAttribute('aria-label', 'Mostrar');
   });
 
   test('should log no console errors on the login page', async ({ page }) => {

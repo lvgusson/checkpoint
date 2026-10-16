@@ -219,16 +219,19 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
     await statusCombobox.focus();
     await page.keyboard.press('ArrowDown');
 
-    const searchInput = modal.getByTestId('modal-status-search');
-    await expect(searchInput).toBeVisible();
-    await expect(searchInput).toBeFocused();
+    const listbox = modal.locator('[role="listbox"]');
+    await expect(listbox).toBeVisible();
 
-    // Verify aria-activedescendant is populated
-    await expect(searchInput).toHaveAttribute('aria-activedescendant', /-option-/);
+    const searchInput = modal.getByTestId('modal-status-search');
+    await expect(searchInput).toHaveCount(0);
+
+    // Verify trigger remains focused and aria-activedescendant is populated
+    await expect(statusCombobox).toBeFocused();
+    await expect(statusCombobox).toHaveAttribute('aria-activedescendant', /-option-/);
 
     // Escape closes listbox and restores focus to the trigger
     await page.keyboard.press('Escape');
-    await expect(searchInput).not.toBeVisible();
+    await expect(listbox).not.toBeVisible();
     await expect(statusCombobox).toBeFocused();
 
     // Close modal

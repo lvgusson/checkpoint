@@ -76,3 +76,7 @@
   object-fit: contain;
   object-position: center;
 }
+
+.queue-mobile-tags {
+  margin-right: auto;
+}
