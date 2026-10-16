@@ -30,7 +30,7 @@ area: frontend
 
 - A component receives data and callbacks; it does not call `fetch` itself. Reads go through `api` in a query hook (`useQuery`).
 - Server state lives in the query cache; local UI state lives in `useState`.
-- A shared piece used in two features moves up to `components/ui` or `packages/ui-react`.
+- A shared piece used in two features moves up to `components/ui` or `packages/ui-react`. Reusable app components are consolidated in `components/index.ts` and cataloged in `components/registry.ts` for the `/componentes` showcase.
 
 ## Related
 

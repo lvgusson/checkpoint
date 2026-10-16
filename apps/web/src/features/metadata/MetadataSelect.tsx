@@ -177,7 +177,7 @@ export function MetadataSelect(props: Props) {
         disabled={disabled}
         aria-disabled={disabled || undefined}
         className={cn(
-          'select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-3 pr-3.5 py-2 text-left text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30',
+          'select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-3 pr-3.5 py-2 text-left text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/30',
           disabled && 'cursor-not-allowed opacity-50',
         )}
         aria-labelledby={`${id}-label ${id}-value`}

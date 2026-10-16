@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react';
+import { Link } from 'react-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { useAppearance } from '../../appearance/AppearanceProvider';
 import {
@@ -231,6 +232,16 @@ export function AppearanceScreen() {
           >
             Restaurar aparência padrão
           </button>
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2>Biblioteca de Componentes</h2>
+        <p className="muted">Catálogo de componentes UI e playground de propriedades.</p>
+        <div className="row">
+          <Link to="/componentes" className="button" data-testid="link-component-catalog">
+            Biblioteca de Componentes ↗
+          </Link>
         </div>
       </section>
     </div>

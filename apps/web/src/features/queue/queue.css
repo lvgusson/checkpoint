@@ -80,3 +80,20 @@
 .queue-mobile-tags {
   margin-right: auto;
 }
+
+.queue-row,
+.queue-link,
+.playing-row {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.queue-row,
+.playing-row {
+  touch-action: pan-y;
+}
+
+.drag-handle,
+[data-testid^='queue-drag-handle-'] {
+  touch-action: none;
+}

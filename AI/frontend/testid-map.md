@@ -64,19 +64,19 @@ area: frontend
 
 ## Queue
 
-| Test ID                                                                         | Action                                                 | Destructive? |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------ |
-| `queue-{search,search-clear,notice-close,excluded-open}`                        | Search, dismiss notices, or show exclusions.           | no           |
-| `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`         | Open game details.                                     | no           |
-| `queue-load-more`                                                               | Infinite scroll sentinel (not a button).               | no           |
-| `queue-recalculate`                                                             | Recalculate recommendations.                           | no           |
-| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                        | Retry the queue or the lists request.                  | no           |
-| `queue-tags-popover-<code>`                                                     | Open metadata popover (mobile).                        | no           |
-| `queue-{playing,immediate,finish}-<code>`, `queue-{purchase,unpurchase}-<code>` | Change status, priority, purchase, or open completion. | yes          |
-| `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`                 | Reorder games or remove a fixed position.              | yes          |
-| `queue-list-{trigger,actions}`, `queue-list-select-<id>`                        | Open list menus or select a list.                      | no           |
-| `queue-list-rename-<id>`, `queue-list-{rename-current,create,name,cancel}`      | Edit a list name or cancel editing.                    | no           |
-| `queue-list-{save,remove}`                                                      | Save a list or request its deletion.                   | yes          |
+| Test ID                                                                               | Action                                                 | Destructive? |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------ |
+| `queue-{search,search-clear,notice-close,excluded-open}`                              | Search, dismiss notices, or show exclusions.           | no           |
+| `queue-game-<code>`, `queue-playing-detail-<code>`, `queue-next-<code>`               | Open game details.                                     | no           |
+| `queue-load-more`                                                                     | Infinite scroll sentinel (not a button).               | no           |
+| `queue-recalculate`                                                                   | Recalculate recommendations.                           | no           |
+| `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                              | Retry the queue or the lists request.                  | no           |
+| `queue-{tags,playing-tags}-popover-<code>`                                            | Open metadata popover (mobile).                        | no           |
+| `queue-{playing,immediate,finish}-<code>`, `queue-{purchase,unpurchase}-<code>`       | Change status, priority, purchase, or open completion. | yes          |
+| `queue-row-<code>`, `queue-{drag,drag-handle}-<code>`, `queue-{release,unpin}-<code>` | Reorder games or remove a fixed position.              | yes          |
+| `queue-list-{trigger,actions}`, `queue-list-select-<id>`                              | Open list menus or select a list.                      | no           |
+| `queue-list-rename-<id>`, `queue-list-{rename-current,create,name,cancel}`            | Edit a list name or cancel editing.                    | no           |
+| `queue-list-{save,remove}`                                                            | Save a list or request its deletion.                   | yes          |
 
 ## Wishlist
 

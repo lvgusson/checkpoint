@@ -15,7 +15,7 @@ React 19, Vite, TypeScript, react-router, TanStack Query, Ky, Zod, react-hook-fo
 | ------------------------- | ----------------------------------------------------------------------------------------- |
 | `pages/`                  | One route component per page; it renders a feature screen (large pages also hold queries) |
 | `features/`               | One folder per capability: screen, hooks, model, styles, `index.ts`                       |
-| `components/ui/`          | shadcn primitives in use (button, select, popover, calendar, ...)                         |
+| `components/`             | Consolidated UI library (`index.ts`), catalog registry (`registry.ts`), shadcn `ui/`      |
 | `app/`                    | Shell, navigation, route table                                                            |
 | `api/`, `auth/`, `query/` | HTTP client, session, query keys and client                                               |
 | `appearance/`             | Theme and accent state                                                                    |

@@ -75,20 +75,29 @@ export function ConfirmDialog({
   onCancel(): void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  const focusConfirm = defaultFocus ? defaultFocus === 'confirm' : !destructive;
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      if (focusConfirm) {
+        confirmBtnRef.current?.focus();
+      } else {
+        cancelBtnRef.current?.focus();
+      }
+    }
     if (!open && dialog.open) dialog.close();
-  }, [open]);
-  const focusConfirm = defaultFocus ? defaultFocus === 'confirm' : !destructive;
+  }, [open, focusConfirm]);
   return (
     <dialog
       data-testid={testId}
       onClick={(e) => e.target === e.currentTarget && onCancel()}
       ref={ref}
-      className="m-auto max-w-[420px] rounded-lg border border-border bg-card p-6 text-foreground backdrop:bg-scrim"
+      className="m-auto w-[min(420px,calc(100vw-32px))] max-w-[420px] rounded-xl border border-border bg-card p-6 text-foreground shadow-2xl backdrop:bg-scrim outline-none"
       aria-labelledby={titleId}
       onCancel={(e) => (e.preventDefault(), onCancel())}
     >
@@ -96,6 +105,7 @@ export function ConfirmDialog({
       {description && <p>{description}</p>}
       <div className="mt-4 flex justify-end gap-2">
         <button
+          ref={cancelBtnRef}
           data-testid={testId && `${testId}-cancel`}
           type="button"
           className="button"
@@ -105,6 +115,7 @@ export function ConfirmDialog({
           {cancelLabel}
         </button>
         <button
+          ref={confirmBtnRef}
           data-testid={testId && `${testId}-confirm`}
           type="button"
           className={destructive ? 'button danger' : 'button primary'}

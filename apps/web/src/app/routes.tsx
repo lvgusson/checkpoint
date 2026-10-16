@@ -94,6 +94,12 @@ const SettingsPage = lazy(() =>
 const AppearancePage = lazy(() =>
   import('../pages/AppearancePage').then((m) => ({ default: m.AppearancePage })),
 );
+const ComponentCatalogPage = lazy(() =>
+  import('../pages/ComponentCatalogPage').then((m) => ({ default: m.ComponentCatalogPage })),
+);
+const ComponentDetailPage = lazy(() =>
+  import('../pages/ComponentDetailPage').then((m) => ({ default: m.ComponentDetailPage })),
+);
 
 /** Same URL space as the Angular app. Without :listId, queue/settings resolve the default list themselves. */
 export const router = createBrowserRouter([
@@ -110,6 +116,8 @@ export const router = createBrowserRouter([
         children: [
           { element: <GuestOnly />, children: [{ path: 'login', element: <LoginPage /> }] },
           { path: 'redefinir-senha', element: <LoginPage initialMode="reset" /> },
+          { path: 'componentes', element: <ComponentCatalogPage /> },
+          { path: 'componentes/:name', element: <ComponentDetailPage /> },
           {
             element: <RequireAuth />,
             children: [

@@ -105,3 +105,51 @@ describe('GameCard action icons', () => {
     expect(out).toContain('text-muted-foreground');
   });
 });
+
+describe('GameCard plannedHours display', () => {
+  it('renders estimated hours when plannedHours is positive', () => {
+    const out = html(
+      React.createElement(GameCard, {
+        game: { ...mockPurchasedGame, plannedHours: 50 },
+        onDesire: () => {},
+        onError: () => {},
+      }),
+    );
+    expect(out).toContain('h estimadas');
+    expect(out).toMatch(/50<!-- --> h estimadas/);
+  });
+
+  it('does not render estimated hours or confirmation sentence when plannedHours is null', () => {
+    const out = html(
+      React.createElement(GameCard, {
+        game: { ...mockPurchasedGame, plannedHours: null },
+        onDesire: () => {},
+        onError: () => {},
+      }),
+    );
+    expect(out).not.toContain('estimadas');
+    expect(out).not.toContain('Tempo a confirmar');
+  });
+
+  it('does not render estimated hours when plannedHours is undefined or 0', () => {
+    const outUndefined = html(
+      React.createElement(GameCard, {
+        game: { ...mockPurchasedGame, plannedHours: undefined as unknown as null },
+        onDesire: () => {},
+        onError: () => {},
+      }),
+    );
+    expect(outUndefined).not.toContain('estimadas');
+    expect(outUndefined).not.toContain('Tempo a confirmar');
+
+    const outZero = html(
+      React.createElement(GameCard, {
+        game: { ...mockPurchasedGame, plannedHours: 0 },
+        onDesire: () => {},
+        onError: () => {},
+      }),
+    );
+    expect(outZero).not.toContain('estimadas');
+    expect(outZero).not.toContain('Tempo a confirmar');
+  });
+});

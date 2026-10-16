@@ -10,13 +10,13 @@ import {
 } from 'react';
 import { authSession, type AuthState } from './session';
 
-interface AuthValue extends AuthState {
+export interface AuthValue extends AuthState {
   user: User | null;
   /** Stable identity used to scope query keys; 'local' when auth is disabled. */
   userId: string;
 }
 
-const AuthContext = createContext<AuthValue | null>(null);
+export const AuthContext = createContext<AuthValue | null>(null);
 
 /**
  * Initializes the session once, exposes it, and clears every cached query when the identity
@@ -24,7 +24,11 @@ const AuthContext = createContext<AuthValue | null>(null);
  * Renders nothing until init settles, like the Angular app initializer did.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const state = useSyncExternalStore(authSession.subscribe, authSession.getState);
+  const state = useSyncExternalStore(
+    authSession.subscribe,
+    authSession.getState,
+    authSession.getState,
+  );
   const queryClient = useQueryClient();
   const user = state.session?.user ?? null;
   const userId = user?.id ?? 'local';

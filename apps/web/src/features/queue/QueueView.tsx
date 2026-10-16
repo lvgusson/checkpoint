@@ -1,5 +1,5 @@
 import { ConfirmDialog, SortableList } from '@checkpoint/ui-react';
-import { CircleDollarSign } from 'lucide-react';
+import { CircleDollarSign, GripVertical, PinOff } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 import type { Desire, QueueEntry, ScoredGame } from '../../../../../packages/core/src/models';
@@ -35,6 +35,130 @@ function Cover({ game, lazy = true }: { game: ScoredGame; lazy?: boolean }) {
       )}
       <span>{game.name.slice(0, 1)}</span>
     </>
+  );
+}
+
+export function PlayingRow({
+  game,
+  onOpenDetails,
+  onFinish,
+  onSetDesire,
+  onDesireSaved,
+  onDesireFailed,
+}: {
+  game: ScoredGame;
+  onOpenDetails?: (id: string) => void;
+  onFinish(game: ScoredGame, e: MouseEvent): void;
+  onSetDesire(id: string, desire: Desire): void;
+  onDesireSaved(): void;
+  onDesireFailed(message: string): void;
+}) {
+  const otherCount = (game.status ? 1 : 0) + (game.desire ? 1 : 0) + game.secondaryTags.length;
+
+  return (
+    <article className="playing-row select-none" key={game.id}>
+      <Link
+        data-testid={`queue-playing-detail-${game.id.toLowerCase()}`}
+        className="playing-link"
+        to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
+        onClick={(e) => {
+          if (onOpenDetails && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+            e.preventDefault();
+            onOpenDetails(game.id);
+          }
+        }}
+      >
+        <div className="queue-cover">
+          <Cover game={game} />
+        </div>
+        <div className="playing-copy">
+          <h3>{game.name}</h3>
+          <div className="tags hidden sm:flex">
+            <MetadataBadge kind="status" value={game.status} />
+            <MetadataBadge kind="genre" value={game.primaryGenre} />
+            {game.secondaryTags.map((tag) => (
+              <MetadataBadge key={tag} kind="tag" value={tag} />
+            ))}
+            <MetadataBadge kind="desire" value={game.desire} />
+          </div>
+          <div className="sm:hidden flex items-center gap-1 min-w-0 mb-1">
+            {game.primaryGenre && (
+              <MetadataBadge
+                kind="genre"
+                value={game.primaryGenre}
+                className="truncate max-w-[90px] whitespace-nowrap"
+              />
+            )}
+            {otherCount > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    data-testid={`queue-playing-tags-popover-${game.id.toLowerCase()}`}
+                    type="button"
+                    className="inline-flex h-5 min-w-5 px-1 shrink-0 items-center justify-center rounded-full border border-border bg-[var(--surface-2)] text-[11px] font-semibold text-[var(--muted)] hover:text-[var(--text)]"
+                    aria-label={`Mais tags de ${game.name}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    {`+${otherCount}`}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-64 p-3 flex flex-col gap-2 z-50 bg-[var(--surface)] border border-border rounded-lg shadow-lg"
+                  align="start"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                >
+                  <div className="flex flex-wrap gap-1.5">
+                    {game.status && <MetadataBadge kind="status" value={game.status} />}
+                    {game.primaryGenre && <MetadataBadge kind="genre" value={game.primaryGenre} />}
+                    {game.secondaryTags.map((t) => (
+                      <MetadataBadge key={t} kind="tag" value={t} />
+                    ))}
+                    {game.desire && <MetadataBadge kind="desire" value={game.desire} />}
+                    {game.pace && <MetadataBadge kind="pace" value={game.pace} />}
+                    {game.structure && <MetadataBadge kind="structure" value={game.structure} />}
+                    {game.coop && <span className="badge gray">Coop: {game.coop}</span>}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+          <p className="muted">
+            {game.startedAt
+              ? 'Iniciado em ' + displayDate(game.startedAt)
+              : 'Data de início não informada'}
+          </p>
+        </div>
+      </Link>
+      <div className="playing-actions">
+        <PlayingButton data-testid={`queue-playing-${game.id.toLowerCase()}`} game={game} />
+        <ImmediateButton
+          data-testid={`queue-immediate-${game.id.toLowerCase()}`}
+          game={game}
+          onChanged={(desire) => onSetDesire(game.id, desire)}
+          onSaved={onDesireSaved}
+          onFailed={onDesireFailed}
+        />
+        <button
+          data-testid={`queue-finish-${game.id.toLowerCase()}`}
+          type="button"
+          className="icon-button finish-btn"
+          aria-label={`Finalizar ${game.name}`}
+          title="Finalizar: nota, horas e avaliação"
+          onClick={(e) => onFinish(game, e)}
+        >
+          <FinishIcon withFlagDetail />
+        </button>
+      </div>
+    </article>
   );
 }
 
@@ -181,62 +305,15 @@ export function QueueView({ listId }: { listId: string }) {
             {data.playing?.length ? (
               <div className="playing-list">
                 {data.playing.map((game) => (
-                  <article className="playing-row" key={game.id}>
-                    <Link
-                      data-testid={`queue-playing-detail-${game.id.toLowerCase()}`}
-                      className="playing-link"
-                      to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
-                      onClick={(e) => {
-                        if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
-                          e.preventDefault();
-                          setSelectedGameId(game.id);
-                        }
-                      }}
-                    >
-                      <div className="queue-cover">
-                        <Cover game={game} />
-                      </div>
-                      <div className="playing-copy">
-                        <h3>{game.name}</h3>
-                        <div className="tags">
-                          <MetadataBadge kind="status" value={game.status} />
-                          <MetadataBadge kind="genre" value={game.primaryGenre} />
-                          {game.secondaryTags.map((tag) => (
-                            <MetadataBadge key={tag} kind="tag" value={tag} />
-                          ))}
-                          <MetadataBadge kind="desire" value={game.desire} />
-                        </div>
-                        <p className="muted">
-                          {game.startedAt
-                            ? 'Iniciado em ' + displayDate(game.startedAt)
-                            : 'Data de início não informada'}
-                        </p>
-                      </div>
-                    </Link>
-                    <div className="playing-actions">
-                      <PlayingButton
-                        data-testid={`queue-playing-${game.id.toLowerCase()}`}
-                        game={game}
-                      />
-                      <ImmediateButton
-                        data-testid={`queue-immediate-${game.id.toLowerCase()}`}
-                        game={game}
-                        onChanged={(desire) => handleSetDesire(game.id, desire)}
-                        onSaved={handleDesireSaved}
-                        onFailed={handleDesireFailed}
-                      />
-                      <button
-                        data-testid={`queue-finish-${game.id.toLowerCase()}`}
-                        type="button"
-                        className="icon-button finish-btn"
-                        aria-label={`Finalizar ${game.name}`}
-                        title="Finalizar: nota, horas e avaliação"
-                        onClick={(e) => handleFinish(game, e)}
-                      >
-                        <FinishIcon withFlagDetail />
-                      </button>
-                    </div>
-                  </article>
+                  <PlayingRow
+                    key={game.id}
+                    game={game}
+                    onOpenDetails={handleOpenDetails}
+                    onSetDesire={handleSetDesire}
+                    onDesireSaved={handleDesireSaved}
+                    onDesireFailed={handleDesireFailed}
+                    onFinish={handleFinish}
+                  />
                 ))}
               </div>
             ) : (
@@ -586,7 +663,7 @@ export const QueueRow = memo(function QueueRow({
   return (
     <div
       className={cn(
-        'queue-row',
+        'queue-row select-none',
         isNextGame && 'is-next-game',
         busy && 'saving',
         flash && 'just-moved',
@@ -611,7 +688,7 @@ export const QueueRow = memo(function QueueRow({
       )}
       <Link
         data-testid={`queue-game-${game.id.toLowerCase()}`}
-        className="queue-link"
+        className="queue-link select-none"
         draggable={false}
         to={`/jogos/${encodeURIComponent(game.id)}${DETAIL_STATE}`}
         onClick={(e) => {
@@ -621,6 +698,20 @@ export const QueueRow = memo(function QueueRow({
           }
         }}
       >
+        {!searching && (
+          <span
+            data-testid={`queue-drag-handle-${game.id.toLowerCase()}`}
+            className="hidden sm:inline-flex items-center justify-center p-1 mr-1 touch-none"
+            {...handleProps}
+            {...pointerProps}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <GripVertical className="size-4 shrink-0 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" />
+          </span>
+        )}
         <span className="rank">
           {String(i + 1).padStart(2, '0')}{' '}
           {item.pinnedPosition && (
@@ -733,6 +824,18 @@ export const QueueRow = memo(function QueueRow({
               </button>
             </span>
           )
+        )}
+        {item.pinnedPosition && (
+          <button
+            data-testid={`queue-unpin-${game.id.toLowerCase()}`}
+            type="button"
+            className="icon-button text-amber-400 hover:text-amber-300"
+            aria-label={`Desafixar ${game.name}`}
+            title="Desafixar jogo da posição manual"
+            onClick={release}
+          >
+            <PinOff className="size-4" />
+          </button>
         )}
         <ImmediateButton
           data-testid={`queue-immediate-${game.id.toLowerCase()}`}

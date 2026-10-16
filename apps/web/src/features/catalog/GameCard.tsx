@@ -63,9 +63,7 @@ export const GameCard = memo(function GameCard({
             ))}
           </div>
           <div className="card-bottom">
-            <span>
-              {g.plannedHours === null ? 'Tempo a confirmar' : g.plannedHours + ' h estimadas'}
-            </span>
+            {g.plannedHours ? <span>{g.plannedHours} h estimadas</span> : null}
             <span className={'badge ' + badgeColor(g.desire)}>{g.desire}</span>
           </div>
         </div>
