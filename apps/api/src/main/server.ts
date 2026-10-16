@@ -115,6 +115,12 @@ export function makeServer(
     res.on('close', onDone); // aborted requests never emit finish
     return traceStore.run(trace, () =>
       runWithContext({ requestId }, async () => {
+        const route = (req.url ?? '').split('?')[0];
+        logger.info('http.request.entry', {
+          method: req.method,
+          path: route,
+          requestId,
+        });
         const send = (data: unknown, status = 200) => {
           const body = span('ser', () => JSON.stringify(data));
           res.writeHead(status, {
@@ -166,9 +172,8 @@ export function makeServer(
           }
           // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
           if (auth && path.startsWith(ApiPath.Root)) {
-            const user = await auth.authenticate(
-              req.headers.authorization,
-              req.socket.remoteAddress ?? '127.0.0.1',
+            const user = await span('auth', () =>
+              auth.authenticate(req.headers.authorization, req.socket.remoteAddress ?? '127.0.0.1'),
             );
             setContext({
               userId: user.id,
