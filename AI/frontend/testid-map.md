@@ -112,15 +112,16 @@ area: frontend
 
 ## Modal
 
+The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focused.
+
 | Test ID                                                 | Action                                              | Destructive? |
 | ------------------------------------------------------- | --------------------------------------------------- | ------------ |
 | `modal-game-<code>`, `modal-close`, `modal-open-detail` | Dismiss the backdrop, close, or open the full page. | no           |
-
-The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focused.
-| `modal-{status,desire}` | Open the metadata menu. | no |
-| `modal-{status,desire}-option-<key>` | Persist a status or desire change. | yes |
-| `modal-notes` | Edit notes. | no |
-| `modal-notes-save`, `modal-finish` | Save notes or open completion. | yes |
+| `modal-game-retry`, `modal-catalog-retry`               | Retry loading game details or metadata catalog.     | no           |
+| `modal-catalog-{error,loading}`                         | Read catalog error alert or loading status.         | no           |
+| `modal-{status,desire,tags}`                            | Open metadata selector or tag combobox.             | no           |
+| `modal-{status,desire,tags}-option-<key>`               | Choose or persist status, desire, or tag changes.   | yes          |
+| `modal-notes`, `modal-notes-save`, `modal-finish`       | Edit notes, save notes, or open game completion.    | yes          |
 
 ## Dialog
 
@@ -134,17 +135,15 @@ The dialog takes focus on open (`tabIndex=-1`). `modal-close` is not auto-focuse
 
 ## Loader
 
-| Test ID                                                       | Action                                                    | Destructive? |
-| ------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
-| `loader-{detail,queue,modal,sword,catalog,route}`             | Read loading status. Loaders have no interactive actions. | no           |
-| `loader-library{-more,}`, `loader-prerequisite{-search,}`     | Read loading status. Loaders have no interactive actions. | no           |
-| `loader-{settings,wishlist}`, `loader-{queue,settings}-lists` | Read loading status. Loaders have no interactive actions. | no           |
+| Test ID                                                                                                                                               | Action                                                    | Destructive? |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------ |
+| `loader-{detail,queue,modal,sword,catalog,route,settings,wishlist}`, `loader-{library,prerequisite}{-more,-search,}`, `loader-{queue,settings}-lists` | Read loading status. Loaders have no interactive actions. | no           |
 
-Date-time picker variants also expose `<picker>-{hour,minute,clear,done}` and `<picker>-{hour,minute}-<value>`.
-Native selects use their option values. Sortable handles use Space, arrows, Space, and Escape.
+Date-time picker variants also expose `<picker>-{hour,minute,clear,done}` and `<picker>-{hour,minute}-<value>`. Native selects use their option values. Sortable handles use Space, arrows, Space, and Escape.
 
 ## Related
 
 - [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
+- [[AI/frontend/data-and-state]]: Query policies, modal deadlines, and error handling.
 - [[AI/frontend/loader]]: The reusable Loader, its props and how to add art.
 - [[AI/frontend/e2e-route-map]]: Route map table of steps, actions and request timings for end-to-end testing.

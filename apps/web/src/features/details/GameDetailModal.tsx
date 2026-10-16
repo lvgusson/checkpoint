@@ -19,6 +19,8 @@ export interface GameDetailModalProps {
  * Modal to display and edit game details without navigating away from the current page.
  * Provides score breakdown, notes editing, status/desire selector and finish action.
  */
+export const MODAL_QUERY_TIMEOUT_MS = 20_000;
+
 export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const k = useQueryKeys();
@@ -26,19 +28,33 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
 
   const gameQuery = useQuery({
     queryKey: k.game(gameId ?? ''),
-    queryFn: ({ signal }) =>
-      api.get<ScoredGame>('games/' + encodeURIComponent(gameId!), { signal }),
+    queryFn: ({ signal }) => {
+      const combinedSignal = AbortSignal.any([signal, AbortSignal.timeout(MODAL_QUERY_TIMEOUT_MS)]);
+      return api.get<ScoredGame>('games/' + encodeURIComponent(gameId!), {
+        signal: combinedSignal,
+        timeout: MODAL_QUERY_TIMEOUT_MS,
+      });
+    },
     enabled: Boolean(open && gameId),
+    retry: false,
   });
 
   const catalogQuery = useQuery({
     queryKey: k.catalog(),
-    queryFn: ({ signal }) => api.get<Catalog>('catalog', { signal }),
+    queryFn: ({ signal }) => {
+      const combinedSignal = AbortSignal.any([signal, AbortSignal.timeout(MODAL_QUERY_TIMEOUT_MS)]);
+      return api.get<Catalog>('catalog', {
+        signal: combinedSignal,
+        timeout: MODAL_QUERY_TIMEOUT_MS,
+      });
+    },
     enabled: Boolean(open),
+    retry: false,
   });
 
   const game = gameQuery.data;
   const catalog = catalogQuery.data;
+  const isCatalogDisabled = !catalog || catalogQuery.isError || catalogQuery.isLoading;
 
   const [notesInput, setNotesInput] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
@@ -68,7 +84,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
   }, [open]);
 
   async function handleStatusChange(status: string) {
-    if (!game) return;
+    if (!game || isCatalogDisabled) return;
     if (catalog?.statuses && !catalog.statuses.includes(status as ScoredGame['status'])) return;
     try {
       await writer.save(game.id, { status: status as ScoredGame['status'] });
@@ -78,7 +94,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
   }
 
   async function handleDesireChange(desire: string) {
-    if (!game) return;
+    if (!game || isCatalogDisabled) return;
     if (catalog?.desires && !catalog.desires.includes(desire as ScoredGame['desire'])) return;
     try {
       await writer.save(game.id, { desire: desire as ScoredGame['desire'] });
@@ -88,7 +104,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
   }
 
   async function handleTagsChange(tags: string[]) {
-    if (!game) return;
+    if (!game || isCatalogDisabled) return;
     try {
       await writer.save(game.id, { secondaryTags: tags });
     } catch {
@@ -167,6 +183,17 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                     ? 'Não foi possível carregar o jogo.'
                     : 'Jogo não encontrado.'}
               </p>
+              {gameQuery.isError && (
+                <button
+                  data-testid="modal-game-retry"
+                  type="button"
+                  className="button mt-3 text-xs"
+                  disabled={gameQuery.isFetching}
+                  onClick={() => void gameQuery.refetch()}
+                >
+                  Tentar novamente
+                </button>
+              )}
             </div>
           ) : game ? (
             <>
@@ -227,6 +254,34 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                 </div>
               </div>
 
+              {catalogQuery.isError && (
+                <div
+                  data-testid="modal-catalog-error"
+                  role="alert"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3 text-xs text-[var(--muted)]"
+                >
+                  <span>Não foi possível carregar as opções de catálogo.</span>
+                  <button
+                    data-testid="modal-catalog-retry"
+                    type="button"
+                    className="button text-xs"
+                    disabled={catalogQuery.isFetching}
+                    onClick={() => void catalogQuery.refetch()}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
+              {catalogQuery.isLoading && !catalog && (
+                <div
+                  data-testid="modal-catalog-loading"
+                  role="status"
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2.5 text-center text-xs text-[var(--muted)]"
+                >
+                  Carregando opções de catálogo…
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="panel p-4">
                   <span className="eyebrow">STATUS DO JOGO</span>
@@ -240,6 +295,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       onValueChange={handleStatusChange}
                       isLoading={catalogQuery.isLoading}
                       isError={catalogQuery.isError}
+                      disabled={isCatalogDisabled}
                       onRetry={() => void catalogQuery.refetch()}
                     />
                   </div>
@@ -256,6 +312,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       onValueChange={handleDesireChange}
                       isLoading={catalogQuery.isLoading}
                       isError={catalogQuery.isError}
+                      disabled={isCatalogDisabled}
                       onRetry={() => void catalogQuery.refetch()}
                     />
                   </div>
@@ -276,6 +333,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                     onValuesChange={handleTagsChange}
                     isLoading={catalogQuery.isLoading}
                     isError={catalogQuery.isError}
+                    disabled={isCatalogDisabled}
                     onRetry={() => void catalogQuery.refetch()}
                   />
                 </div>
