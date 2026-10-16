@@ -9,17 +9,20 @@ area: backend
 
 Node 24 runs `.ts` files directly through type stripping.
 Imports carry the `.ts` extension.
-HTTP uses `node:http` without a framework.
+HTTP uses Fastify 5 (`fastify`). Fastify handles hooks, errors and responses only.
+One catch-all route (`/*`) sends every request to the route modules, which match their own paths.
+Outbound HTTP uses native `fetch` (one call, in `auth.ts`). The project does not use axios.
 
 ## Request flow
 
-1. The router in `apps/api/src/main/server.ts` assigns the request identifier.
-2. The router adds security headers and enforces the request body limit.
+1. `makeServer` in `apps/api/src/main/server.ts` builds the Fastify app. `genReqId` assigns the request identifier.
+2. The `onRequest` hook adds security headers. The route reads the body itself with `readJson` and enforces the size limit after authentication.
 3. `apps/api/src/auth/auth.ts` authenticates the caller.
 4. The central gate in `apps/api/src/main/server.ts` verifies permissions through `packages/core/src/authorization.ts`.
 5. The route delegates work to domain services (`GameService`, `WishlistService`, or `ConfigService`).
 6. Services query repositories, which execute operations through storage drivers.
-7. Errors convert to RFC 9457 problem+json format through `apps/api/src/routes/http-errors.ts`.
+7. `setErrorHandler` and `frameworkErrors` convert errors to RFC 9457 problem+json through `apps/api/src/routes/http-errors.ts`.
+8. The `onResponse` hook writes the `http.request` log line and the timing metric.
 
 A resource owned by another user returns HTTP 404.
 The API retains the legacy `error.message` field for compatibility with older clients.

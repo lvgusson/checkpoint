@@ -28,7 +28,7 @@ export function toProblem(
   if (e instanceof AppError) {
     ({ code: status, message: detail } = e);
     headers = e.headers ?? {};
-  } else if (e instanceof URIError) {
+  } else if (e instanceof URIError || (e as { code?: string }).code === 'FST_ERR_BAD_URL') {
     status = 400;
     detail = 'Codificação de URL inválida';
   } else {

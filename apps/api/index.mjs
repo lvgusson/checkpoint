@@ -12,6 +12,7 @@
 // edições se perdem) — só serve para previews sem banco. Ver docs/deploy.md.
 // Imports explícitos das dependências usadas só pelos .ts: garantem que o trace de
 // arquivos da Vercel (nft) as inclua no bundle da função.
+import 'fastify';
 import 'jose';
 import 'postgres';
 import '@vercel/functions';
@@ -26,9 +27,10 @@ const { service, wishlist, config, track } = await createService({
   dataDir: process.env.DATA_DIR ?? join(tmpdir(), 'checkpoint'),
 });
 
-// makeServer devolve um http.Server; reaproveitamos o listener dele sem listen().
-const server = makeServer(service, auth, wishlist, null, config, track);
+// makeServer devolve uma instância Fastify; reaproveitamos o http.Server dela sem listen().
+const app = makeServer(service, auth, wishlist, null, config, track);
+await app.ready();
 
 export default function handler(req, res) {
-  server.emit('request', req, res);
+  app.server.emit('request', req, res);
 }

@@ -19,7 +19,7 @@ Extend by adding an implementation behind an existing interface. Change a call s
 ## Add a route
 
 1. Add the method to the service in `apps/api/src/services/`. Keep HTTP out of services.
-2. Wire the route in `apps/api/src/routes/` and register it in the dispatch chain in `apps/api/src/main/server.ts` (an unregistered route is unreachable). Registered writes inherit `games:update`. Throw `AppError` for expected failures.
+2. Wire the route in `apps/api/src/routes/` and register it in the dispatch chain (`dispatchApi`) in `apps/api/src/main/server.ts`. Do not add a Fastify route: the catch-all calls your module. Registered writes inherit `games:update`. Throw `AppError` for expected failures.
 3. Document it in `apps/api/openapi.json`.
 4. Check: call it with a valid and an invalid body; the error must be problem+json.
 

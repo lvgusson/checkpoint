@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,16 +59,46 @@ export function makeServer(
   track: TrackService | null = null,
 ) {
   const guardExpensive = createRequestGuard(60, 60_000, 10);
-  return createServer((req, res) => {
-    const incoming = req.headers['x-request-id'];
-    const requestId =
-      typeof incoming === 'string' && REQUEST_ID.test(incoming) ? incoming : randomUUID();
+  const traces = new WeakMap<FastifyRequest, ReturnType<typeof newTrace>>();
+  const problem = (e: unknown, request: FastifyRequest, reply: FastifyReply) => {
+    if (!reply.hasHeader('X-Request-Id')) begin(request, reply); // framework errors (bad URL) skip the hooks
+    const { status, headers, body } = toProblem(e, request.id);
+    return reply
+      .code(status)
+      .headers({ ...headers, 'Cache-Control': 'no-store' })
+      .type(ContentType.ProblemJson)
+      .send(JSON.stringify(body));
+  };
+  const app = fastify({
+    logger: false, // the project logger (observability/logger.ts) writes the request log
+    requestIdHeader: false, // genReqId alone decides: only a well-formed X-Request-Id is trusted
+    genReqId: (req) => {
+      const incoming = req.headers['x-request-id'];
+      return typeof incoming === 'string' && REQUEST_ID.test(incoming) ? incoming : randomUUID();
+    },
+    frameworkErrors: problem, // bad URL encoding fails before any hook or route runs
+    exposeHeadRoutes: false, // `all` already covers HEAD
+    // Keep the node:http defaults that Fastify overrides.
+    keepAliveTimeout: 5_000,
+    requestTimeout: 300_000,
+  });
+  // The routes read the body themselves (readJson, with per-route limits, after auth).
+  // This parser only stops Fastify from consuming the stream first.
+  app.removeAllContentTypeParsers();
+  app.addContentTypeParser('*', (_req, _payload, done) => done(null));
+  // Runs for every request (onRequest hook): headers, trace, Server-Timing, request log.
+  const begin = (request: FastifyRequest, reply: FastifyReply) => {
+    const req = request.raw;
+    const res = reply.raw;
     const startedAt = performance.now();
     const trace = newTrace(
       clientLatencyMs(Date.now(), req.headers['x-client-sent-at'] as string | undefined),
     );
+    traces.set(request, trace);
     const detailEnv = process.env.TIMING_DETAIL;
-    res.setHeader('X-Request-Id', requestId);
+    reply.header('X-Request-Id', request.id).headers(SECURITY_HEADERS);
+    if (req.url?.startsWith(ApiPath.Root))
+      reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
     // Server-Timing must be set before headers go out, so build it at writeHead.
     // Stages after that (send) reach only the log line.
     let sendStart = 0n;
@@ -85,19 +115,15 @@ export function makeServer(
       }
       return writeHead.apply(this, args);
     } as typeof res.writeHead;
-    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
-    if (req.url?.startsWith(ApiPath.Root))
-      res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
     let logged = false;
     const onDone = () => {
       if (logged) return;
       logged = true;
       const now = process.hrtime.bigint();
       const ms = Math.round(performance.now() - startedAt);
-      const route = (req.url ?? '').split('?')[0];
       logger.info('http.request', {
         method: req.method,
-        path: route,
+        path: (req.url ?? '').split('?')[0],
         status: res.statusCode,
         ms,
         ...(detailEnv === '1' && {
@@ -107,22 +133,29 @@ export function makeServer(
           ),
         }),
         aborted: !res.writableFinished,
-        requestId,
+        requestId: request.id,
       });
       metrics.timing('http.server.duration', ms, { method: req.method, status: res.statusCode });
     };
-    res.on('finish', onDone);
-    res.on('close', onDone); // aborted requests never emit finish
+    res.once('finish', onDone);
+    res.once('close', onDone); // aborted requests never emit finish
+  };
+  app.setErrorHandler(problem);
+  app.addHook('onRequest', async (request, reply) => begin(request, reply));
+  const send = (reply: FastifyReply, hit: Exclude<RouteResult, null>) => {
+    if ('raw' in hit) return reply.type(hit.contentType).send(hit.raw);
+    reply.header('Cache-Control', 'no-store');
+    if (hit.status === 204) return reply.code(204).send();
+    return reply
+      .code(hit.status ?? 200)
+      .type(ContentType.JsonUtf8)
+      .send(span('ser', () => JSON.stringify(hit.data)));
+  };
+  const handle = (request: FastifyRequest, reply: FastifyReply) => {
+    const trace = traces.get(request)!;
     return traceStore.run(trace, () =>
-      runWithContext({ requestId }, async () => {
-        const send = (data: unknown, status = 200) => {
-          const body = span('ser', () => JSON.stringify(data));
-          res.writeHead(status, {
-            'Content-Type': ContentType.JsonUtf8,
-            'Cache-Control': 'no-store',
-          });
-          res.end(body);
-        };
+      runWithContext({ requestId: request.id }, async () => {
+        const req = request.raw;
         const readJson = async (maxBytes = MAX_BODY_BYTES): Promise<Record<string, unknown>> => {
           if (Number(req.headers['content-length'] ?? 0) > maxBytes)
             throw new AppError('Conteúdo muito grande', 413);
@@ -143,96 +176,78 @@ export function makeServer(
             throw new AppError('Objeto JSON obrigatório');
           return body;
         };
-        const reply = (hit: Exclude<RouteResult, null>) => {
-          if ('raw' in hit) {
-            res.setHeader('Content-Type', hit.contentType);
-            return res.end(hit.raw);
-          }
-          if (hit.status === 204) {
-            res.writeHead(204, { 'Cache-Control': 'no-store' });
-            return res.end();
-          }
-          return send(hit.data, hit.status);
-        };
-        try {
-          const url = new URL(req.url ?? '/', 'http://localhost');
-          const path = url.pathname;
-          const system = await systemRoute(path, releases);
-          if (system) return reply(system);
-          // Public release reads and dedicated-token registration precede user authentication.
-          if (path.startsWith(ApiPath.Releases)) {
-            const hit = await releaseRoute(releases, req, url, readJson);
-            if (hit) return reply(hit);
-          }
-          // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
-          if (auth && path.startsWith(ApiPath.Root)) {
-            const user = await auth.authenticate(
-              req.headers.authorization,
-              req.socket.remoteAddress ?? '127.0.0.1',
-            );
-            setContext({
-              userId: user.id,
-              accessToken: user.accessToken,
-              email: user.email,
-              role: user.role,
-            });
-          } else if (path.startsWith(ApiPath.Root)) {
-            setContext({ role: Role.Admin }); // no-auth dev mode
-            trace.authed = true; // makeServer without auth runs only on localhost
-          }
-          const telemetry = await telemetryRoute(req.method, path, readJson);
-          if (telemetry) return reply(telemetry);
-          if (path.startsWith(ApiPath.Root)) {
-            const read = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
-            need(
-              path === ApiPath.Track
-                ? Permission.GamesRead
-                : !read && path.includes('/settings/')
-                  ? Permission.SettingsUpdate
-                  : read
-                    ? Permission.GamesRead
-                    : Permission.GamesUpdate,
-            );
-          }
-          const isExpensive =
-            path.endsWith('/recommendations') ||
-            path === ApiPath.WishlistImportSteam ||
-            path === ApiPath.WishlistPricesRefresh ||
-            path === ApiPath.SteamSearch ||
-            path.startsWith('/api/v1/steam/apps/');
-          const dispatch = async () =>
-            (await gamesRoute(service, req, url, readJson)) ??
-            (await listsRoute(service, req, url, readJson)) ??
-            (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
-            (config ? await configRoute(config, req, url, readJson) : null) ??
-            (track ? await trackRoute(track, req.method, path, readJson) : null);
-          const isGet = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
-          const hit = await span('route', () =>
-            isExpensive
-              ? guardExpensive(
-                  `${getContext()?.userId ?? 'local'}:${path}${url.search}`,
-                  dispatch,
-                  isGet,
-                )
-              : dispatch(),
-          );
-          if (hit) return reply(hit);
-          if (path.startsWith(ApiPath.Root)) throw new AppError('Rota não encontrada', 404);
-          if (req.method !== HttpMethod.Get) throw new AppError('Método não permitido', 405);
-          return reply((await staticRoute(path))!);
-        } catch (e) {
-          const { status, headers, body } = toProblem(e, requestId);
-          if (res.headersSent) return void res.end();
-          res.writeHead(status, {
-            ...headers,
-            'Content-Type': ContentType.ProblemJson,
-            'Cache-Control': 'no-store',
-          });
-          res.end(JSON.stringify(body));
+        const url = new URL(req.url ?? '/', 'http://localhost');
+        const path = url.pathname;
+        const system = await systemRoute(path, releases);
+        if (system) return send(reply, system);
+        // Public release reads and dedicated-token registration precede user authentication.
+        if (path.startsWith(ApiPath.Releases)) {
+          const hit = await releaseRoute(releases, req, url, readJson);
+          if (hit) return send(reply, hit);
         }
+        // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
+        if (auth && path.startsWith(ApiPath.Root)) {
+          const user = await auth.authenticate(
+            req.headers.authorization,
+            req.socket.remoteAddress ?? '127.0.0.1',
+          );
+          setContext({
+            userId: user.id,
+            accessToken: user.accessToken,
+            email: user.email,
+            role: user.role,
+          });
+        } else if (path.startsWith(ApiPath.Root)) {
+          setContext({ role: Role.Admin }); // no-auth dev mode
+          trace.authed = true; // makeServer without auth runs only on localhost
+        }
+        const telemetry = await telemetryRoute(req.method, path, readJson);
+        if (telemetry) return send(reply, telemetry);
+        if (path.startsWith(ApiPath.Root)) {
+          const read = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
+          need(
+            path === ApiPath.Track
+              ? Permission.GamesRead
+              : !read && path.includes('/settings/')
+                ? Permission.SettingsUpdate
+                : read
+                  ? Permission.GamesRead
+                  : Permission.GamesUpdate,
+          );
+        }
+        const isExpensive =
+          path.endsWith('/recommendations') ||
+          path === ApiPath.WishlistImportSteam ||
+          path === ApiPath.WishlistPricesRefresh ||
+          path === ApiPath.SteamSearch ||
+          path.startsWith('/api/v1/steam/apps/');
+        const dispatch = async () =>
+          (await gamesRoute(service, req, url, readJson)) ??
+          (await listsRoute(service, req, url, readJson)) ??
+          (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
+          (config ? await configRoute(config, req, url, readJson) : null) ??
+          (track ? await trackRoute(track, req.method, path, readJson) : null);
+        const isGet = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
+        const hit = await span('route', () =>
+          isExpensive
+            ? guardExpensive(
+                `${getContext()?.userId ?? 'local'}:${path}${url.search}`,
+                dispatch,
+                isGet,
+              )
+            : dispatch(),
+        );
+        if (hit) return send(reply, hit);
+        if (path.startsWith(ApiPath.Root)) throw new AppError('Rota não encontrada', 404);
+        if (req.method !== HttpMethod.Get) throw new AppError('Método não permitido', 405);
+        return send(reply, (await staticRoute(path))!);
       }),
     );
-  });
+  };
+  // One catch-all: the routes/*.ts modules still match their own paths.
+  app.all('/*', handle);
+  app.setNotFoundHandler(handle); // methods that `all` does not cover
+  return app;
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const auth = authenticatorFromEnv();
@@ -250,7 +265,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     });
   for (const signal of ['SIGTERM', 'SIGINT'] as const)
     process.on(signal, () => void flushLogs().finally(() => process.exit(0)));
-  server.listen(Number(process.env.PORT) || 3000, host, () =>
-    logger.info('server.listening', { storage, host, port: Number(process.env.PORT) || 3000 }),
-  );
+  const port = Number(process.env.PORT) || 3000;
+  await server.listen({ port, host });
+  logger.info('server.listening', { storage, host, port });
 }
