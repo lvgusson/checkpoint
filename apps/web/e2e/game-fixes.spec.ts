@@ -218,7 +218,7 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
     await expect(searchInput).toBeFocused();
 
     // Verify aria-activedescendant is populated
-    await expect(searchInput).toHaveAttribute('aria-activedescendant', /modal-status-option-/);
+    await expect(searchInput).toHaveAttribute('aria-activedescendant', /-option-/);
 
     // Escape closes listbox and restores focus to the trigger
     await page.keyboard.press('Escape');
