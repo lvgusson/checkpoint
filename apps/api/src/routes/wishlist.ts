@@ -22,7 +22,7 @@ export async function wishlistRoute(
     return { data: await wishlist.app(decodeURIComponent(app[1])) };
   if (path === ApiPath.Wishlist) {
     if (method === HttpMethod.Get)
-      return { data: await wishlist.list(url.searchParams.get('sort') ?? 'name') };
+      return { data: await wishlist.list(url.searchParams.get('sort') ?? undefined) };
     if (method === HttpMethod.Post) {
       const { item, created } = await wishlist.add(await readJson());
       return { data: { ...item, created }, status: created ? 201 : 200 };

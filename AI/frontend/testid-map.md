@@ -73,6 +73,7 @@ area: frontend
 | `queue-load-more`                                                          | Infinite scroll sentinel (not a button).          | no           |
 | `queue-recalculate`                                                        | Recalculate recommendations.                      | no           |
 | `queue-retry`, `queue-lists-retry`, `queue-lists-reload`                   | Retry the queue or the lists request.             | no           |
+| `queue-tags-popover-<code>`                                                | Open metadata popover (mobile).                   | no           |
 | `queue-{playing,immediate,finish}-<code>`                                  | Change game status, priority, or open completion. | yes          |
 | `queue-row-<code>`, `queue-drag-<code>`, `queue-release-<code>`            | Reorder games or remove a fixed position.         | yes          |
 | `queue-list-{trigger,actions}`, `queue-list-select-<id>`                   | Open list menus or select a list.                 | no           |

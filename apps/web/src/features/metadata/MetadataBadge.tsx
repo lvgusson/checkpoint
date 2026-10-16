@@ -24,7 +24,9 @@ export function MetadataBadge({
       >
         <path d={icon} />
       </svg>
-      <span className="min-w-0 break-words">{value}</span>
+      <span className={`min-w-0 ${className.includes('truncate') ? 'truncate' : 'break-words'}`}>
+        {value}
+      </span>
     </span>
   );
 }
