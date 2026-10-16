@@ -97,6 +97,18 @@ describe('GameDetailModal', () => {
     expect(out).toContain('data-testid="modal-genre"');
     expect(out).toContain('data-testid="modal-tags"');
 
+    // Unified GÊNERO outer panel with Principal and Secundárias selectors
+    expect(out).toContain('GÊNERO');
+    expect(out).not.toContain('GÊNERO PRINCIPAL');
+    expect(out).not.toContain('TAGS SECUNDÁRIAS');
+    expect(out).toContain('Principal');
+    expect(out).toContain('Secundárias');
+
+    // Action icons must not be restricted by max-w-[280px] and open-detail link must be present
+    expect(out).not.toContain('max-w-[280px]');
+    expect(out).toContain('data-testid="modal-open-detail"');
+    expect(out).toContain('Abrir página completa →');
+
     // Tags control must display selected tags count and tags
     expect(out).toContain('2 / 3 tags selecionadas');
     expect(out).toContain('Viagem no Tempo');
