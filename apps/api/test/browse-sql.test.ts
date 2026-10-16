@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import type { Sql } from 'postgres';
 import { db } from '../src/data/db.ts';
 import { PgGamesDriver } from '../src/data/drivers/pg/games.ts';
 import { JsonGamesDriver } from '../src/data/drivers/json/games.ts';
@@ -18,8 +19,12 @@ import { gameFrom, gameJson, toGame, type RawGame } from '../src/data/drivers/pg
 const hasDb = Boolean(process.env.SECURITY_TEST_DATABASE_URL);
 
 describe.skipIf(!hasDb)('PgGamesDriver SQL browse', () => {
-  const sql = db(process.env.SECURITY_TEST_DATABASE_URL!);
-  const driver = new PgGamesDriver(sql);
+  let sql: Sql;
+  let driver: PgGamesDriver;
+  beforeAll(() => {
+    sql = db(process.env.SECURITY_TEST_DATABASE_URL!);
+    driver = new PgGamesDriver(sql);
+  });
 
   it('paginates results with distinct items per page and correct total count', async () => {
     const page1 = await driver.browse(SEED_APP_USER_ID, {
