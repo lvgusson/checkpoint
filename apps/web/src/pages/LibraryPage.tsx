@@ -268,6 +268,7 @@ export function LibraryPage() {
         title="Você comprou o jogo?"
         confirmLabel="Sim"
         cancelLabel="Não"
+        defaultFocus="confirm"
         onConfirm={async () => {
           if (!purchasingGame) return;
           const target = purchasingGame;

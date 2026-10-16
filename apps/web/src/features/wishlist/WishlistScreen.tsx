@@ -386,6 +386,7 @@ export function WishlistScreen() {
         title="Você comprou o jogo?"
         confirmLabel="Sim"
         cancelLabel="Não"
+        defaultFocus="confirm"
         onConfirm={() => {
           if (!purchasingGame) return;
           const game = purchasingGame;

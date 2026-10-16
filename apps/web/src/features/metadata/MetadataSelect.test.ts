@@ -61,6 +61,22 @@ describe('MetadataSelect', () => {
 
     expect(out).toContain('Carregando…');
   });
+
+  it('does not render virtual keyboard search input', () => {
+    const out = html(
+      React.createElement(MetadataSelect, {
+        label: 'Status do Jogo',
+        kind: 'status',
+        options: ['Não iniciado', 'Jogando', 'Finalizado'],
+        value: 'Jogando',
+        onValueChange: () => {},
+        'data-testid': 'modal-status',
+      }),
+    );
+
+    expect(out).not.toContain('role="searchbox"');
+    expect(out).not.toContain('modal-status-search');
+  });
 });
 
 describe('Combobox', () => {
@@ -76,8 +92,24 @@ describe('Combobox', () => {
     );
 
     expect(out).toContain('data-testid="combobox-store"');
+    expect(out).toContain('role="combobox"');
     expect(out).toContain('aria-haspopup="listbox"');
     expect(out).toContain('Filtro de Loja');
     expect(out).toContain('Steam');
+  });
+
+  it('does not render virtual keyboard search input', () => {
+    const out = html(
+      React.createElement(Combobox, {
+        label: 'Filtro de Loja',
+        options: ['Steam', 'GOG', 'Epic Games'],
+        value: 'Steam',
+        placeholder: 'Selecione uma loja',
+        'data-testid': 'combobox-store',
+      }),
+    );
+
+    expect(out).not.toContain('role="searchbox"');
+    expect(out).not.toContain('combobox-store-search');
   });
 });
