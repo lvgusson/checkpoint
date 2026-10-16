@@ -144,14 +144,15 @@ describe('WishlistScreen default sort and PC score', () => {
     expect(html).toContain('value="recommendation" selected=""');
   });
 
-  it('renders PC recommendation score inside card-bottom', () => {
+  it('renders recommendation score inside card-bottom on mobile and desktop', () => {
     const html = renderToString(React.createElement(WishlistScreen));
 
     // Zelda has score 95
     expect(html).toContain('Pontuação: 95');
     // Hollow Knight falls back to baseScore 88
     expect(html).toContain('Pontuação: 88');
-    // Check score element class
-    expect(html).toContain('hidden sm:inline-flex score font-mono text-xs text-muted-foreground');
+    // Check score element class (non-mono, visible on both mobile and desktop)
+    expect(html).toContain('class="score text-sm font-semibold text-foreground"');
+    expect(html).not.toContain('hidden sm:inline-flex score');
   });
 });
