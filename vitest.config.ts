@@ -21,11 +21,25 @@ export default defineConfig({
         },
       },
       {
+        resolve: {
+          alias: [
+            {
+              find: /^@\//,
+              replacement: fileURLToPath(new URL('./apps/web/src/', import.meta.url)),
+            },
+            {
+              find: '@checkpoint/ui-react',
+              replacement: fileURLToPath(
+                new URL('./packages/ui-react/src/index.ts', import.meta.url),
+              ),
+            },
+          ],
+        },
         test: {
           name: 'web',
           root: fileURLToPath(new URL('./apps/web', import.meta.url)),
           environment: 'node',
-          include: ['src/**/*.test.ts'],
+          include: ['src/**/*.test.{ts,tsx}'],
         },
       },
       {
