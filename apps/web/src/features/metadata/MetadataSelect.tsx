@@ -106,6 +106,7 @@ export function MetadataSelect(props: Props) {
       props.onValuesChange(
         selected(item) ? props.values.filter((v) => v !== item) : [...props.values, item],
       );
+      searchInputRef.current?.focus();
     } else {
       props.onValueChange(item);
       close(true);
@@ -153,6 +154,12 @@ export function MetadataSelect(props: Props) {
       openList();
     }
   }
+
+  const highlightedItem = filteredOptions[highlightedIndex];
+  const activeDescendantId =
+    open && highlightedItem
+      ? `${id}-option-${metadataOptionKey(kind, highlightedItem)}`
+      : undefined;
 
   return (
     <div ref={root} className={cn('relative mt-[17px] block min-w-0', open && 'z-30')}>
@@ -209,6 +216,9 @@ export function MetadataSelect(props: Props) {
               data-testid={`${props['data-testid']}-search`}
               type="text"
               role="searchbox"
+              aria-autocomplete="list"
+              aria-controls={id}
+              aria-activedescendant={activeDescendantId}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -261,6 +271,7 @@ export function MetadataSelect(props: Props) {
                 const isHighlighted = index === highlightedIndex;
                 return (
                   <button
+                    id={`${id}-option-${metadataOptionKey(kind, item)}`}
                     data-testid={`${props['data-testid']}-option-${metadataOptionKey(kind, item)}`}
                     key={item}
                     type="button"

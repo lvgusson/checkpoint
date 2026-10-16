@@ -139,11 +139,12 @@ export class AuthSession {
   /** Forces a refresh after a 401; concurrent callers share one promise. */
   refreshToken(): Promise<string | null> {
     if (!this.client) return Promise.resolve(null);
+    if (this.refreshing) return this.refreshing;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<{ data: { session: null }; error: boolean }>((resolve) => {
       timer = setTimeout(() => resolve({ data: { session: null }, error: true }), 5000);
     });
-    this.refreshing ??= Promise.race([this.client.refreshSession(), timeoutPromise])
+    this.refreshing = Promise.race([this.client.refreshSession(), timeoutPromise])
       .then(({ data, error }) => (error ? null : (data.session?.access_token ?? null)))
       .catch(() => null)
       .finally(() => {

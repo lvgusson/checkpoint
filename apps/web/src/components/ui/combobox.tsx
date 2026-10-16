@@ -162,6 +162,10 @@ export function Combobox({
     }
   }
 
+  const highlightedOption = filteredOptions[highlightedIndex];
+  const activeDescendantId =
+    open && highlightedOption ? `${id}-opt-${highlightedIndex}` : undefined;
+
   return (
     <div ref={rootRef} className={cn('relative block min-w-0', open && 'z-30', className)}>
       {label && (
@@ -213,6 +217,9 @@ export function Combobox({
               data-testid={testId ? `${testId}-search` : undefined}
               type="text"
               role="searchbox"
+              aria-autocomplete="list"
+              aria-controls={`${id}-listbox`}
+              aria-activedescendant={activeDescendantId}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -267,6 +274,7 @@ export function Combobox({
                 const isHighlighted = index === highlightedIndex;
                 return (
                   <button
+                    id={`${id}-opt-${index}`}
                     key={opt.value}
                     data-testid={testId ? `${testId}-option-${opt.value}` : undefined}
                     type="button"

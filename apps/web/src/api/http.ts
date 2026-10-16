@@ -34,6 +34,7 @@ async function resolveTokenWithTimeout(
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let onAbort: (() => void) | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
       reject(new DOMException('Auth token request timed out', 'TimeoutError'));
@@ -42,12 +43,9 @@ async function resolveTokenWithTimeout(
 
   const abortPromise = signal
     ? new Promise<never>((_, reject) => {
-        signal.addEventListener(
-          'abort',
-          () =>
-            reject(signal.reason ?? new DOMException('The user aborted a request.', 'AbortError')),
-          { once: true },
-        );
+        onAbort = () =>
+          reject(signal.reason ?? new DOMException('The user aborted a request.', 'AbortError'));
+        signal.addEventListener('abort', onAbort, { once: true });
       })
     : null;
 
@@ -57,6 +55,7 @@ async function resolveTokenWithTimeout(
     return await Promise.race(promises);
   } finally {
     if (timer) clearTimeout(timer);
+    if (signal && onAbort) signal.removeEventListener('abort', onAbort);
   }
 }
 
