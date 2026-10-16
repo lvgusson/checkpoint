@@ -35,7 +35,7 @@ import {
   stageTable,
   traceStore,
 } from '../observability/timing.ts';
-import { createRequestGuard } from '../shared/request-guard.ts';
+import { createRequestGuard, requestDeadlineMs, withDeadline } from '../shared/request-guard.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const MAX_BODY_BYTES = 100_000;
 const REQUEST_ID = /^[\w.-]{8,64}$/;
@@ -200,12 +200,18 @@ export function makeServer(
             path === ApiPath.WishlistPricesRefresh ||
             path === ApiPath.SteamSearch ||
             path.startsWith('/api/v1/steam/apps/');
-          const dispatch = async () =>
-            (await gamesRoute(service, req, url, readJson)) ??
-            (await listsRoute(service, req, url, readJson)) ??
-            (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
-            (config ? await configRoute(config, req, url, readJson) : null) ??
-            (track ? await trackRoute(track, req.method, path, readJson) : null);
+          // The deadline sits inside the guard, so a hung route frees its guard slot.
+          // Steam and recommendation routes retry upstream calls, so they get 4x the time.
+          const dispatch = () =>
+            withDeadline(
+              requestDeadlineMs() * (isExpensive ? 4 : 1),
+              async () =>
+                (await gamesRoute(service, req, url, readJson)) ??
+                (await listsRoute(service, req, url, readJson)) ??
+                (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
+                (config ? await configRoute(config, req, url, readJson) : null) ??
+                (track ? await trackRoute(track, req.method, path, readJson) : null),
+            );
           const isGet = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
           const hit = await span('route', () =>
             isExpensive
