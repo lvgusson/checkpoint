@@ -14,6 +14,7 @@ type Common = {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  disabled?: boolean;
 };
 
 function metadataOptionKey(kind: MetadataKind, value: string) {
@@ -40,7 +41,15 @@ type Props =
 
 /** Searchable combobox of metadata badges; single or multiple (limited by `max`). Keyboard: arrows, Home/End, Enter, Escape, Tab. */
 export function MetadataSelect(props: Props) {
-  const { label, kind, options, isLoading = false, isError = false, onRetry } = props;
+  const {
+    label,
+    kind,
+    options,
+    isLoading = false,
+    isError = false,
+    onRetry,
+    disabled = false,
+  } = props;
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +153,7 @@ export function MetadataSelect(props: Props) {
   }
 
   function handleTriggerKeyDown(event: React.KeyboardEvent) {
+    if (disabled) return;
     if (
       event.key === 'ArrowDown' ||
       event.key === 'ArrowUp' ||
@@ -170,12 +180,17 @@ export function MetadataSelect(props: Props) {
         data-testid={props['data-testid']}
         type="button"
         role="combobox"
-        className="select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-[11px] py-2 text-left text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+        disabled={disabled}
+        aria-disabled={disabled || undefined}
+        className={cn(
+          'select-trigger mt-2 flex min-h-[46px] w-full items-center justify-between gap-2 rounded-[7px] border border-border bg-card px-[11px] py-2 text-left text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30',
+          disabled && 'cursor-not-allowed opacity-50',
+        )}
         aria-labelledby={`${id}-label ${id}-value`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
-        onClick={() => (open ? close() : openList())}
+        onClick={() => !disabled && (open ? close() : openList())}
         onKeyDown={handleTriggerKeyDown}
       >
         <span className="flex min-w-0 flex-wrap gap-[5px]" id={id + '-value'}>
