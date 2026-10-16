@@ -15,6 +15,8 @@ export interface UseInfiniteScrollOptions {
   root?: Element | null;
   /** Whether the observer is enabled (default: true). */
   enabled?: boolean;
+  /** Change it after each slice renders: the observer restarts, so a sentinel still in view fires again. */
+  resetKey?: unknown;
 }
 
 /**
@@ -29,6 +31,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
   threshold = 0,
   root = null,
   enabled = true,
+  resetKey,
 }: UseInfiniteScrollOptions) {
   const sentinelRef = useRef<T | null>(null);
   const onLoadMoreRef = useRef(onLoadMore);
@@ -57,7 +60,7 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
     return () => {
       observer.disconnect();
     };
-  }, [enabled, hasMore, isLoading, rootMargin, threshold, root]);
+  }, [enabled, hasMore, isLoading, rootMargin, threshold, root, resetKey]);
 
   return sentinelRef;
 }

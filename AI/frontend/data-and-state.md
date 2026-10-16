@@ -37,9 +37,20 @@ Each request sends `X-Client-Sent-At`. The browser reads `Server-Timing` from th
 
 Mutations without their own `onError` and background refetch errors reach the toast in `app/Shell.tsx`. A 403 from a catalog edit means admin only; show the server message.
 
+## Modal queries and error boundaries
+
+`GameDetailModal` loads game details and metadata catalog with bounded timeouts:
+
+- Both queries use `MODAL_QUERY_TIMEOUT_MS = 20_000`, Ky 20 s timeout, and `retry: false`.
+- Game loading ends in at most 20 s instead of hanging indefinitely.
+- On game query error, the modal hides the loader and displays an alert with a retry action (`modal-game-retry`).
+- On catalog query error, the modal displays an alert (`modal-catalog-error`) with a retry action (`modal-catalog-retry`).
+- When the catalog is loading or in error, status, desire, and tag controls are disabled.
+
 ## Related
 
 - [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
 - [[AI/frontend/creating-a-component]]: Where a new component, screen or feature lives and how to build it.
 - [[AI/frontend/infinite-scroll]]: Infinite scroll pattern using useInfiniteScroll and paginated queries.
+- [[AI/frontend/testid-map]]: Stable test IDs and screen elements.
 - [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.

@@ -35,8 +35,9 @@ import {
   stageTable,
   traceStore,
 } from '../observability/timing.ts';
-import { createRequestGuard } from '../shared/request-guard.ts';
+import { createRequestGuard, requestDeadlineMs, withDeadline } from '../shared/request-guard.ts';
 const root = fileURLToPath(new URL('../../', import.meta.url));
+const EXPENSIVE_DEADLINE_FACTOR = 4;
 const MAX_BODY_BYTES = 100_000;
 const REQUEST_ID = /^[\w.-]{8,64}$/;
 const SECURITY_HEADERS = {
@@ -115,6 +116,12 @@ export function makeServer(
     res.on('close', onDone); // aborted requests never emit finish
     return traceStore.run(trace, () =>
       runWithContext({ requestId }, async () => {
+        const route = (req.url ?? '').split('?')[0];
+        logger.info('http.request.entry', {
+          method: req.method,
+          path: route,
+          requestId,
+        });
         const send = (data: unknown, status = 200) => {
           const body = span('ser', () => JSON.stringify(data));
           res.writeHead(status, {
@@ -166,9 +173,8 @@ export function makeServer(
           }
           // Daqui em diante, toda rota /api/* exige JWT do Supabase (401 se ausente/inválido).
           if (auth && path.startsWith(ApiPath.Root)) {
-            const user = await auth.authenticate(
-              req.headers.authorization,
-              req.socket.remoteAddress ?? '127.0.0.1',
+            const user = await span('auth', () =>
+              auth.authenticate(req.headers.authorization, req.socket.remoteAddress ?? '127.0.0.1'),
             );
             setContext({
               userId: user.id,
@@ -200,12 +206,18 @@ export function makeServer(
             path === ApiPath.WishlistPricesRefresh ||
             path === ApiPath.SteamSearch ||
             path.startsWith('/api/v1/steam/apps/');
-          const dispatch = async () =>
-            (await gamesRoute(service, req, url, readJson)) ??
-            (await listsRoute(service, req, url, readJson)) ??
-            (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
-            (config ? await configRoute(config, req, url, readJson) : null) ??
-            (track ? await trackRoute(track, req.method, path, readJson) : null);
+          // The deadline sits inside the guard, so a hung route frees its guard slot.
+          // Steam and recommendation routes retry upstream calls, so they get 4x the time.
+          const dispatch = () =>
+            withDeadline(
+              requestDeadlineMs() * (isExpensive ? EXPENSIVE_DEADLINE_FACTOR : 1),
+              async () =>
+                (await gamesRoute(service, req, url, readJson)) ??
+                (await listsRoute(service, req, url, readJson)) ??
+                (wishlist ? await wishlistRoute(wishlist, req, url, readJson) : null) ??
+                (config ? await configRoute(config, req, url, readJson) : null) ??
+                (track ? await trackRoute(track, req.method, path, readJson) : null),
+            );
           const isGet = req.method === HttpMethod.Get || req.method === HttpMethod.Head;
           const hit = await span('route', () =>
             isExpensive

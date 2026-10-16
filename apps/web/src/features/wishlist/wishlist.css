@@ -40,7 +40,9 @@
   .results img {
     width: 92px;
     height: 35px;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
+    background: var(--surface-2);
     border-radius: 4px;
   }
   .results .name {
@@ -110,7 +112,7 @@
   .wishlist-purchase-btn {
     position: absolute;
     right: 14px;
-    bottom: 12px;
+    bottom: 10px;
     z-index: 3;
     display: inline-grid;
     place-items: center;
@@ -136,5 +138,22 @@
   }
   .card-bottom {
     padding-right: 44px;
+    margin-top: 20px;
+    padding-top: 14px;
+  }
+  .score {
+    font-family: inherit;
+    min-width: auto;
+  }
+  .cover {
+    background: var(--surface-2);
+  }
+  .cover:not(:has(img)),
+  .cover:has(img[style*='none']) {
+    background: linear-gradient(130deg, var(--cover-a), var(--cover-b));
+  }
+  .cover img {
+    object-fit: contain;
+    object-position: center;
   }
 }

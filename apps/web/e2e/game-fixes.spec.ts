@@ -72,10 +72,16 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
     const imageCount = await coverImages.count();
     expect(imageCount).toBeGreaterThan(0);
 
-    const hasLoadedImage = await coverImages.first().evaluate((img: HTMLImageElement) => {
-      return img.complete && img.naturalWidth > 0;
-    });
-    expect(hasLoadedImage).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          return await coverImages.first().evaluate((img: HTMLImageElement) => {
+            return img.complete && img.naturalWidth > 0;
+          });
+        },
+        { timeout: 10000 },
+      )
+      .toBe(true);
 
     // Verify requests stabilized (no infinite runaway)
     const countAfterLoad = gamesRequestCount;
@@ -194,5 +200,43 @@ test.describe.serial('Verification of Game Fixes (checkpoint-ad7)', () => {
       await naoBtn.click();
       await expect(confirmModal).not.toBeVisible();
     }
+  });
+
+  test('7. Combobox keyboard navigation and focus management in modal', async () => {
+    await page.goto('/ordem');
+
+    const queueRow = page.locator('.queue-row-main a, .next-game').first();
+    await expect(queueRow).toBeVisible({ timeout: 10000 });
+    await queueRow.click();
+
+    const modal = page.locator('dialog[data-testid^="modal-game-"]');
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    const statusCombobox = modal.getByTestId('modal-status');
+    await expect(statusCombobox).toBeVisible();
+
+    // Open via keyboard ArrowDown
+    await statusCombobox.focus();
+    await page.keyboard.press('ArrowDown');
+
+    const listbox = modal.locator('[role="listbox"]');
+    await expect(listbox).toBeVisible();
+
+    const searchInput = modal.getByTestId('modal-status-search');
+    await expect(searchInput).toHaveCount(0);
+
+    // Verify trigger remains focused and aria-activedescendant is populated
+    await expect(statusCombobox).toBeFocused();
+    await expect(statusCombobox).toHaveAttribute('aria-activedescendant', /-option-/);
+
+    // Escape closes listbox and restores focus to the trigger
+    await page.keyboard.press('Escape');
+    await expect(listbox).not.toBeVisible();
+    await expect(statusCombobox).toBeFocused();
+
+    // Close modal
+    const closeBtn = page.getByTestId('modal-close');
+    await closeBtn.click();
+    await expect(modal).not.toBeVisible();
   });
 });

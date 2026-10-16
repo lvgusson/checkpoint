@@ -42,7 +42,9 @@ Under `prefers-reduced-motion` the spinner stops. Styles use the `ckl` class pre
 
 ## Environment variable
 
-`VITE_LOADER_ART` is the default `variant` of `AppLoader`. When it is empty the default is `sword`. A `variant` prop on one `AppLoader` wins.
+`VITE_LOADER_ART` overrides the default `variant` of `AppLoader`.
+When empty, the default is `sword` for stacked loaders and `spinner` for inline loaders.
+A `variant` prop on `AppLoader` wins.
 
 ## Use it in another app
 

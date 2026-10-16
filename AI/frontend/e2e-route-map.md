@@ -66,6 +66,11 @@ Never print original notes content (print length only).
 Queue checks are read-only: never release, delete, or reorder pins.
 Never delete existing games or list records.
 
+## Known pitfalls
+
+- Never assert on a bare `getByRole('status')`. Many components render `role=status` (save bar, prerequisite search, loaders). Use `detail-save-status` for the detail save message.
+- Playwright restarts the worker after a failed test. The shared page and login session are lost, so later screens fail with "heading not found" or "Target page closed". Fix the first failure; the later failures are fallout.
+
 ## Related
 
 - [[AI/frontend/testid-map]]: Stable test IDs and destructive actions for every application screen.

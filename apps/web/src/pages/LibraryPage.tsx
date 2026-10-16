@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import type { Catalog, Desire, ScoredGame } from '../../../../packages/core/src/models';
 import { api } from '../api/http';
 import { GameCard, useInfiniteCatalog, type LibraryFilters } from '../features/catalog';
+import { FinishDialog } from '../features/finish-dialog';
 import { AppLoader } from '../features/loader/AppLoader';
 import { useGameWriter } from '../features/playing';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -16,6 +17,8 @@ export function LibraryPage() {
   const writer = useGameWriter();
   const [error, setError] = useState('');
   const [purchasingGame, setPurchasingGame] = useState<ScoredGame | null>(null);
+  const [unpurchasingGame, setUnpurchasingGame] = useState<ScoredGame | null>(null);
+  const [finishingGame, setFinishingGame] = useState<ScoredGame | null>(null);
 
   const catalog = useQuery({
     queryKey: k.catalog(),
@@ -151,7 +154,7 @@ export function LibraryPage() {
       <div className="list-toolbar">
         <span>
           {total} jogos encontrados
-          {isFetching && (
+          {hasData && isFetching && (
             <span className="muted inline-flex items-center gap-1.5 ml-1">
               · <AppLoader layout="inline" size="sm" label="carregando…" />
             </span>
@@ -180,7 +183,12 @@ export function LibraryPage() {
         </div>
       )}
       {isLoading && !hasData ? (
-        <AppLoader fill="block" label="Carregando jogos…" data-testid="loader-library" />
+        <AppLoader
+          fill="block"
+          label="Carregando jogos…"
+          data-testid="loader-library"
+          variant="sword"
+        />
       ) : isInitialError && !hasData ? (
         <ErrorState
           data-testid="library-error"
@@ -197,6 +205,8 @@ export function LibraryPage() {
                 onDesire={setDesire}
                 onError={handleError}
                 onPurchase={setPurchasingGame}
+                onUnpurchase={setUnpurchasingGame}
+                onFinish={setFinishingGame}
               />
             ))}
           </div>
@@ -263,6 +273,7 @@ export function LibraryPage() {
         title="Você comprou o jogo?"
         confirmLabel="Sim"
         cancelLabel="Não"
+        defaultFocus="confirm"
         onConfirm={async () => {
           if (!purchasingGame) return;
           const target = purchasingGame;
@@ -275,6 +286,37 @@ export function LibraryPage() {
         }}
         onCancel={() => setPurchasingGame(null)}
       />
+      <ConfirmDialog
+        data-testid="dialog-unpurchase"
+        open={Boolean(unpurchasingGame)}
+        title="Deseja marcar o jogo como não comprado?"
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        defaultFocus="confirm"
+        onConfirm={async () => {
+          if (!unpurchasingGame) return;
+          const target = unpurchasingGame;
+          setUnpurchasingGame(null);
+          try {
+            await writer.unpurchase(target.id);
+          } catch {
+            setError(`Não foi possível marcar ${target.name} como não comprado.`);
+          }
+        }}
+        onCancel={() => setUnpurchasingGame(null)}
+      />
+      {finishingGame && (
+        <FinishDialog
+          key={finishingGame.id}
+          game={finishingGame}
+          onClose={(saved) => {
+            setFinishingGame(null);
+            if (saved) {
+              void refetch();
+            }
+          }}
+        />
+      )}
     </>
   );
 }

@@ -6,7 +6,8 @@ import { api, isApiError } from '../api/http';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { FinishDialog } from '../features/finish-dialog';
 import { AppLoader } from '../features/loader/AppLoader';
-import { MetadataBadge, MetadataSelect } from '../features/metadata';
+import { GameActionIcons, GameDetailTags } from '../features/details';
+import { MetadataSelect } from '../features/metadata';
 import { useGameWriter } from '../features/playing';
 import { PrerequisiteSearch } from '../features/prerequisite-search';
 import { useQueryKeys } from '../query/keys';
@@ -159,26 +160,14 @@ export function DetailPage() {
                 {g.store} · {g.platform}
               </span>
               <h1>{g.name}</h1>
-              <div className="tags">
-                <MetadataBadge kind="status" value={g.status} />
-                <MetadataBadge kind="genre" value={g.primaryGenre} />
-                {g.secondaryTags.map((t) => (
-                  <MetadataBadge key={t} kind="tag" value={t} />
-                ))}
-              </div>
-              <p className="muted">
-                {g.pace} · {g.structure} · {g.coop}
-              </p>
-              {g.status !== 'Finalizado' && g.status !== 'Desejado' && (
-                <button
-                  data-testid="detail-finish"
-                  type="button"
-                  className="button primary finish-open"
-                  onClick={() => setFinishing(true)}
-                >
-                  ✓ Finalizar jogo
-                </button>
-              )}
+              <GameDetailTags game={g} testIdPrefix="detail-badge" className="my-2" />
+              <GameActionIcons
+                game={g}
+                onFinish={() => setFinishing(true)}
+                onPurchaseSuccess={() => setEdits(null)}
+                onUnpurchaseSuccess={() => setEdits(null)}
+                testIdPrefix="detail"
+              />
             </div>
           </div>
           <form data-testid="detail-form" className="detail-form" onSubmit={save}>
@@ -296,6 +285,28 @@ export function DetailPage() {
                     />
                   </label>
                 </section>
+                <section className="panel">
+                  <span className="eyebrow">GÊNERO</span>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <MetadataSelect
+                      data-testid="detail-genre"
+                      label="Principal"
+                      kind="genre"
+                      options={catalog?.genres ?? []}
+                      value={form.primaryGenre}
+                      onValueChange={(v) => set('primaryGenre', v)}
+                    />
+                    <MetadataSelect
+                      data-testid="detail-tags"
+                      multiple
+                      label="Secundárias"
+                      kind="tag"
+                      options={catalog?.tags ?? []}
+                      values={form.secondaryTags}
+                      onValuesChange={(v) => set('secondaryTags', v)}
+                    />
+                  </div>
+                </section>
                 <section className="panel metadata">
                   <span className="eyebrow">CLASSIFICAÇÃO</span>
                   <h2>Metadados do jogo</h2>
@@ -310,23 +321,6 @@ export function DetailPage() {
                         required
                       />
                     </label>
-                    <MetadataSelect
-                      data-testid="detail-genre"
-                      label="Gênero principal"
-                      kind="genre"
-                      options={catalog?.genres ?? []}
-                      value={form.primaryGenre}
-                      onValueChange={(v) => set('primaryGenre', v)}
-                    />
-                    <MetadataSelect
-                      data-testid="detail-tags"
-                      multiple
-                      label="Tags secundárias"
-                      kind="tag"
-                      options={catalog?.tags ?? []}
-                      values={form.secondaryTags}
-                      onValuesChange={(v) => set('secondaryTags', v)}
-                    />
                     <MetadataSelect
                       data-testid="detail-pace"
                       label="Ritmo"
@@ -408,7 +402,7 @@ export function DetailPage() {
                   </div>
                 </section>
                 <div className="save-bar">
-                  <span role="status">
+                  <span role="status" data-testid="detail-save-status">
                     {saved
                       ? 'Salvo. A ordem já foi recalculada.'
                       : 'Salvar recalcula a ordem de todas as listas.'}

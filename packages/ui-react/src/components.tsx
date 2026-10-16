@@ -59,6 +59,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   destructive,
+  defaultFocus,
   onConfirm,
   onCancel,
 }: {
@@ -69,6 +70,7 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
+  defaultFocus?: 'confirm' | 'cancel';
   onConfirm(): void;
   onCancel(): void;
 }) {
@@ -80,6 +82,7 @@ export function ConfirmDialog({
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
   }, [open]);
+  const focusConfirm = defaultFocus ? defaultFocus === 'confirm' : !destructive;
   return (
     <dialog
       data-testid={testId}
@@ -97,7 +100,7 @@ export function ConfirmDialog({
           type="button"
           className="button"
           onClick={onCancel}
-          autoFocus
+          autoFocus={!focusConfirm}
         >
           {cancelLabel}
         </button>
@@ -106,6 +109,7 @@ export function ConfirmDialog({
           type="button"
           className={destructive ? 'button danger' : 'button primary'}
           onClick={onConfirm}
+          autoFocus={focusConfirm}
         >
           {confirmLabel}
         </button>

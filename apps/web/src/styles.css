@@ -492,7 +492,7 @@ textarea {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: 6px;
-  padding: 9px 10px;
+  padding: 9px 28px 9px 10px;
   color: var(--text-2);
   max-width: 180px;
 }
@@ -535,11 +535,13 @@ textarea {
 .card-link {
   display: block;
 }
+.card-actions,
 .card-immediate {
-  position: absolute;
-  z-index: 3;
-  top: 8px;
-  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 10px 10px;
 }
 /* Row icon actions for immediate desire and completion. */
 .immediate-btn,
@@ -597,15 +599,20 @@ textarea {
   border-color: var(--border);
   background: var(--surface);
 }
+.card-actions .immediate-btn,
 .card-immediate .immediate-btn {
-  background: var(--surface);
-  box-shadow: 0 2px 8px var(--shadow-mid);
+  background: none;
+  box-shadow: none;
 }
 .cover {
   aspect-ratio: 460/215;
   position: relative;
-  background: linear-gradient(130deg, var(--cover-a), var(--cover-b));
+  background: var(--surface-2);
   overflow: hidden;
+}
+.cover:not(:has(img)),
+.cover:has(img[style*='none']) {
+  background: linear-gradient(130deg, var(--cover-a), var(--cover-b));
 }
 .cover img,
 .next-cover img,
@@ -614,8 +621,15 @@ textarea {
   position: absolute;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   z-index: 1;
+}
+.cover:has(img:not([style*='none'])) .cover-fallback,
+.next-cover:has(img:not([style*='none'])) > span,
+.queue-cover:has(img:not([style*='none'])) > span,
+.detail-cover:has(img:not([style*='none'])) > span {
+  display: none;
 }
 .cover-fallback,
 .next-cover > span,
@@ -777,6 +791,10 @@ footer {
 .next-cover {
   position: relative;
   min-width: 37%;
+  background: var(--surface-2);
+}
+.next-cover:not(:has(img)),
+.next-cover:has(img[style*='none']) {
   background: linear-gradient(135deg, var(--cover-a), var(--cover-b));
 }
 .method {
@@ -1124,8 +1142,12 @@ footer {
   position: relative;
   overflow: hidden;
   border-radius: 6px;
-  background: var(--cover-a);
+  background: var(--surface-2);
   flex-shrink: 0;
+}
+.queue-cover:not(:has(img)),
+.queue-cover:has(img[style*='none']) {
+  background: var(--cover-a);
 }
 .queue-cover > span {
   font-size: 25px;
@@ -1187,11 +1209,15 @@ footer {
 .detail-cover {
   width: 250px;
   aspect-ratio: 460/215;
-  background: var(--cover-a);
+  background: var(--surface-2);
   border-radius: 10px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
+}
+.detail-cover:not(:has(img)),
+.detail-cover:has(img[style*='none']) {
+  background: var(--cover-a);
 }
 .detail-hero h1 {
   font-size: 31px;
@@ -1577,7 +1603,7 @@ pre {
   }
   .filters select {
     min-height: 44px;
-    padding: 8px;
+    padding: 8px 28px 8px 10px;
   }
   .filters select:last-child:nth-child(odd) {
     grid-column: 1 / -1;
@@ -1641,19 +1667,13 @@ pre {
     font-size: 12px;
     min-height: 44px;
   }
-  /* Library cards keep room for the floating play and bonfire buttons; wishlist cards do not. */
   .card-link .card-bottom {
     justify-content: flex-start;
     flex-wrap: wrap;
-    padding-right: 104px;
   }
+  .card-actions,
   .card-immediate {
-    top: auto;
-    right: 10px;
-    bottom: 10px;
-  }
-  .card-immediate .immediate-btn {
-    box-shadow: none;
+    padding: 0 10px 8px;
   }
   .next-game {
     display: block;

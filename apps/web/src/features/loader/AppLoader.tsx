@@ -4,13 +4,17 @@ import { SwordArt } from './SwordArt';
 registerLoaderArt('sword', SwordArt);
 
 /**
- * The app's loader: the kit's `Loader` with this product's art. `VITE_LOADER_ART` names the
- * default art (`sword` when unset). Pass `variant`, `art` or `src` to override it per use.
+ * The app's loader: the kit's `Loader` with bonfire sword as default art for stacked loaders,
+ * and standard circular spinner when layout === 'inline' (buttons / small indicators).
+ * `VITE_LOADER_ART` can override the default art when provided.
  */
 export function AppLoader({
   label = 'Carregando…',
-  variant = import.meta.env.VITE_LOADER_ART || 'sword',
+  variant,
+  layout = 'stacked',
   ...rest
 }: LoaderProps) {
-  return <Loader label={label} variant={variant} {...rest} />;
+  const defaultVariant = layout === 'inline' ? 'spinner' : 'sword';
+  const resolvedVariant = variant ?? (import.meta.env.VITE_LOADER_ART || defaultVariant);
+  return <Loader label={label} variant={resolvedVariant} layout={layout} {...rest} />;
 }

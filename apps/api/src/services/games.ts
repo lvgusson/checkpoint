@@ -67,8 +67,11 @@ const CATALOG_FIELDS = [
   'prerequisiteId',
   'secondaryTags',
 ] as const;
+const USER_EDITABLE_CATALOG_FIELDS = new Set<string>(['secondaryTags', 'primaryGenre']);
 const catalogChanged = (a: Game, b: Game) =>
-  CATALOG_FIELDS.some((f) => JSON.stringify(a[f]) !== JSON.stringify(b[f]));
+  CATALOG_FIELDS.filter((f) => !USER_EDITABLE_CATALOG_FIELDS.has(f)).some(
+    (f) => JSON.stringify(a[f]) !== JSON.stringify(b[f]),
+  );
 /** Parâmetros da listagem de jogos, como chegam da query string. */
 interface GameQuery {
   q?: string | null;
@@ -529,6 +532,20 @@ export class GameService {
     });
   }
 
+  async unpurchase(id: string) {
+    return this.serial(async () => {
+      const game = await this.repository.get(id);
+      if (!game) throw new AppError('Jogo não encontrado', 404);
+      await this.repository.save({
+        ...game,
+        status: GameStatus.Wishlist,
+        purchasedAt: null,
+      });
+      this.invalidateUserCache();
+      return this.game(id);
+    });
+  }
+
   async patch(id: string, body: Record<string, unknown>) {
     return this.serial(async () => {
       const old = await this.repository.get(id);
@@ -677,6 +694,10 @@ export class GameService {
         next.status !== GameStatus.Finished
       )
         next.finishedAt = null;
+      if (body.status === GameStatus.Wishlist) {
+        next.status = GameStatus.Wishlist;
+        next.purchasedAt = null;
+      }
       // Work data (game rows and tags) is shared by every library; only admins may change it.
       if (!can(getContext()?.role, Permission.CatalogUpdate) && catalogChanged(old, next))
         throw new AppError('Somente administradores editam dados do catálogo', 403);
