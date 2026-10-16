@@ -9,17 +9,17 @@ area: backend
 
 ## Layout
 
-| Path                      | Holds                                                                |
-| ------------------------- | -------------------------------------------------------------------- |
-| `apps/api/src`            | Server, services, repositories, drivers, auth, observability         |
-| `apps/api/src/data`       | Ports, repositories, and drivers (Postgres and JSON)                 |
-| `apps/api/index.mjs`      | Vercel Function entry; plain JS that loads the `.ts` sources         |
-| `apps/api/openapi.json`   | API contract, served at `/api/v1/openapi.json`                       |
-| `apps/api/infra/db`       | Plain-Postgres migrations and the seed generator                     |
-| `apps/api/infra/supabase` | Supabase CLI project; its `migrations` folder is canonical to deploy |
-| `apps/api/infra/data`     | Seed inputs (metadata, wishlist snapshot)                            |
-| `apps/api/scripts`        | Release, rollback, metadata and master-user scripts                  |
-| `scripts/dev.mjs`         | Starts API and web together for `pnpm dev`                           |
+| Path                      | Holds                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `apps/api/src`            | Server, services, repositories, drivers, auth, observability                                                |
+| `apps/api/src/data`       | Ports, repositories, and drivers (Postgres and JSON)                                                        |
+| `apps/api/index.mjs`      | Vercel Function entry; plain JS; runs `app.ready()` then `app.server.emit('request')` on the Fastify server |
+| `apps/api/openapi.json`   | API contract, served at `/api/v1/openapi.json`                                                              |
+| `apps/api/infra/db`       | Plain-Postgres migrations and the seed generator                                                            |
+| `apps/api/infra/supabase` | Supabase CLI project; its `migrations` folder is canonical to deploy                                        |
+| `apps/api/infra/data`     | Seed inputs (metadata, wishlist snapshot)                                                                   |
+| `apps/api/scripts`        | Release, rollback, metadata and master-user scripts                                                         |
+| `scripts/dev.mjs`         | Starts API and web together for `pnpm dev`                                                                  |
 
 ## Storage modes
 
