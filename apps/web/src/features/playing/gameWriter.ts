@@ -22,6 +22,7 @@ export interface GameWriter {
   setDesire(id: string, desire: Desire): Promise<ScoredGame>;
   togglePlaying(game: ScoredGame): Promise<void>;
   purchase(id: string): Promise<ScoredGame>;
+  unpurchase(id: string): Promise<ScoredGame>;
   readonly pendingPlaying: number;
   /** Subscribe to playing outcomes; returns the unsubscribe function. */
   onPlaying(listener: (event: PlayingEvent) => void): () => void;
@@ -173,11 +174,29 @@ function createGameWriter(qc: QueryClient, userId: string): GameWriter {
     return game;
   }
 
+  async function unpurchase(id: string): Promise<ScoredGame> {
+    await playing.wait(id);
+    const game = await api.post<ScoredGame>(`games/${encodeURIComponent(id)}/unpurchase`, {
+      json: {},
+    });
+    await qc.cancelQueries({ queryKey: k.game(id) });
+    qc.setQueryData(k.game(id), game);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: k.games() }),
+      qc.invalidateQueries({ queryKey: k.wishlist() }),
+      qc.invalidateQueries({ queryKey: k.game(id) }),
+      qc.invalidateQueries({ queryKey: [...k.all, 'queue'] }),
+      qc.invalidateQueries({ queryKey: k.catalog() }),
+    ]);
+    return game;
+  }
+
   return {
     save,
     setDesire: (id, desire) => save(id, { desire }),
     togglePlaying: (game) => playing.toggle(game),
     purchase,
+    unpurchase,
     get pendingPlaying() {
       return playing.pending;
     },

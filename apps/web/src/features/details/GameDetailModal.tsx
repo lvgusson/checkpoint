@@ -6,8 +6,10 @@ import { api } from '../../api/http';
 import { useQueryKeys } from '../../query/keys';
 import { FinishDialog } from '../finish-dialog';
 import { AppLoader } from '../loader/AppLoader';
-import { MetadataBadge, MetadataSelect } from '../metadata';
+import { MetadataSelect } from '../metadata';
 import { useGameWriter } from '../playing/gameWriter';
+import { GameActionIcons } from './GameActionIcons';
+import { GameDetailTags } from './GameDetailTags';
 
 export interface GameDetailModalProps {
   gameId: string | null;
@@ -112,6 +114,16 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
     }
   }
 
+  async function handleGenreChange(genre: string) {
+    if (!game || isCatalogDisabled) return;
+    if (catalog?.genres && !catalog.genres.includes(genre)) return;
+    try {
+      await writer.save(game.id, { primaryGenre: genre });
+    } catch {
+      // GameWriter handles error reporting
+    }
+  }
+
   async function handleSaveNotes() {
     if (!game) return;
     setSavingNotes(true);
@@ -147,10 +159,10 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
           e.preventDefault();
           onOpenChange(false);
         }}
-        className="fixed inset-0 z-50 m-auto flex max-h-[calc(100dvh-48px)] w-[min(720px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--text)] shadow-2xl backdrop:bg-[var(--scrim)] outline-none focus:outline-none"
+        className="z-50 m-auto flex w-[calc(100vw-24px)] max-w-[720px] max-h-[calc(100dvh-32px)] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--text)] shadow-2xl backdrop:bg-[var(--scrim)] outline-none focus:outline-none max-sm:w-[calc(100vw-16px)] max-sm:rounded-xl"
         aria-labelledby="modal-game-title"
       >
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 sm:px-6 sm:py-4">
           <span className="eyebrow m-0">DETALHES DO JOGO</span>
           <button
             data-testid="modal-close"
@@ -163,7 +175,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
           </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto p-6">
+        <div className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12" role="status">
               <AppLoader
@@ -221,31 +233,18 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                   >
                     {game.name}
                   </h2>
-                  <div className="my-2 flex flex-wrap gap-1.5">
-                    <MetadataBadge kind="status" value={game.status} />
-                    <MetadataBadge kind="genre" value={game.primaryGenre} />
-                    {game.secondaryTags.map((t) => (
-                      <MetadataBadge key={t} kind="tag" value={t} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-[var(--muted)]">
-                    {game.pace} · {game.structure} · {game.coop}
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    {game.status !== 'Finalizado' && game.status !== 'Desejado' && (
-                      <button
-                        data-testid="modal-finish"
-                        type="button"
-                        className="button primary text-sm"
-                        onClick={() => setFinishing(true)}
-                      >
-                        ✓ Finalizar jogo
-                      </button>
-                    )}
+                  <GameDetailTags game={game} testIdPrefix="modal" className="my-2" />
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                    <GameActionIcons
+                      game={game}
+                      onFinish={() => setFinishing(true)}
+                      testIdPrefix="modal"
+                      className="my-0 max-w-[280px]"
+                    />
                     <Link
                       data-testid="modal-open-detail"
                       to={`/jogos/${encodeURIComponent(game.id)}`}
-                      className="text-xs text-[var(--muted)] underline hover:text-[var(--text)]"
+                      className="text-xs text-[var(--muted)] underline hover:text-[var(--text)] whitespace-nowrap"
                       onClick={() => onOpenChange(false)}
                     >
                       Abrir página completa →
@@ -319,23 +318,42 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                 </div>
               </div>
 
-              <div className="panel p-4">
-                <span className="eyebrow">TAGS SECUNDÁRIAS</span>
-                <div className="mt-2">
-                  <MetadataSelect
-                    data-testid="modal-tags"
-                    multiple
-                    max={3}
-                    label="Tags secundárias"
-                    kind="tag"
-                    options={catalog?.tags ?? []}
-                    values={game.secondaryTags ?? []}
-                    onValuesChange={handleTagsChange}
-                    isLoading={catalogQuery.isLoading}
-                    isError={catalogQuery.isError}
-                    disabled={isCatalogDisabled}
-                    onRetry={() => void catalogQuery.refetch()}
-                  />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="panel p-4">
+                  <span className="eyebrow">GÊNERO PRINCIPAL</span>
+                  <div className="mt-2">
+                    <MetadataSelect
+                      data-testid="modal-genre"
+                      label="Gênero principal"
+                      kind="genre"
+                      options={catalog?.genres ?? []}
+                      value={game.primaryGenre}
+                      onValueChange={handleGenreChange}
+                      isLoading={catalogQuery.isLoading}
+                      isError={catalogQuery.isError}
+                      disabled={isCatalogDisabled}
+                      onRetry={() => void catalogQuery.refetch()}
+                    />
+                  </div>
+                </div>
+                <div className="panel p-4">
+                  <span className="eyebrow">TAGS SECUNDÁRIAS</span>
+                  <div className="mt-2">
+                    <MetadataSelect
+                      data-testid="modal-tags"
+                      multiple
+                      max={3}
+                      label="Tags secundárias"
+                      kind="tag"
+                      options={catalog?.tags ?? []}
+                      values={game.secondaryTags ?? []}
+                      onValuesChange={handleTagsChange}
+                      isLoading={catalogQuery.isLoading}
+                      isError={catalogQuery.isError}
+                      disabled={isCatalogDisabled}
+                      onRetry={() => void catalogQuery.refetch()}
+                    />
+                  </div>
                 </div>
               </div>
 
