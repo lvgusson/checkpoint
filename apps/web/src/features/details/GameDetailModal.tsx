@@ -68,7 +68,8 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
   }, [open]);
 
   async function handleStatusChange(status: string) {
-    if (!game || !catalog?.statuses.includes(status as ScoredGame['status'])) return;
+    if (!game) return;
+    if (catalog?.statuses && !catalog.statuses.includes(status as ScoredGame['status'])) return;
     try {
       await writer.save(game.id, { status: status as ScoredGame['status'] });
     } catch {
@@ -77,9 +78,19 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
   }
 
   async function handleDesireChange(desire: string) {
-    if (!game || !catalog?.desires.includes(desire as ScoredGame['desire'])) return;
+    if (!game) return;
+    if (catalog?.desires && !catalog.desires.includes(desire as ScoredGame['desire'])) return;
     try {
       await writer.save(game.id, { desire: desire as ScoredGame['desire'] });
+    } catch {
+      // GameWriter handles error reporting
+    }
+  }
+
+  async function handleTagsChange(tags: string[]) {
+    if (!game) return;
+    try {
+      await writer.save(game.id, { secondaryTags: tags });
     } catch {
       // GameWriter handles error reporting
     }
@@ -141,6 +152,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
             <div className="flex flex-col items-center justify-center py-12" role="status">
               <AppLoader
                 data-testid="loader-modal"
+                variant="spinner"
                 size={48}
                 label="Carregando detalhes do jogo…"
                 fill="block"
@@ -164,7 +176,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                     <img
                       src={game.coverUrl}
                       alt=""
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                       onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
                   )}
@@ -226,6 +238,9 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       options={catalog?.statuses ?? []}
                       value={game.status}
                       onValueChange={handleStatusChange}
+                      isLoading={catalogQuery.isLoading}
+                      isError={catalogQuery.isError}
+                      onRetry={() => void catalogQuery.refetch()}
                     />
                   </div>
                 </div>
@@ -239,8 +254,30 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       options={catalog?.desires ?? []}
                       value={game.desire}
                       onValueChange={handleDesireChange}
+                      isLoading={catalogQuery.isLoading}
+                      isError={catalogQuery.isError}
+                      onRetry={() => void catalogQuery.refetch()}
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="panel p-4">
+                <span className="eyebrow">TAGS SECUNDÁRIAS</span>
+                <div className="mt-2">
+                  <MetadataSelect
+                    data-testid="modal-tags"
+                    multiple
+                    max={3}
+                    label="Tags secundárias"
+                    kind="tag"
+                    options={catalog?.tags ?? []}
+                    values={game.secondaryTags ?? []}
+                    onValuesChange={handleTagsChange}
+                    isLoading={catalogQuery.isLoading}
+                    isError={catalogQuery.isError}
+                    onRetry={() => void catalogQuery.refetch()}
+                  />
                 </div>
               </div>
 
@@ -307,7 +344,7 @@ export function GameDetailModal({ gameId, open, onOpenChange }: GameDetailModalP
                       onClick={handleSaveNotes}
                     >
                       {savingNotes ? (
-                        <AppLoader layout="inline" size="sm" label="Salvando…" />
+                        <AppLoader variant="spinner" layout="inline" size="sm" label="Salvando…" />
                       ) : (
                         'Salvar anotações'
                       )}
