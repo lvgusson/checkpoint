@@ -24,7 +24,7 @@ area: frontend
 4. Read server data through TanStack Query with keys from `useQueryKeys()`. Follow [[AI/frontend/data-and-state]].
 5. Export through the feature's `index.ts` when it has one (appearance, loader, queue, settings and wishlist have none; pages import them by path).
 6. Give every interactive element an accessible name, keyboard operation and visible focus. Use the ui-react state components (`EmptyState`, `ErrorState`) for empty and error states.
-7. Check: `pnpm check`, then open the page in `pnpm dev` and use it with the keyboard.
+7. Follow [[AI/frontend/design-engineering]] for browser checks, responsive screenshots, accessibility checks, and `pnpm check`.
 
 ## Rules
 
@@ -35,4 +35,5 @@ area: frontend
 ## Related
 
 - [[AI/frontend/frontend]]: Folder map of apps/web and the map of frontend notes.
+- [[AI/frontend/e2e-testing]]: Run and write the Playwright browser smoke tests of apps/web.
 - [[AI/patterns/design-patterns]]: Design patterns in use, where they live, and how to expand a class.

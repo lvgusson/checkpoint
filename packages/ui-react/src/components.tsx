@@ -50,50 +50,6 @@ export function ErrorState({
   );
 }
 
-/** Previous/next paging with a live position label. Renders nothing for a single page. */
-export function Pagination({
-  page,
-  pageCount,
-  onPageChange,
-  'data-testid': testId,
-  labels = { previous: 'Anterior', next: 'Próxima', position: (p, c) => `Página ${p} de ${c}` },
-}: {
-  'data-testid'?: string;
-  page: number;
-  pageCount: number | undefined;
-  onPageChange(page: number): void;
-  labels?: { previous: string; next: string; position(page: number, pageCount: number): string };
-}) {
-  if (pageCount === undefined || pageCount <= 1) return null;
-  return (
-    <nav
-      data-testid={testId}
-      className="flex items-center justify-center gap-3 py-4"
-      aria-label="Paginação"
-    >
-      <button
-        data-testid={testId && `${testId}-previous`}
-        type="button"
-        className="button"
-        disabled={page <= 1}
-        onClick={() => onPageChange(page - 1)}
-      >
-        {labels.previous}
-      </button>
-      <span aria-live="polite">{labels.position(page, pageCount)}</span>
-      <button
-        data-testid={testId && `${testId}-next`}
-        type="button"
-        className="button"
-        disabled={page >= pageCount}
-        onClick={() => onPageChange(page + 1)}
-      >
-        {labels.next}
-      </button>
-    </nav>
-  );
-}
-
 /** Modal confirmation on the native <dialog> (focus trap and Escape come from the platform; a backdrop click cancels). */
 export function ConfirmDialog({
   'data-testid': testId,

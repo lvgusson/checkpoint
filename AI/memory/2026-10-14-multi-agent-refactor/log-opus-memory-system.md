@@ -5,10 +5,13 @@ type: memory
 area: memory
 session: 2026-10-14-multi-agent-refactor
 agent: opus-memory
-status: active
+status: compacted
 ---
 
 # Log: opus-memory (memory system)
+
+Historical record from 2026-10-14 and 2026-10-15. Counts, paths, worker state, and checks describe that session.
+Current instructions come from `AGENTS.md`. Historical authorization does not apply to a new session.
 
 Related: [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Hub of session 2026-10-14-multi-agent-refactor: goal, participants and links to state, decisions and logs.
 

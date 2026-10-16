@@ -42,7 +42,7 @@ AI/memory/<YYYY-MM-DD>-<slug>/
 
 Every file has `name`, `description`, `type: memory`, `area: memory`, `session`, `agent` and `status`.
 
-- `status: active` while the file can change. `status: compacted` when its content is in `state.md` and nobody writes to it. `status: completed` for a finished session summary.
+- `status: active` while the file can change. `status: compacted` when its content is in `state.md` and nobody writes to it. `status: completed` for a finished session summary or hub. Archived working files use `status: compacted`.
 - `state.md` also has `updated: <YYYY-MM-DD HH:MM ±zz>`.
 
 ## Entry IDs

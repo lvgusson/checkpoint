@@ -153,3 +153,16 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 - If a required sync or push is blocked, stop and report the exact command and error.
 
 <!-- END BEADS INTEGRATION -->
+
+<!-- BEGIN DESIGN-PROJECT v1 -->
+
+## UI/UX design engineering
+
+UI work follows the `design-engineer` skill (installed from the `design-project` repo). Design in code. Verify in a real browser. No Figma.
+
+- Load `design-engineer` before any UI task. It selects the other design skills.
+- Reuse existing components and tokens. Add no UI library for one screen.
+- A UI task is done only after: real-browser screenshots at 375 and 1440, `apps/web/e2e/design-responsive-a11y.spec.ts` result (`DESIGN_ROUTES=/a,/b pnpm --filter web test:e2e design-responsive`), and the project gate.
+- Say "NOT RUN" for any check you skipped.
+
+<!-- END DESIGN-PROJECT v1 -->

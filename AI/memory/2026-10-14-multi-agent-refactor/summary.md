@@ -1,7 +1,7 @@
 ---
 name: summary
 description: Final session summary for the multi-agent refactor, features, security audit, and documentation review.
-type: reference
+type: memory
 area: memory
 session: 2026-10-14-multi-agent-refactor
 agent: orchestrator
@@ -11,9 +11,12 @@ updated: 2026-10-15 00:30 -03
 
 # Session Summary: Multi-Agent Refactor & Security Hardening
 
+Historical record from 2026-10-14 and 2026-10-15. Counts, paths, worker state, and checks describe that session.
+Current instructions come from `AGENTS.md`. Historical authorization does not apply to a new session.
+
 This document records the results of session `2026-10-14-multi-agent-refactor`.
 
-## Scope Completed
+## Completion recorded at that time
 
 1. **Skill System Repair (`checkpoint-2m2`, `checkpoint-418`)**:
    - Audited `.agents/skills/**`, `.claude/skills/`, and `skills-lock.json`.
@@ -52,7 +55,7 @@ This document records the results of session `2026-10-14-multi-agent-refactor`.
    - Slice 4: Wishlist purchase flag, "Comprei" button, recency bonus, and formula.
    - Slice 5: Wishlist sorting by price, discount, and recommendation.
 
-## Verification Evidence
+## Verification evidence recorded at that time
 
 - `pnpm check`: Exited 0 (TypeScript typecheck, ESLint, Prettier format check, Web production build).
 - Feature & regression suite: 20 passed, 0 failed (`apps/api/test/security-fixes.test.ts`, `apps/api/test/config.test.ts`, `apps/api/test/features/*.test.ts`).
@@ -61,5 +64,5 @@ This document records the results of session `2026-10-14-multi-agent-refactor`.
 ## Related
 
 - [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Session hub.
-- [[AI/memory/2026-10-14-multi-agent-refactor/state]]: Active state and work item tracking.
+- [[AI/memory/2026-10-14-multi-agent-refactor/state]]: Historical final state and work item tracking.
 - [[AI/memory/2026-10-14-multi-agent-refactor/decisions]]: Architectural decisions.

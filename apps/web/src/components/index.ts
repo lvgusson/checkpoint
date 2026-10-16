@@ -8,7 +8,7 @@ export { DateTimePicker } from './ui/date-time-picker';
 export { Toaster as Sonner, Toaster } from './ui/sonner';
 
 // Domain / Kit
-export { ConfirmDialog, EmptyState, ErrorState, Pagination } from '@checkpoint/ui-react';
+export { ConfirmDialog, EmptyState, ErrorState } from '@checkpoint/ui-react';
 
 // Brand / Feedback
 export { AppLoader } from '@/features/loader/AppLoader';

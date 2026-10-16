@@ -25,7 +25,7 @@ React 19, Vite, TypeScript, react-router, TanStack Query, Ky, Zod, react-hook-fo
 - Build a new component, screen or feature: [[AI/frontend/creating-a-component]]
 - Colors, typography, spacing, themes: [[AI/frontend/visual-identity]]
 - Fetching, caching, optimistic updates, errors: [[AI/frontend/data-and-state]]
-- Reusable list, pagination, drag and drop pieces: [[AI/core/core]]
+- Reusable list, dialogs, empty and error state pieces: [[AI/core/core]]
 - Loading states and the reusable loader: [[AI/frontend/loader]]
 - Infinite scroll pagination: [[AI/frontend/infinite-scroll]]
 - Browser event tracking: [[AI/backend/tracking]]: Fire-and-forget client tracking queue and listener.
@@ -35,6 +35,7 @@ React 19, Vite, TypeScript, react-router, TanStack Query, Ky, Zod, react-hook-fo
 ## Related
 
 - [[AI/frontend/testid-map]]: Stable test IDs and destructive actions for every application screen.
+- [[AI/frontend/design-engineering]]: How agents design a screen and verify it (responsive, a11y, screenshots).
 
 - [[AI/index]]: Entry point: pick the area you change and follow one link.
 - [[AI/patterns/design-patterns]]: Design patterns in use, where they live, and how to expand a class.

@@ -13,11 +13,10 @@ area: frontend
 - Dynamic lists use game codes or domain IDs. They never use array indexes.
 - A ui-react component forwards `data-testid` to its root. Its actions add suffixes to that ID.
 - IDs never use translated display text. Fixed status and desire choices use contract keys.
-- `<code>` means a lowercase game code. `<id>` means a list UUID or Steam application ID.
-- `<key>` means a contract key in kebab-case. `<value-key>` encodes a stored catalog key as hyphenated hexadecimal Unicode code points.
-- Braces list alternatives. For example, `login-{email,password}` means two separate IDs.
-- Status blocks with no action: `{queue,settings}-lists` (error), `{queue,settings}-lists-empty`, `wishlist-error`.
-- Tests skip destructive actions or restore their original state. Persisted writes also use `yes` below.
+- `<code>` means a game code; `<id>` means a list or Steam ID; `<key>` means a contract key.
+- `<value-key>` encodes a stored catalog key as hexadecimal Unicode code points.
+- Braces list alternatives (e.g. `login-{email,password}`). Actionless status: `{queue,settings}-lists`, `wishlist-error`.
+- Tests skip destructive actions or restore original state. Persisted writes use `yes` below.
 
 ## Nav
 

@@ -46,9 +46,9 @@ pnpm --filter @checkpoint/api run test:security
 ```
 
 The test helper creates temporary JSON files for local HTTP tests. It does not inherit storage paths or credentials.
-Ownership and SQL suites require `SECURITY_TEST_DATABASE_URL`. They fail when this variable is absent.
+Ownership and SQL suites require `SECURITY_TEST_DATABASE_URL`. They skip when this variable is absent.
 The URL must select a local database whose name starts with `checkpoint_security_`.
-Never supply a production database. The orchestrator prepares the isolated database with migrations and seed data.
+Never supply a production database. `pnpm db:up` prepares the isolated database with migrations and seed data.
 
 Ownership tests use PostgreSQL and two authenticated identities. They preserve the expected 404 response for foreign records.
 SQL tests exercise attack examples against PostgreSQL. They cannot prove that every future query is safe.
@@ -57,7 +57,6 @@ Review every query change for parameters and fixed identifiers.
 ## Related
 
 - [[AI/backend/testing]]: Unit test commands, Vitest configuration, and local database test requirements.
-
 - [[AI/backend/backend]]: Backend request flow and notes.
 - [[AI/backend/authorization]]: Roles and ownership rules.
 - [[AI/backend/infrastructure]]: Storage, environment variables, and deployment.

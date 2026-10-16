@@ -10,6 +10,9 @@ status: completed
 
 # Session 2026-10-14-multi-agent-refactor
 
+Historical record from 2026-10-14 and 2026-10-15. Counts, paths, worker state, and checks describe that session.
+Current instructions come from `AGENTS.md`. Historical authorization does not apply to a new session.
+
 Goal: do the seven-slice refactor epic, the security audit and fixes, and the session memory system.
 
 - Orchestrator: the owner's main Claude Code session. It reports Sonnet 5.5 with an Opus advisor (reported, not verified).
@@ -20,9 +23,9 @@ Goal: do the seven-slice refactor epic, the security audit and fixes, and the se
 
 - [[AI/memory/2026-10-14-multi-agent-refactor/summary]]: Final session summary with verification evidence and completed scope.
 
-- [[AI/memory/2026-10-14-multi-agent-refactor/handoff]]: Current recovery instructions, worker ownership and remaining integration.
+- [[AI/memory/2026-10-14-multi-agent-refactor/handoff]]: Historical recovery instructions and former worker ownership.
 
-- [[AI/memory/2026-10-14-multi-agent-refactor/state]]: Read first after a context clear: next step, blockers, work items and open handoffs.
+- [[AI/memory/2026-10-14-multi-agent-refactor/state]]: Historical final state and recorded checks.
 
 ## Notes
 

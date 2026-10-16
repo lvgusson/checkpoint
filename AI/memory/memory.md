@@ -33,8 +33,8 @@ Session notes link bd ids. They do not copy issue text.
 
 ## Sessions
 
-- [[AI/memory/2026-10-14-multi-agent-refactor/index]]: completed. Seven-slice refactor epic, security audit and memory system.
-- [[AI/memory/2026-10-15-prod-recovery-and-perf/index]]: active. Production recovery, performance, tracking and the handoff to agy.
+- [[AI/memory/2026-10-14-multi-agent-refactor/index]]: Historical completed session: refactor, security audit, and memory system.
+- [[AI/memory/2026-10-15-prod-recovery-and-perf/index]]: Historical handoff: production recovery, performance, and tracking. Current task status comes from `bd`.
 
 ## Related
 
