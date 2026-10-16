@@ -86,6 +86,26 @@ Run them from the repository root. They read `.env` and need `DATABASE_URL`.
 
 `vercel-build` runs `apps/api/scripts/record-release.mjs` after the web build to register the deployed commit.
 
+## Runbook: reset the database password (owner)
+
+Use it after a password leak or when the API times out on Vercel. Supabase project ref: `yvsipeicyboqaslyqwrt`. The agent never writes secrets: the owner runs each `!` step.
+`apps/api/src/data/db.ts` already sets `prepare: false`, `max` 5, `idle_timeout` 20 s and `connect_timeout` 10 s. Do not change it for this fault.
+The script `fix-db-url.sh` is not in the repository. Use the steps below instead.
+
+1. Open Supabase dashboard, Project Settings, Database. Click "Reset database password". Copy the new password.
+2. Copy the "Transaction pooler" string (port 6543). The user must read `postgres.yvsipeicyboqaslyqwrt`. URL-encode special characters in the password.
+3. `! vercel env rm DATABASE_URL preview --scope lucasgusson99-4673s-projects`
+4. `! vercel env add DATABASE_URL preview --scope lucasgusson99-4673s-projects` (paste the pooler string).
+5. `! vercel env rm DATABASE_URL production --scope lucasgusson99-4673s-projects`
+6. `! vercel env add DATABASE_URL production --scope lucasgusson99-4673s-projects` (same string).
+7. Update `DATABASE_URL_SESSION` (port 5432, same user) the same way. Update local `.env` and the Docker-free scripts that read it.
+8. `! vercel redeploy <latest homologacao deployment url> --scope lucasgusson99-4673s-projects`. A new build is required: running functions keep the old value.
+9. Redeploy production only with owner approval.
+10. Verify: `GET /api/v1/health` answers 200 on the preview. Then run `pnpm --filter @checkpoint/web exec playwright test route-map.spec.ts` with `BASE_URL` set to the preview.
+11. Check Supabase logs (`supavisor_logs`): no "password authentication failed" lines after the redeploy.
+
+Diagnosis on 2026-10-16 (bd `checkpoint-8qy`): Vercel MCP answered 403, so runtime logs and env values were not readable. `vercel env ls` shows `DATABASE_URL` (Secret) on Preview and Production, 5 days old. Postgres and Supavisor logs show no authentication failure. The PATCH path is one SQL statement (`PgGamesDriver.save`) plus two reads, so no slow query exists in code. Cause not proven. Run step 10 first: if it passes, the fault was cold start or network latency, not credentials.
+
 ## Related
 
 - [[AI/backend/backend]]: Request flow of apps/api and the map of backend notes.
